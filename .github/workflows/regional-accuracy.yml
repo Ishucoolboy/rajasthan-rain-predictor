@@ -1,0 +1,87 @@
+name: Rajasthan Regional Accuracy Update
+
+on:
+  workflow_dispatch:
+
+  schedule:
+    # Every day at 02:30 UTC = 08:00 AM IST
+    - cron: "30 2 * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  update-regional-accuracy:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # ------------------------------------------------------
+      # CHECKOUT
+      # ------------------------------------------------------
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+
+      # ------------------------------------------------------
+      # PYTHON
+      # ------------------------------------------------------
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+
+      # ------------------------------------------------------
+      # INSTALL DEPENDENCIES
+      # ------------------------------------------------------
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+
+      # ------------------------------------------------------
+      # RUN REGIONAL COLLECTOR
+      # ------------------------------------------------------
+
+      - name: Collect regional accuracy
+        run: |
+          python regional-accuracy-collector.py
+
+
+      # ------------------------------------------------------
+      # CHECK DATABASE
+      # ------------------------------------------------------
+
+      - name: Check generated database
+        run: |
+          if [ -f regional-accuracy-database.json ]; then
+            echo "Regional accuracy database created."
+            wc -c regional-accuracy-database.json
+          else
+            echo "ERROR: regional-accuracy-database.json was not created."
+            exit 1
+          fi
+
+
+      # ------------------------------------------------------
+      # COMMIT DATABASE
+      # ------------------------------------------------------
+
+      - name: Commit regional accuracy database
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add regional-accuracy-database.json
+
+          if git diff --cached --quiet; then
+            echo "No database changes to commit."
+          else
+            git commit -m "Update regional accuracy database"
+            git push
+          fi
