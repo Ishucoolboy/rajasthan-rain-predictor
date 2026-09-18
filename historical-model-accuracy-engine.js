@@ -1,48 +1,91 @@
 /* =========================================================
    Rajasthan Rain Predictor
-   Historical Model Accuracy Engine V2
+   Historical Model Accuracy Engine V3
    ---------------------------------------------------------
-   Purpose:
-   - Evaluate historical ECMWF / GFS / ICON forecasts
-   - Compare fixed lead-time forecasts with ERA5 reference
-   - Test Day 1 to Day 7
-   - No invented accuracy
+   Historical verification:
+   ECMWF / GFS / ICON
+   Fixed lead times: Day 1 to Day 7
+
+   Reference:
+   Open-Meteo ERA5 reanalysis
+
+   IMPORTANT:
+   This is NOT independent rain-gauge / IMD accuracy.
    ========================================================= */
 
 (function () {
+
   "use strict";
 
+
+  /* =======================================================
+     SETTINGS
+     ======================================================= */
+
   const RESULT_KEY =
-    "rrp_historical_model_accuracy_v2";
+    "rrp_historical_model_accuracy_v3";
+
 
   const MODELS = [
+
     {
       name: "ECMWF",
       id: "ecmwf_ifs025"
     },
+
     {
       name: "GFS",
       id: "gfs_seamless"
     },
+
     {
       name: "ICON",
       id: "icon_seamless"
     }
+
   ];
+
 
   const LEAD_DAYS = [
-    1, 2, 3, 4, 5, 6, 7
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
   ];
 
+
   const RAIN_THRESHOLD = 0.1;
+
+
+  /*
+    FIXED HISTORICAL TEST PERIOD
+
+    We intentionally use a confirmed past period
+    so browser/PC clock cannot create future dates.
+  */
+
+  const TEST_START_DATE =
+    "2026-08-01";
+
+
+  const TEST_END_DATE =
+    "2026-08-07";
 
 
   /* =======================================================
      HELPERS
      ======================================================= */
 
-  function number(value, fallback = null) {
-    const n = Number(value);
+  function number(
+    value,
+    fallback = null
+  ) {
+
+    const n =
+      Number(value);
 
     return Number.isFinite(n)
       ? n
@@ -50,68 +93,110 @@
   }
 
 
-  function round(value, digits = 3) {
-    const n = Number(value);
+  function round(
+    value,
+    digits = 3
+  ) {
 
-    if (!Number.isFinite(n)) {
+    const n =
+      Number(value);
+
+    if (
+      !Number.isFinite(n)
+    ) {
+
       return null;
     }
 
+
     const multiplier =
-      Math.pow(10, digits);
+      Math.pow(
+        10,
+        digits
+      );
+
 
     return (
-      Math.round(n * multiplier) /
+      Math.round(
+        n * multiplier
+      ) /
       multiplier
     );
+
   }
 
 
-  function saveJSON(key, value) {
+  function saveJSON(
+    key,
+    value
+  ) {
+
     try {
+
       localStorage.setItem(
         key,
         JSON.stringify(value)
       );
+
     } catch (error) {
+
       console.warn(
         "Historical accuracy save error:",
         error
       );
+
     }
+
   }
 
 
-  function loadJSON(key) {
+  function loadJSON(
+    key
+  ) {
+
     try {
+
       const raw =
-        localStorage.getItem(key);
+        localStorage.getItem(
+          key
+        );
+
 
       if (!raw) {
+
         return null;
       }
 
-      return JSON.parse(raw);
+
+      return JSON.parse(
+        raw
+      );
 
     } catch (error) {
+
       return null;
     }
+
   }
 
 
-  function dateString(date) {
-    return date
-      .toISOString()
-      .slice(0, 10);
-  }
-
+  /* =======================================================
+     GET CURRENT SELECTED LOCATION
+     ======================================================= */
 
   function getLocation() {
 
-    if (window.latestWeatherData) {
+    /*
+      Main source
+    */
+
+    if (
+      window.latestWeatherData
+    ) {
 
       const data =
         window.latestWeatherData;
+
 
       const latitude =
         number(
@@ -120,6 +205,7 @@
           data.location?.latitude ??
           data.location?.lat
         );
+
 
       const longitude =
         number(
@@ -131,92 +217,133 @@
           data.location?.lng
         );
 
+
       const name =
         data.locationName ??
         data.name ??
         data.location?.name ??
         "Selected Location";
 
+
       if (
         latitude !== null &&
         longitude !== null
       ) {
+
         return {
+
           latitude,
+
           longitude,
+
           name
+
         };
+
       }
+
     }
 
 
-    if (window.RRP_BACKTEST) {
+    /*
+      Backtest engine fallback
+    */
+
+    if (
+      window.RRP_BACKTEST
+    ) {
 
       const location =
-        window.RRP_BACKTEST.getLocation();
+        window.RRP_BACKTEST
+          .getLocation();
 
-      if (location) {
+
+      if (
+        location
+      ) {
+
         return location;
       }
+
     }
 
 
     return null;
+
   }
 
 
   /* =======================================================
-     FETCH ERA5 HISTORICAL REFERENCE
+     FETCH HISTORICAL ERA5 REFERENCE
      ======================================================= */
 
   async function fetchHistoricalActual(
+
     latitude,
+
     longitude,
+
     startDate,
+
     endDate
+
   ) {
 
-    const params = new URLSearchParams();
+
+    const params =
+      new URLSearchParams();
+
 
     params.set(
       "latitude",
       latitude
     );
 
+
     params.set(
       "longitude",
       longitude
     );
+
 
     params.set(
       "start_date",
       startDate
     );
 
+
     params.set(
       "end_date",
       endDate
     );
+
 
     params.set(
       "daily",
       "precipitation_sum"
     );
 
+
     params.set(
       "timezone",
       "auto"
     );
+
 
     params.set(
       "precipitation_unit",
       "mm"
     );
 
-    params.set(
-      "models",
-      "era5"
-    );
+
+    /*
+      IMPORTANT:
+      No models=era5 parameter here.
+
+      The archive endpoint's standard
+      historical weather response is used.
+    */
+
 
     const url =
       "https://archive-api.open-meteo.com/v1/archive?" +
@@ -224,54 +351,74 @@
 
 
     console.log(
-      "ERA5 historical request:",
+      "ERA5 Historical API:",
       url
     );
 
 
     const response =
-      await fetch(url);
+      await fetch(
+        url
+      );
 
 
-    if (!response.ok) {
+    if (
+      !response.ok
+    ) {
 
       let reason =
         "HTTP " +
         response.status;
+
 
       try {
 
         const errorData =
           await response.json();
 
-        if (errorData.reason) {
+
+        if (
+          errorData.reason
+        ) {
+
           reason =
             errorData.reason;
         }
 
-      } catch (error) {
-        /* Ignore JSON parsing error */
+      } catch (
+        error
+      ) {
+
+        /*
+          Ignore JSON parse error
+        */
+
       }
 
 
       throw new Error(
-        "ERA5 Historical Weather API " +
+        "Historical Weather API " +
         reason
       );
+
     }
 
 
     return response.json();
+
   }
 
 
   /* =======================================================
-     CREATE ACTUAL DAILY MAP
+     CREATE ACTUAL RAINFALL MAP
      ======================================================= */
 
-  function createActualMap(api) {
+  function createActualMap(
+    api
+  ) {
 
     const map = {};
+
 
     if (
       !api ||
@@ -280,33 +427,43 @@
         api.daily.time
       )
     ) {
+
       return map;
     }
 
 
-    const rain =
-      api.daily.precipitation_sum ||
+    const rainfall =
+      api.daily
+        .precipitation_sum ||
       [];
 
 
     api.daily.time.forEach(
-      function (date, index) {
+      function (
+        date,
+        index
+      ) {
 
         const value =
           number(
-            rain[index]
+            rainfall[index]
           );
 
-        if (value !== null) {
+
+        if (
+          value !== null
+        ) {
 
           map[date] =
             value;
         }
+
       }
     );
 
 
     return map;
+
   }
 
 
@@ -315,13 +472,21 @@
      ======================================================= */
 
   async function fetchPreviousRun(
+
     modelId,
+
     leadDays,
+
     latitude,
+
     longitude,
+
     startDate,
+
     endDate
+
   ) {
+
 
     const leadVariable =
       "precipitation_previous_day" +
@@ -331,40 +496,48 @@
     const params =
       new URLSearchParams();
 
+
     params.set(
       "latitude",
       latitude
     );
+
 
     params.set(
       "longitude",
       longitude
     );
 
+
     params.set(
       "start_date",
       startDate
     );
+
 
     params.set(
       "end_date",
       endDate
     );
 
+
     params.set(
       "hourly",
       leadVariable
     );
+
 
     params.set(
       "timezone",
       "auto"
     );
 
+
     params.set(
       "precipitation_unit",
       "mm"
     );
+
 
     params.set(
       "models",
@@ -378,35 +551,49 @@
 
 
     console.log(
-      "Previous Runs request:",
+      "Previous Runs API:",
       modelId,
-      leadVariable,
-      url
+      leadVariable
     );
 
 
     const response =
-      await fetch(url);
+      await fetch(
+        url
+      );
 
 
-    if (!response.ok) {
+    if (
+      !response.ok
+    ) {
 
       let reason =
         "HTTP " +
         response.status;
+
 
       try {
 
         const errorData =
           await response.json();
 
-        if (errorData.reason) {
+
+        if (
+          errorData.reason
+        ) {
+
           reason =
             errorData.reason;
         }
 
-      } catch (error) {
-        /* Ignore JSON parsing error */
+      } catch (
+        error
+      ) {
+
+        /*
+          Ignore JSON parse error
+        */
+
       }
 
 
@@ -414,23 +601,30 @@
         "Previous Runs API " +
         reason
       );
+
     }
 
 
     return response.json();
+
   }
 
 
   /* =======================================================
-     DAILY FORECAST FROM PREVIOUS RUN
+     CONVERT HOURLY FORECAST TO DAILY TOTAL
      ======================================================= */
 
   function createDailyForecastMap(
+
     api,
+
     leadDays
+
   ) {
 
+
     const result = {};
+
 
     if (
       !api ||
@@ -439,6 +633,7 @@
         api.hourly.time
       )
     ) {
+
       return result;
     }
 
@@ -449,20 +644,31 @@
 
 
     const times =
-      api.hourly.time || [];
+      api.hourly.time ||
+      [];
+
 
     const values =
       api.hourly[
         leadVariable
-      ] || [];
+      ] ||
+      [];
 
 
     times.forEach(
-      function (time, index) {
+      function (
+        time,
+        index
+      ) {
 
         const date =
-          String(time)
-            .slice(0, 10);
+          String(
+            time
+          ).slice(
+            0,
+            10
+          );
+
 
         const value =
           number(
@@ -470,89 +676,134 @@
           );
 
 
-        if (value === null) {
+        if (
+          value === null
+        ) {
+
           return;
         }
 
 
         if (
-          !Object.prototype.hasOwnProperty.call(
-            result,
-            date
-          )
+          !Object.prototype
+            .hasOwnProperty
+            .call(
+              result,
+              date
+            )
         ) {
-          result[date] = 0;
+
+          result[date] =
+            0;
         }
 
 
         result[date] +=
           value;
+
       }
     );
 
 
-    Object.keys(result).forEach(
-      function (date) {
+    Object.keys(
+      result
+    ).forEach(
+      function (
+        date
+      ) {
 
         result[date] =
           round(
             result[date],
             2
           );
+
       }
     );
 
 
     return result;
+
   }
 
 
   /* =======================================================
-     METRICS
+     CALCULATE METRICS
      ======================================================= */
 
   function calculateMetrics(
     records
   ) {
 
-    if (!records.length) {
+
+    if (
+      !records.length
+    ) {
 
       return {
+
         samples: 0,
+
         mae: null,
+
         rmse: null,
+
         bias: null,
+
         rainAccuracy: null,
+
         hits: 0,
+
         misses: 0,
+
         falseAlarms: 0,
+
         correctNoRain: 0
+
       };
+
     }
 
 
-    let absoluteError = 0;
+    let absoluteError =
+      0;
 
-    let squaredError = 0;
 
-    let bias = 0;
+    let squaredError =
+      0;
 
-    let hits = 0;
 
-    let misses = 0;
+    let totalBias =
+      0;
 
-    let falseAlarms = 0;
 
-    let correctNoRain = 0;
+    let hits =
+      0;
+
+
+    let misses =
+      0;
+
+
+    let falseAlarms =
+      0;
+
+
+    let correctNoRain =
+      0;
 
 
     records.forEach(
-      function (item) {
+      function (
+        item
+      ) {
+
 
         const predicted =
           number(
             item.predictedRainMm
           );
+
 
         const actual =
           number(
@@ -564,23 +815,28 @@
           predicted === null ||
           actual === null
         ) {
+
           return;
         }
 
 
         const error =
-          predicted - actual;
+          predicted -
+          actual;
 
 
         absoluteError +=
-          Math.abs(error);
+          Math.abs(
+            error
+          );
 
 
         squaredError +=
-          error * error;
+          error *
+          error;
 
 
-        bias +=
+        totalBias +=
           error;
 
 
@@ -601,24 +857,32 @@
 
           hits++;
 
-        } else if (
+        }
+
+        else if (
           !predictedRain &&
           actualRain
         ) {
 
           misses++;
 
-        } else if (
+        }
+
+        else if (
           predictedRain &&
           !actualRain
         ) {
 
           falseAlarms++;
 
-        } else {
+        }
+
+        else {
 
           correctNoRain++;
+
         }
+
       }
     );
 
@@ -639,12 +903,12 @@
       );
 
 
-    const averageBias =
-      bias /
+    const bias =
+      totalBias /
       samples;
 
 
-    const classificationTotal =
+    const totalClassification =
       hits +
       misses +
       falseAlarms +
@@ -652,14 +916,17 @@
 
 
     const rainAccuracy =
-      classificationTotal > 0
+      totalClassification > 0
+
         ? (
             (
               hits +
               correctNoRain
             ) /
-            classificationTotal
-          ) * 100
+            totalClassification
+          ) *
+          100
+
         : null;
 
 
@@ -681,7 +948,7 @@
 
       bias:
         round(
-          averageBias,
+          bias,
           3
         ),
 
@@ -698,126 +965,102 @@
       falseAlarms,
 
       correctNoRain
+
     };
+
   }
 
 
   /* =======================================================
-     RUN HISTORICAL TEST
+     MAIN TEST
      ======================================================= */
 
   async function run(
     options = {}
   ) {
 
+
     const location =
       getLocation();
 
 
-    if (!location) {
+    if (
+      !location
+    ) {
 
       throw new Error(
         "Pehle website par location search karo."
       );
+
     }
 
 
-    const days =
-      Math.min(
-        7,
-        Math.max(
-          1,
-          Number(
-            options.days || 7
-          )
-        )
-      );
-
-
     /*
-      ERA5 has a data delay.
-      We deliberately test older dates.
+      For now the test period is fixed
+      to a confirmed historical period.
     */
 
-    const end =
-      new Date();
-
-
-    end.setUTCDate(
-      end.getUTCDate() -
-      8
-    );
-
-
-    const start =
-      new Date(end);
-
-
-    start.setUTCDate(
-      start.getUTCDate() -
-      days +
-      1
-    );
-
-
     const startDate =
-      dateString(start);
+      TEST_START_DATE;
+
 
     const endDate =
-      dateString(end);
+      TEST_END_DATE;
 
 
     console.log(
-      "======================================"
+      "===================================="
     );
 
+
     console.log(
-      "Historical Model Accuracy V2"
+      "RRP Historical Accuracy V3"
     );
+
 
     console.log(
       "Location:",
-      location
+      location.name
     );
 
+
     console.log(
-      "Period:",
+      "Coordinates:",
+      location.latitude,
+      location.longitude
+    );
+
+
+    console.log(
+      "Historical period:",
       startDate,
       "to",
       endDate
     );
 
+
     console.log(
-      "======================================"
+      "===================================="
     );
 
 
     /* =====================================================
        STEP 1
-       FETCH ERA5 ACTUAL
+       ERA5 REFERENCE
        ===================================================== */
 
-    let actualAPI;
+    const actualAPI =
+      await fetchHistoricalActual(
 
-    try {
+        location.latitude,
 
-      actualAPI =
-        await fetchHistoricalActual(
-          location.latitude,
-          location.longitude,
-          startDate,
-          endDate
-        );
+        location.longitude,
 
-    } catch (error) {
+        startDate,
 
-      console.error(
-        "ERA5 reference failed:",
-        error
+        endDate
+
       );
-
-      throw error;
-    }
 
 
     const actualMap =
@@ -827,19 +1070,19 @@
 
 
     console.log(
-      "ERA5 actual rainfall:",
+      "Historical rainfall reference:",
       actualMap
     );
 
 
     /* =====================================================
-       RESULT OBJECT
+       RESULT
        ===================================================== */
 
     const result = {
 
       version:
-        "historical-accuracy-v2",
+        "historical-accuracy-v3",
 
       generatedAt:
         new Date()
@@ -848,13 +1091,15 @@
       location,
 
       period: {
+
         startDate,
-        endDate,
-        days
+
+        endDate
+
       },
 
       reference:
-        "Open-Meteo ERA5 reanalysis reference",
+        "Open-Meteo ERA5/reanalysis",
 
       referenceType:
         "reanalysis-not-rain-gauge",
@@ -862,32 +1107,32 @@
       models: {},
 
       allRecords: []
+
     };
 
 
     /* =====================================================
        STEP 2
-       MODEL TEST
+       EACH MODEL
        ===================================================== */
 
     for (
       const model of MODELS
     ) {
 
+
       result.models[
         model.name
       ] = {};
 
 
+      /* ================================================
+         DAY 1 TO DAY 7
+         ================================================ */
+
       for (
         const leadDays of LEAD_DAYS
       ) {
-
-        if (
-          leadDays > days
-        ) {
-          continue;
-        }
 
 
         console.log(
@@ -905,60 +1150,98 @@
 
           api =
             await fetchPreviousRun(
+
               model.id,
+
               leadDays,
+
               location.latitude,
+
               location.longitude,
+
               startDate,
+
               endDate
+
             );
 
-        } catch (error) {
+        }
+
+
+        catch (
+          error
+        ) {
 
           console.warn(
             model.name,
             "Day",
             leadDays,
             "failed:",
-            error
+            error.message
           );
+
 
           result.models[
             model.name
           ][
-            "day" + leadDays
+            "day" +
+            leadDays
           ] = {
+
             samples: 0,
+
             mae: null,
+
             rmse: null,
+
             bias: null,
+
             rainAccuracy: null,
+
             hits: 0,
+
             misses: 0,
+
             falseAlarms: 0,
+
             correctNoRain: 0,
+
             error:
               error.message
+
           };
 
+
           continue;
+
         }
 
 
+        /* ==============================================
+           DAILY FORECAST
+           ============================================== */
+
         const dailyForecasts =
           createDailyForecastMap(
+
             api,
+
             leadDays
+
           );
 
 
-        const records = [];
+        const records =
+          [];
 
 
         Object.keys(
           dailyForecasts
         ).forEach(
-          function (validDate) {
+          function (
+            validDate
+          ) {
+
 
             const actual =
               number(
@@ -971,6 +1254,7 @@
             if (
               actual === null
             ) {
+
               return;
             }
 
@@ -986,6 +1270,7 @@
             if (
               predicted === null
             ) {
+
               return;
             }
 
@@ -1008,6 +1293,7 @@
 
               actualRainMm:
                 actual
+
             };
 
 
@@ -1019,31 +1305,36 @@
             result.allRecords.push(
               record
             );
+
+
           }
         );
+
+
+        const metrics =
+          calculateMetrics(
+            records
+          );
 
 
         result.models[
           model.name
         ][
-          "day" + leadDays
+          "day" +
+          leadDays
         ] =
-          calculateMetrics(
-            records
-          );
+          metrics;
 
 
         console.log(
           model.name,
           "Day",
           leadDays,
-          result.models[
-            model.name
-          ][
-            "day" + leadDays
-          ]
+          metrics
         );
+
       }
+
     }
 
 
@@ -1058,12 +1349,27 @@
 
 
     console.log(
-      "Historical accuracy result saved:",
+      "===================================="
+    );
+
+
+    console.log(
+      "HISTORICAL ACCURACY COMPLETE"
+    );
+
+
+    console.log(
       result
     );
 
 
+    console.log(
+      "===================================="
+    );
+
+
     return result;
+
   }
 
 
@@ -1081,7 +1387,9 @@
         return loadJSON(
           RESULT_KEY
         );
+
       },
+
 
     clear:
       function () {
@@ -1089,12 +1397,15 @@
         localStorage.removeItem(
           RESULT_KEY
         );
+
       }
+
   };
 
 
   console.log(
-    "RRP Historical Model Accuracy Engine V2 loaded."
+    "RRP Historical Model Accuracy Engine V3 loaded."
   );
+
 
 })();
