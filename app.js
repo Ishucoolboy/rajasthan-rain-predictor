@@ -16,9 +16,11 @@ const WEATHER_API =
 const GEOCODING_API =
     "https://geocoding-api.open-meteo.com/v1/search";
 
-// OpenStreetMap Nominatim fallback
 const OSM_GEOCODING_API =
     "https://nominatim.openstreetmap.org/search";
+
+const VILLAGE_DATABASE_URL =
+    "./villages.json";
 
 
 // =======================================================
@@ -33,7 +35,7 @@ const DEFAULT_LOCATION = {
 
 
 // =======================================================
-// KNOWN VILLAGE / LOCATION ALIASES
+// KNOWN LOCATIONS
 // =======================================================
 
 const KNOWN_LOCATIONS = {
@@ -63,6 +65,13 @@ const KNOWN_LOCATIONS = {
     }
 
 };
+
+
+// =======================================================
+// VILLAGE DATABASE
+// =======================================================
+
+let villageDatabase = [];
 
 
 // =======================================================
@@ -127,14 +136,203 @@ const iconRain =
 
 function setStatus(message, online = true) {
 
-    statusText.textContent = message;
+    if (statusText) {
+        statusText.textContent = message;
+    }
 
-    if (online) {
+    if (statusIndicator) {
+
         statusIndicator.style.background =
-            "#22c55e";
-    } else {
-        statusIndicator.style.background =
-            "#ef4444";
+            online
+                ? "#22c55e"
+                : "#ef4444";
+
+    }
+
+}
+
+
+// =======================================================
+// NORMALIZE SEARCH
+// =======================================================
+
+function normalizeSearchText(text) {
+
+    return String(text || "")
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, " ");
+
+}
+
+
+// =======================================================
+// SIMPLE FUZZY MATCH
+// =======================================================
+
+function levenshteinDistance(a, b) {
+
+    const matrix = [];
+
+    const aa = String(a);
+    const bb = String(b);
+
+    for (let i = 0; i <= bb.length; i++) {
+        matrix[i] = [i];
+    }
+
+    for (let j = 0; j <= aa.length; j++) {
+        matrix[0][j] = j;
+    }
+
+    for (let i = 1; i <= bb.length; i++) {
+
+        for (let j = 1; j <= aa.length; j++) {
+
+            if (bb.charAt(i - 1) === aa.charAt(j - 1)) {
+
+                matrix[i][j] =
+                    matrix[i - 1][j - 1];
+
+            } else {
+
+                matrix[i][j] =
+                    Math.min(
+                        matrix[i - 1][j - 1] + 1,
+                        matrix[i][j - 1] + 1,
+                        matrix[i - 1][j] + 1
+                    );
+
+            }
+
+        }
+
+    }
+
+    return matrix[bb.length][aa.length];
+
+}
+
+
+function similarityScore(a, b) {
+
+    const first =
+        normalizeSearchText(a);
+
+    const second =
+        normalizeSearchText(b);
+
+    if (!first || !second) {
+        return 0;
+    }
+
+    if (first === second) {
+        return 1;
+    }
+
+    if (
+        first.includes(second) ||
+        second.includes(first)
+    ) {
+        return 0.95;
+    }
+
+    const distance =
+        levenshteinDistance(
+            first,
+            second
+        );
+
+    const maxLength =
+        Math.max(
+            first.length,
+            second.length
+        );
+
+    if (!maxLength) {
+        return 0;
+    }
+
+    return 1 - (
+        distance / maxLength
+    );
+
+}
+
+
+// =======================================================
+// LOAD VILLAGE DATABASE
+// =======================================================
+
+async function loadVillageDatabase() {
+
+    try {
+
+        setStatus(
+            "Loading Rajasthan village database..."
+        );
+
+        const response =
+            await fetch(
+                `${VILLAGE_DATABASE_URL}?v=1`
+            );
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Village database could not be loaded."
+            );
+
+        }
+
+        const data =
+            await response.json();
+
+        if (!Array.isArray(data)) {
+
+            throw new Error(
+                "Village database format is invalid."
+            );
+
+        }
+
+        villageDatabase =
+            data.filter(
+                village =>
+                    village &&
+                    village.name &&
+                    Number.isFinite(
+                        Number(village.latitude)
+                    ) &&
+                    Number.isFinite(
+                        Number(village.longitude)
+                    )
+            );
+
+        console.log(
+            `Loaded ${villageDatabase.length} Rajasthan villages.`
+        );
+
+        setStatus(
+            "Village database ready"
+        );
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            "Village database error:",
+            error
+        );
+
+        setStatus(
+            "Village database unavailable",
+            false
+        );
+
+        return false;
+
     }
 
 }
@@ -156,62 +354,152 @@ function displayLocation(location) {
 
 
 // =======================================================
-// NORMALIZE SEARCH
+// VILLAGE DATABASE SEARCH
 // =======================================================
 
-function normalizeSearchText(text) {
+function searchVillageDatabase(query) {
 
-    return text
-        .toLowerCase()
-        .trim()
-        .replace(/\s+/g, " ");
+    if (
+        !Array.isArray(villageDatabase) ||
+        villageDatabase.length === 0
+    ) {
+        return null;
+    }
+
+    const search =
+        normalizeSearchText(query);
+
+
+    // ---------------------------------------------------
+    // Exact village name
+    // ---------------------------------------------------
+
+    const exact =
+        villageDatabase.find(
+            village =>
+                normalizeSearchText(
+                    village.name
+                ) === search
+        );
+
+    if (exact) {
+        return exact;
+    }
+
+
+    // ---------------------------------------------------
+    // Village + district / tehsil search
+    // ---------------------------------------------------
+
+    const containsMatches =
+        villageDatabase.filter(
+            village => {
+
+                const fullText =
+                    normalizeSearchText(
+                        [
+                            village.name,
+                            village.tehsil,
+                            village.district,
+                            village.block
+                        ]
+                        .filter(Boolean)
+                        .join(" ")
+                    );
+
+                return fullText.includes(search);
+
+            }
+        );
+
+    if (containsMatches.length > 0) {
+
+        const nameMatch =
+            containsMatches.find(
+                village =>
+                    normalizeSearchText(
+                        village.name
+                    ).includes(search)
+            );
+
+        return nameMatch ||
+            containsMatches[0];
+
+    }
+
+
+    // ---------------------------------------------------
+    // Fuzzy matching
+    // ---------------------------------------------------
+
+    let bestVillage = null;
+
+    let bestScore = 0;
+
+
+    for (
+        const village of villageDatabase
+    ) {
+
+        const villageName =
+            normalizeSearchText(
+                village.name
+            );
+
+        const score =
+            similarityScore(
+                search,
+                villageName
+            );
+
+        if (
+            score > bestScore
+        ) {
+
+            bestScore =
+                score;
+
+            bestVillage =
+                village;
+
+        }
+
+    }
+
+
+    // Don't accept extremely weak matches
+
+    if (
+        bestVillage &&
+        bestScore >= 0.72
+    ) {
+
+        return bestVillage;
+
+    }
+
+
+    return null;
 
 }
 
 
 // =======================================================
-// CHECK WHETHER LOCATION IS IN RAJASTHAN
+// CREATE LOCATION FROM VILLAGE
 // =======================================================
 
-function isRajasthan(place) {
+function createVillageLocation(village) {
 
-    const state =
-        String(
-            place.admin1 ||
-            place.address?.state ||
-            ""
-        ).toLowerCase();
+    const parts = [
 
-    const country =
-        String(
-            place.country_code ||
-            place.address?.country_code ||
-            ""
-        ).toLowerCase();
+        village.name,
 
-    return (
-        country === "in" &&
-        (
-            state.includes("rajasthan") ||
-            state.includes("राजस्थान")
-        )
-    );
+        village.tehsil,
 
-}
+        village.district,
 
+        "Rajasthan"
 
-// =======================================================
-// CREATE LOCATION FROM OPEN-METEO RESULT
-// =======================================================
-
-function createOpenMeteoLocation(place) {
-
-    const nameParts = [
-        place.name,
-        place.admin4,
-        place.admin3,
-        place.admin2,
-        place.admin1
     ]
         .filter(Boolean)
         .filter(
@@ -219,68 +507,17 @@ function createOpenMeteoLocation(place) {
                 array.indexOf(value) === index
         );
 
-    return {
-
-        name: nameParts.join(", "),
-
-        latitude:
-            Number(place.latitude),
-
-        longitude:
-            Number(place.longitude)
-
-    };
-
-}
-
-
-// =======================================================
-// CREATE LOCATION FROM OSM RESULT
-// =======================================================
-
-function createOSMLocation(place) {
-
-    const address =
-        place.address || {};
-
-    const mainName =
-        place.name ||
-        address.village ||
-        address.town ||
-        address.city ||
-        address.hamlet ||
-        address.municipality;
-
-    const district =
-        address.county ||
-        address.state_district ||
-        address.district;
-
-    const state =
-        address.state ||
-        "Rajasthan";
-
-    const nameParts = [
-        mainName,
-        district,
-        state,
-        "India"
-    ]
-        .filter(Boolean)
-        .filter(
-            (value, index, array) =>
-                array.indexOf(value) === index
-        );
 
     return {
 
-        name: nameParts.join(", "),
+        name:
+            parts.join(", "),
 
         latitude:
-            Number(place.lat),
+            Number(village.latitude),
 
         longitude:
-            Number(place.lon)
+            Number(village.longitude)
 
     };
 
@@ -306,7 +543,9 @@ async function searchOpenMeteo(query) {
     let allResults = [];
 
 
-    for (const searchTerm of searches) {
+    for (
+        const searchTerm of searches
+    ) {
 
         try {
 
@@ -344,8 +583,6 @@ async function searchOpenMeteo(query) {
     }
 
 
-    // Remove duplicates
-
     const uniqueResults =
         Array.from(
 
@@ -363,8 +600,6 @@ async function searchOpenMeteo(query) {
         );
 
 
-    // Prefer Rajasthan
-
     const rajasthanResults =
         uniqueResults.filter(
             place =>
@@ -378,20 +613,15 @@ async function searchOpenMeteo(query) {
         );
 
 
-    if (rajasthanResults.length > 0) {
-
-        return rajasthanResults;
-
-    }
-
-
-    return uniqueResults;
+    return rajasthanResults.length > 0
+        ? rajasthanResults
+        : uniqueResults;
 
 }
 
 
 // =======================================================
-// OPENSTREETMAP / NOMINATIM FALLBACK
+// OPENSTREETMAP FALLBACK
 // =======================================================
 
 async function searchOpenStreetMap(query) {
@@ -407,33 +637,37 @@ async function searchOpenStreetMap(query) {
             await fetch(url);
 
         if (!response.ok) {
-
-            throw new Error(
-                "OpenStreetMap search failed."
-            );
-
+            return [];
         }
 
         const data =
             await response.json();
 
         if (!Array.isArray(data)) {
-
             return [];
-
         }
 
 
-        // Only keep Rajasthan locations
-
         return data.filter(
-            place => isRajasthan(place)
+            place => {
+
+                const state =
+                    String(
+                        place.address?.state ||
+                        ""
+                    ).toLowerCase();
+
+                return (
+                    state.includes("rajasthan")
+                );
+
+            }
         );
 
     } catch (error) {
 
         console.error(
-            "OpenStreetMap fallback failed:",
+            "OSM search failed:",
             error
         );
 
@@ -445,7 +679,7 @@ async function searchOpenStreetMap(query) {
 
 
 // =======================================================
-// ADD OSM ATTRIBUTION
+// OSM ATTRIBUTION
 // =======================================================
 
 function addOSMAttribution() {
@@ -481,7 +715,9 @@ function addOSMAttribution() {
     if (locationInput?.parentElement) {
 
         locationInput.parentElement
-            .appendChild(attribution);
+            .appendChild(
+                attribution
+            );
 
     }
 
@@ -524,58 +760,92 @@ async function searchLocation() {
         normalizeSearchText(query);
 
 
-    // ---------------------------------------------------
-    // CHECK KNOWN LOCATIONS FIRST
-    // ---------------------------------------------------
-
-    if (
-        KNOWN_LOCATIONS[
-            normalizedQuery
-        ]
-    ) {
-
-        const selectedLocation =
-            KNOWN_LOCATIONS[
-                normalizedQuery
-            ];
-
-
-        displayLocation(
-            selectedLocation
-        );
-
-
-        locationInput.value =
-            selectedLocation.name;
-
-
-        await loadWeather(
-            selectedLocation
-        );
-
-
-        searchButton.disabled = false;
-
-        searchButton.textContent =
-            "Search";
-
-        return;
-
-    }
-
-
     try {
 
         // ------------------------------------------------
-        // STEP 1 — OPEN-METEO
+        // STEP 1 — RAJASTHAN VILLAGE DATABASE
+        // ------------------------------------------------
+
+        const village =
+            searchVillageDatabase(
+                query
+            );
+
+
+        if (village) {
+
+            const selectedLocation =
+                createVillageLocation(
+                    village
+                );
+
+
+            displayLocation(
+                selectedLocation
+            );
+
+
+            locationInput.value =
+                village.name;
+
+
+            await loadWeather(
+                selectedLocation
+            );
+
+
+            return;
+
+        }
+
+
+        // ------------------------------------------------
+        // STEP 2 — KNOWN LOCATIONS
+        // ------------------------------------------------
+
+        if (
+            KNOWN_LOCATIONS[
+                normalizedQuery
+            ]
+        ) {
+
+            const selectedLocation =
+                KNOWN_LOCATIONS[
+                    normalizedQuery
+                ];
+
+
+            displayLocation(
+                selectedLocation
+            );
+
+
+            locationInput.value =
+                selectedLocation.name;
+
+
+            await loadWeather(
+                selectedLocation
+            );
+
+
+            return;
+
+        }
+
+
+        // ------------------------------------------------
+        // STEP 3 — OPEN-METEO
         // ------------------------------------------------
 
         let results =
-            await searchOpenMeteo(query);
+            await searchOpenMeteo(
+                query
+            );
 
 
         // ------------------------------------------------
-        // STEP 2 — OSM FALLBACK
+        // STEP 4 — OSM FALLBACK
         // ------------------------------------------------
 
         if (
@@ -583,7 +853,7 @@ async function searchLocation() {
         ) {
 
             setStatus(
-                "Trying extended village search..."
+                "Trying extended location search..."
             );
 
 
@@ -607,24 +877,16 @@ async function searchLocation() {
         }
 
 
-        // ------------------------------------------------
-        // NO RESULT
-        // ------------------------------------------------
-
         if (
             results.length === 0
         ) {
 
             throw new Error(
-                `Location "${query}" not found. Try village + district, for example "Kuchera Nagaur".`
+                `Location "${query}" not found. Try village + district name.`
             );
 
         }
 
-
-        // ------------------------------------------------
-        // SELECT BEST RESULT
-        // ------------------------------------------------
 
         const place =
             results[0];
@@ -633,28 +895,60 @@ async function searchLocation() {
         let selectedLocation;
 
 
-        // OpenStreetMap result
-
         if (
             place.lat !== undefined &&
             place.lon !== undefined
         ) {
 
-            selectedLocation =
-                createOSMLocation(
-                    place
-                );
+            selectedLocation = {
 
-        }
+                name:
+                    [
+                        place.name,
+                        place.address?.county,
+                        place.address?.state,
+                        "India"
+                    ]
+                    .filter(Boolean)
+                    .filter(
+                        (value, index, array) =>
+                            array.indexOf(value) === index
+                    )
+                    .join(", "),
 
-        // Open-Meteo result
+                latitude:
+                    Number(place.lat),
 
-        else {
+                longitude:
+                    Number(place.lon)
 
-            selectedLocation =
-                createOpenMeteoLocation(
-                    place
-                );
+            };
+
+        } else {
+
+            selectedLocation = {
+
+                name:
+                    [
+                        place.name,
+                        place.admin3,
+                        place.admin2,
+                        place.admin1
+                    ]
+                    .filter(Boolean)
+                    .filter(
+                        (value, index, array) =>
+                            array.indexOf(value) === index
+                    )
+                    .join(", "),
+
+                latitude:
+                    Number(place.latitude),
+
+                longitude:
+                    Number(place.longitude)
+
+            };
 
         }
 
@@ -694,6 +988,276 @@ async function searchLocation() {
 
         searchButton.textContent =
             "Search";
+
+    }
+
+}
+
+
+// =======================================================
+// WEATHER API
+// =======================================================
+
+async function fetchWeatherModel(
+    latitude,
+    longitude,
+    model
+) {
+
+    const params =
+        new URLSearchParams({
+
+            latitude:
+                latitude,
+
+            longitude:
+                longitude,
+
+            hourly:
+                [
+                    "precipitation"
+                ].join(","),
+
+            daily:
+                [
+                    "precipitation_sum",
+                    "precipitation_probability_max"
+                ].join(","),
+
+            forecast_days:
+                "7",
+
+            timezone:
+                "auto",
+
+            models:
+                model
+
+        });
+
+
+    const response =
+        await fetch(
+            `${WEATHER_API}?${params}`
+        );
+
+
+    if (!response.ok) {
+
+        throw new Error(
+            `${model} weather request failed`
+        );
+
+    }
+
+
+    return await response.json();
+
+}
+
+
+// =======================================================
+// MODEL TOTAL RAIN
+// =======================================================
+
+function getModelTotalRain(data) {
+
+    const values =
+        data?.daily?.precipitation_sum || [];
+
+
+    return values.reduce(
+        (total, value) => {
+
+            const number =
+                Number(value);
+
+            return total +
+                (
+                    Number.isFinite(number)
+                        ? number
+                        : 0
+                );
+
+        },
+        0
+    );
+
+}
+
+
+// =======================================================
+// MODEL COMPARISON
+// =======================================================
+
+async function updateModelComparison(
+    location
+) {
+
+    ecmwfRain.textContent =
+        "Loading...";
+
+    gfsRain.textContent =
+        "Loading...";
+
+    iconRain.textContent =
+        "Loading...";
+
+
+    const models = [
+
+        {
+            name: "ECMWF",
+            id: "ecmwf_ifs025",
+            element: ecmwfRain
+        },
+
+        {
+            name: "GFS",
+            id: "gfs_seamless",
+            element: gfsRain
+        },
+
+        {
+            name: "ICON",
+            id: "icon_seamless",
+            element: iconRain
+        }
+
+    ];
+
+
+    const results = [];
+
+
+    await Promise.all(
+
+        models.map(
+            async model => {
+
+                try {
+
+                    const data =
+                        await fetchWeatherModel(
+                            location.latitude,
+                            location.longitude,
+                            model.id
+                        );
+
+
+                    const totalRain =
+                        getModelTotalRain(
+                            data
+                        );
+
+
+                    model.element.textContent =
+                        `${totalRain.toFixed(1)} mm`;
+
+
+                    results.push(
+                        totalRain
+                    );
+
+
+                } catch (error) {
+
+                    console.error(
+                        `${model.name} error:`,
+                        error
+                    );
+
+
+                    model.element.textContent =
+                        "Unavailable";
+
+                }
+
+            }
+        )
+
+    );
+
+
+    // ---------------------------------------------------
+    // CONSENSUS
+    // ---------------------------------------------------
+
+    const validResults =
+        results.filter(
+            value =>
+                Number.isFinite(value)
+        );
+
+
+    let consensus =
+        document.getElementById(
+            "modelConsensus"
+        );
+
+
+    if (!consensus) {
+
+        consensus =
+            document.createElement(
+                "div"
+            );
+
+        consensus.id =
+            "modelConsensus";
+
+        consensus.style.marginTop =
+            "12px";
+
+        consensus.style.padding =
+            "12px";
+
+        consensus.style.borderRadius =
+            "10px";
+
+        consensus.style.background =
+            "rgba(37, 99, 235, 0.08)";
+
+        consensus.style.fontWeight =
+            "600";
+
+
+        const parent =
+            ecmwfRain.closest("section") ||
+            ecmwfRain.parentElement?.parentElement;
+
+
+        if (parent) {
+
+            parent.appendChild(
+                consensus
+            );
+
+        }
+
+    }
+
+
+    if (
+        validResults.length > 0
+    ) {
+
+        const average =
+            validResults.reduce(
+                (sum, value) =>
+                    sum + value,
+                0
+            ) /
+            validResults.length;
+
+
+        consensus.textContent =
+            `Model Consensus (7-day): ${average.toFixed(1)} mm`;
+
+    } else {
+
+        consensus.textContent =
+            "Model Consensus: Data unavailable";
 
     }
 
@@ -787,7 +1351,18 @@ async function loadWeather(location) {
         );
 
 
-        updateModelStatus();
+        // ------------------------------------------------
+        // LIVE MODEL COMPARISON
+        // ------------------------------------------------
+
+        setStatus(
+            "Loading ECMWF, GFS and ICON..."
+        );
+
+
+        await updateModelComparison(
+            location
+        );
 
 
         setStatus(
@@ -1287,29 +1862,6 @@ function formatDay(date) {
 
 
 // =======================================================
-// MODEL STATUS
-// =======================================================
-
-function updateModelStatus() {
-
-    /*
-     * ECMWF, GFS and ICON comparison
-     * will be connected separately.
-     */
-
-    ecmwfRain.textContent =
-        "-- mm";
-
-    gfsRain.textContent =
-        "-- mm";
-
-    iconRain.textContent =
-        "-- mm";
-
-}
-
-
-// =======================================================
 // SEARCH BUTTON
 // =======================================================
 
@@ -1340,7 +1892,7 @@ locationInput.addEventListener(
 
 
 // =======================================================
-// INITIAL LOAD
+// INITIALIZE
 // =======================================================
 
 async function initialize() {
@@ -1353,6 +1905,13 @@ async function initialize() {
     locationInput.value =
         DEFAULT_LOCATION.name;
 
+
+    // Load village database first
+
+    await loadVillageDatabase();
+
+
+    // Then load default weather
 
     await loadWeather(
         DEFAULT_LOCATION
