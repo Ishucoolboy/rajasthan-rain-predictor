@@ -16,6 +16,10 @@ const WEATHER_API =
 const GEOCODING_API =
     "https://geocoding-api.open-meteo.com/v1/search";
 
+// OpenStreetMap Nominatim fallback
+const OSM_GEOCODING_API =
+    "https://nominatim.openstreetmap.org/search";
+
 
 // =======================================================
 // DEFAULT LOCATION
@@ -152,6 +156,339 @@ function displayLocation(location) {
 
 
 // =======================================================
+// NORMALIZE SEARCH
+// =======================================================
+
+function normalizeSearchText(text) {
+
+    return text
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, " ");
+
+}
+
+
+// =======================================================
+// CHECK WHETHER LOCATION IS IN RAJASTHAN
+// =======================================================
+
+function isRajasthan(place) {
+
+    const state =
+        String(
+            place.admin1 ||
+            place.address?.state ||
+            ""
+        ).toLowerCase();
+
+    const country =
+        String(
+            place.country_code ||
+            place.address?.country_code ||
+            ""
+        ).toLowerCase();
+
+    return (
+        country === "in" &&
+        (
+            state.includes("rajasthan") ||
+            state.includes("राजस्थान")
+        )
+    );
+
+}
+
+
+// =======================================================
+// CREATE LOCATION FROM OPEN-METEO RESULT
+// =======================================================
+
+function createOpenMeteoLocation(place) {
+
+    const nameParts = [
+        place.name,
+        place.admin4,
+        place.admin3,
+        place.admin2,
+        place.admin1
+    ]
+        .filter(Boolean)
+        .filter(
+            (value, index, array) =>
+                array.indexOf(value) === index
+        );
+
+    return {
+
+        name: nameParts.join(", "),
+
+        latitude:
+            Number(place.latitude),
+
+        longitude:
+            Number(place.longitude)
+
+    };
+
+}
+
+
+// =======================================================
+// CREATE LOCATION FROM OSM RESULT
+// =======================================================
+
+function createOSMLocation(place) {
+
+    const address =
+        place.address || {};
+
+    const mainName =
+        place.name ||
+        address.village ||
+        address.town ||
+        address.city ||
+        address.hamlet ||
+        address.municipality;
+
+    const district =
+        address.county ||
+        address.state_district ||
+        address.district;
+
+    const state =
+        address.state ||
+        "Rajasthan";
+
+    const nameParts = [
+        mainName,
+        district,
+        state,
+        "India"
+    ]
+        .filter(Boolean)
+        .filter(
+            (value, index, array) =>
+                array.indexOf(value) === index
+        );
+
+    return {
+
+        name: nameParts.join(", "),
+
+        latitude:
+            Number(place.lat),
+
+        longitude:
+            Number(place.lon)
+
+    };
+
+}
+
+
+// =======================================================
+// OPEN-METEO SEARCH
+// =======================================================
+
+async function searchOpenMeteo(query) {
+
+    const searches = [
+
+        query,
+
+        `${query}, Rajasthan`,
+
+        `${query}, Rajasthan, India`
+
+    ];
+
+    let allResults = [];
+
+
+    for (const searchTerm of searches) {
+
+        try {
+
+            const url =
+                `${GEOCODING_API}?name=${encodeURIComponent(searchTerm)}&count=100&language=en&format=json&countryCode=IN`;
+
+            const response =
+                await fetch(url);
+
+            if (!response.ok) {
+                continue;
+            }
+
+            const data =
+                await response.json();
+
+            if (data.results) {
+
+                allResults =
+                    allResults.concat(
+                        data.results
+                    );
+
+            }
+
+        } catch (error) {
+
+            console.log(
+                "Open-Meteo search failed:",
+                error
+            );
+
+        }
+
+    }
+
+
+    // Remove duplicates
+
+    const uniqueResults =
+        Array.from(
+
+            new Map(
+
+                allResults.map(
+                    place => [
+                        `${place.latitude},${place.longitude}`,
+                        place
+                    ]
+                )
+
+            ).values()
+
+        );
+
+
+    // Prefer Rajasthan
+
+    const rajasthanResults =
+        uniqueResults.filter(
+            place =>
+                place.country_code === "IN" &&
+                (
+                    place.admin1 === "Rajasthan" ||
+                    place.admin1
+                        ?.toLowerCase()
+                        .includes("rajasthan")
+                )
+        );
+
+
+    if (rajasthanResults.length > 0) {
+
+        return rajasthanResults;
+
+    }
+
+
+    return uniqueResults;
+
+}
+
+
+// =======================================================
+// OPENSTREETMAP / NOMINATIM FALLBACK
+// =======================================================
+
+async function searchOpenStreetMap(query) {
+
+    try {
+
+        const url =
+            `${OSM_GEOCODING_API}?q=${encodeURIComponent(
+                query + ", Rajasthan, India"
+            )}&format=json&addressdetails=1&limit=10&countrycodes=in&accept-language=en`;
+
+        const response =
+            await fetch(url);
+
+        if (!response.ok) {
+
+            throw new Error(
+                "OpenStreetMap search failed."
+            );
+
+        }
+
+        const data =
+            await response.json();
+
+        if (!Array.isArray(data)) {
+
+            return [];
+
+        }
+
+
+        // Only keep Rajasthan locations
+
+        return data.filter(
+            place => isRajasthan(place)
+        );
+
+    } catch (error) {
+
+        console.error(
+            "OpenStreetMap fallback failed:",
+            error
+        );
+
+        return [];
+
+    }
+
+}
+
+
+// =======================================================
+// ADD OSM ATTRIBUTION
+// =======================================================
+
+function addOSMAttribution() {
+
+    if (
+        document.getElementById(
+            "osmAttribution"
+        )
+    ) {
+        return;
+    }
+
+
+    const attribution =
+        document.createElement("div");
+
+    attribution.id =
+        "osmAttribution";
+
+    attribution.style.fontSize =
+        "11px";
+
+    attribution.style.marginTop =
+        "6px";
+
+    attribution.style.opacity =
+        "0.65";
+
+    attribution.innerHTML =
+        'Location search may use <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap contributors</a>.';
+
+
+    if (locationInput?.parentElement) {
+
+        locationInput.parentElement
+            .appendChild(attribution);
+
+    }
+
+}
+
+
+// =======================================================
 // SEARCH LOCATION
 // =======================================================
 
@@ -184,9 +521,7 @@ async function searchLocation() {
 
 
     const normalizedQuery =
-        query
-            .toLowerCase()
-            .trim();
+        normalizeSearchText(query);
 
 
     // ---------------------------------------------------
@@ -229,64 +564,43 @@ async function searchLocation() {
     }
 
 
-    // ---------------------------------------------------
-    // NORMAL GEOCODING SEARCH
-    // ---------------------------------------------------
-
     try {
 
-        const searches = [
+        // ------------------------------------------------
+        // STEP 1 — OPEN-METEO
+        // ------------------------------------------------
 
-            query,
-
-            `${query}, Rajasthan`,
-
-            `${query}, Rajasthan, India`
-
-        ];
+        let results =
+            await searchOpenMeteo(query);
 
 
-        let allResults = [];
+        // ------------------------------------------------
+        // STEP 2 — OSM FALLBACK
+        // ------------------------------------------------
 
-
-        for (
-            const searchTerm of searches
+        if (
+            results.length === 0
         ) {
 
-            try {
-
-                const url =
-                    `${GEOCODING_API}?name=${encodeURIComponent(searchTerm)}&count=20&language=en&format=json&countryCode=IN`;
-
-
-                const response =
-                    await fetch(url);
+            setStatus(
+                "Trying extended village search..."
+            );
 
 
-                if (!response.ok) {
-                    continue;
-                }
-
-
-                const data =
-                    await response.json();
-
-
-                if (data.results) {
-
-                    allResults =
-                        allResults.concat(
-                            data.results
-                        );
-
-                }
-
-            } catch (error) {
-
-                console.log(
-                    "Geocoding attempt failed:",
-                    error
+            const osmResults =
+                await searchOpenStreetMap(
+                    query
                 );
+
+
+            if (
+                osmResults.length > 0
+            ) {
+
+                results =
+                    osmResults;
+
+                addOSMAttribution();
 
             }
 
@@ -294,55 +608,15 @@ async function searchLocation() {
 
 
         // ------------------------------------------------
-        // REMOVE DUPLICATES
+        // NO RESULT
         // ------------------------------------------------
-
-        const uniqueResults =
-            Array.from(
-
-                new Map(
-
-                    allResults.map(
-                        place => [
-                            `${place.latitude},${place.longitude}`,
-                            place
-                        ]
-                    )
-
-                ).values()
-
-            );
-
-
-        // ------------------------------------------------
-        // PREFER RAJASTHAN
-        // ------------------------------------------------
-
-        const rajasthanResults =
-            uniqueResults.filter(
-                place =>
-                    place.country_code === "IN" &&
-                    (
-                        place.admin1 === "Rajasthan" ||
-                        place.admin1
-                            ?.toLowerCase()
-                            .includes("rajasthan")
-                    )
-            );
-
-
-        const resultsToUse =
-            rajasthanResults.length > 0
-                ? rajasthanResults
-                : uniqueResults;
-
 
         if (
-            resultsToUse.length === 0
+            results.length === 0
         ) {
 
             throw new Error(
-                `Location "${query}" not found. Try adding the district name, for example "${query}, Nagaur".`
+                `Location "${query}" not found. Try village + district, for example "Kuchera Nagaur".`
             );
 
         }
@@ -353,47 +627,45 @@ async function searchLocation() {
         // ------------------------------------------------
 
         const place =
-            resultsToUse[0];
+            results[0];
 
 
-        const selectedLocation = {
+        let selectedLocation;
 
-            name:
-                [
-                    place.name,
-                    place.admin3,
-                    place.admin2,
-                    place.admin1
-                ]
-                    .filter(Boolean)
-                    .filter(
-                        (
-                            value,
-                            index,
-                            array
-                        ) =>
-                            array.indexOf(
-                                value
-                            ) === index
-                    )
-                    .join(", "),
 
-            latitude:
-                Number(
-                    place.latitude
-                ),
+        // OpenStreetMap result
 
-            longitude:
-                Number(
-                    place.longitude
-                )
+        if (
+            place.lat !== undefined &&
+            place.lon !== undefined
+        ) {
 
-        };
+            selectedLocation =
+                createOSMLocation(
+                    place
+                );
+
+        }
+
+        // Open-Meteo result
+
+        else {
+
+            selectedLocation =
+                createOpenMeteoLocation(
+                    place
+                );
+
+        }
 
 
         displayLocation(
             selectedLocation
         );
+
+
+        locationInput.value =
+            selectedLocation.name;
 
 
         await loadWeather(
@@ -415,7 +687,6 @@ async function searchLocation() {
         alert(
             error.message
         );
-
 
     } finally {
 
