@@ -1,7 +1,7 @@
 /*
 =========================================================
-Rajasthan Rain Predictor
-Main Website JavaScript
+RAJASTHAN RAIN PREDICTOR
+MAIN WEBSITE JAVASCRIPT
 =========================================================
 */
 
@@ -16,11 +16,9 @@ const WEATHER_API =
 const GEOCODING_API =
     "https://geocoding-api.open-meteo.com/v1/search";
 
-// OpenStreetMap Nominatim fallback
 const OSM_GEOCODING_API =
     "https://nominatim.openstreetmap.org/search";
 
-// Village database
 const VILLAGE_DATABASE_URL =
     "./villages.json";
 
@@ -41,12 +39,11 @@ const DEFAULT_LOCATION = {
 // =======================================================
 
 let VILLAGE_DATABASE = [];
-
 let villageDatabaseLoaded = false;
 
 
 // =======================================================
-// KNOWN VILLAGE / LOCATION ALIASES
+// KNOWN LOCATIONS
 // =======================================================
 
 const KNOWN_LOCATIONS = {
@@ -147,9 +144,7 @@ function setStatus(message, online = true) {
     if (statusIndicator) {
 
         statusIndicator.style.background =
-            online
-                ? "#22c55e"
-                : "#ef4444";
+            online ? "#22c55e" : "#ef4444";
 
     }
 
@@ -180,7 +175,7 @@ function displayLocation(location) {
 
 
 // =======================================================
-// NORMALIZE SEARCH
+// NORMALIZE TEXT
 // =======================================================
 
 function normalizeSearchText(text) {
@@ -194,7 +189,7 @@ function normalizeSearchText(text) {
 
 
 // =======================================================
-// LEVENSHTEIN DISTANCE
+// LEVENSHTEIN
 // =======================================================
 
 function levenshteinDistance(a, b) {
@@ -217,22 +212,21 @@ function levenshteinDistance(a, b) {
     const matrix = [];
 
     for (let i = 0; i <= b.length; i++) {
-
         matrix[i] = [i];
-
     }
 
     for (let j = 0; j <= a.length; j++) {
-
         matrix[0][j] = j;
-
     }
 
     for (let i = 1; i <= b.length; i++) {
 
         for (let j = 1; j <= a.length; j++) {
 
-            if (b.charAt(i - 1) === a.charAt(j - 1)) {
+            if (
+                b.charAt(i - 1) ===
+                a.charAt(j - 1)
+            ) {
 
                 matrix[i][j] =
                     matrix[i - 1][j - 1];
@@ -241,13 +235,9 @@ function levenshteinDistance(a, b) {
 
                 matrix[i][j] =
                     Math.min(
-
                         matrix[i - 1][j - 1] + 1,
-
                         matrix[i][j - 1] + 1,
-
                         matrix[i - 1][j] + 1
-
                     );
 
             }
@@ -275,7 +265,7 @@ async function loadVillageDatabase() {
 
         const response =
             await fetch(
-                `${VILLAGE_DATABASE_URL}?v=1`
+                `${VILLAGE_DATABASE_URL}?v=2`
             );
 
         if (!response.ok) {
@@ -291,8 +281,7 @@ async function loadVillageDatabase() {
 
         if (Array.isArray(data)) {
 
-            VILLAGE_DATABASE =
-                data;
+            VILLAGE_DATABASE = data;
 
         } else if (
             Array.isArray(data.villages)
@@ -309,8 +298,7 @@ async function loadVillageDatabase() {
 
         }
 
-        villageDatabaseLoaded =
-            true;
+        villageDatabaseLoaded = true;
 
         console.log(
             `Village database loaded: ${VILLAGE_DATABASE.length} records`
@@ -318,11 +306,8 @@ async function loadVillageDatabase() {
 
     } catch (error) {
 
-        villageDatabaseLoaded =
-            false;
-
-        VILLAGE_DATABASE =
-            [];
+        villageDatabaseLoaded = false;
+        VILLAGE_DATABASE = [];
 
         console.error(
             "Village database loading failed:",
@@ -338,11 +323,9 @@ async function loadVillageDatabase() {
 // GET VILLAGE FIELD
 // =======================================================
 
-function getVillageField(village, possibleNames) {
+function getVillageField(village, fields) {
 
-    for (
-        const field of possibleNames
-    ) {
+    for (const field of fields) {
 
         if (
             village &&
@@ -362,7 +345,7 @@ function getVillageField(village, possibleNames) {
 
 
 // =======================================================
-// CREATE LOCATION FROM VILLAGE DATABASE
+// CREATE VILLAGE LOCATION
 // =======================================================
 
 function createVillageLocation(village) {
@@ -442,14 +425,9 @@ function createVillageLocation(village) {
         );
 
     return {
-
-        name:
-            nameParts.join(", "),
-
+        name: nameParts.join(", "),
         latitude,
-
         longitude
-
     };
 
 }
@@ -463,26 +441,21 @@ function searchVillageDatabase(query) {
 
     if (
         !villageDatabaseLoaded ||
-        !Array.isArray(VILLAGE_DATABASE) ||
-        VILLAGE_DATABASE.length === 0
+        !VILLAGE_DATABASE.length
     ) {
 
         return [];
 
     }
 
-    const normalizedQuery =
+    const q =
         normalizeSearchText(query);
 
-    const exactMatches = [];
+    const exact = [];
+    const contains = [];
+    const fuzzy = [];
 
-    const containsMatches = [];
-
-    const fuzzyMatches = [];
-
-    for (
-        const village of VILLAGE_DATABASE
-    ) {
+    for (const village of VILLAGE_DATABASE) {
 
         const name =
             normalizeSearchText(
@@ -532,48 +505,34 @@ function searchVillageDatabase(query) {
         const combined =
             `${name} ${tehsil} ${district}`;
 
-        if (
-            name === normalizedQuery
-        ) {
+        if (name === q) {
 
-            exactMatches.push(village);
-
+            exact.push(village);
             continue;
 
         }
 
-        if (
-            combined.includes(
-                normalizedQuery
-            )
-        ) {
+        if (combined.includes(q)) {
 
-            containsMatches.push(village);
-
+            contains.push(village);
             continue;
 
         }
 
-        if (
-            normalizedQuery.length >= 4
-        ) {
+        if (q.length >= 4) {
 
             const distance =
                 levenshteinDistance(
                     name,
-                    normalizedQuery
+                    q
                 );
 
             const threshold =
-                normalizedQuery.length <= 6
-                    ? 2
-                    : 3;
+                q.length <= 6 ? 2 : 3;
 
-            if (
-                distance <= threshold
-            ) {
+            if (distance <= threshold) {
 
-                fuzzyMatches.push({
+                fuzzy.push({
                     village,
                     distance
                 });
@@ -584,18 +543,18 @@ function searchVillageDatabase(query) {
 
     }
 
-    fuzzyMatches.sort(
+    fuzzy.sort(
         (a, b) =>
             a.distance - b.distance
     );
 
     return [
 
-        ...exactMatches,
+        ...exact,
 
-        ...containsMatches,
+        ...contains,
 
-        ...fuzzyMatches
+        ...fuzzy
             .slice(0, 10)
             .map(item => item.village)
 
@@ -605,7 +564,7 @@ function searchVillageDatabase(query) {
 
 
 // =======================================================
-// CHECK WHETHER LOCATION IS IN RAJASTHAN
+// RAJASTHAN CHECK
 // =======================================================
 
 function isRajasthan(place) {
@@ -625,33 +584,28 @@ function isRajasthan(place) {
         ).toLowerCase();
 
     return (
-
         country === "in" &&
-
         (
             state.includes("rajasthan") ||
             state.includes("राजस्थान")
         )
-
     );
 
 }
 
 
 // =======================================================
-// CREATE LOCATION FROM OPEN-METEO RESULT
+// OPEN-METEO LOCATION
 // =======================================================
 
 function createOpenMeteoLocation(place) {
 
     const nameParts = [
-
         place.name,
         place.admin4,
         place.admin3,
         place.admin2,
         place.admin1
-
     ]
         .filter(Boolean)
         .filter(
@@ -676,7 +630,7 @@ function createOpenMeteoLocation(place) {
 
 
 // =======================================================
-// CREATE LOCATION FROM OSM RESULT
+// OSM LOCATION
 // =======================================================
 
 function createOSMLocation(place) {
@@ -701,24 +655,20 @@ function createOSMLocation(place) {
         address.state ||
         "Rajasthan";
 
-    const nameParts = [
-
-        mainName,
-        district,
-        state,
-        "India"
-
-    ]
-        .filter(Boolean)
-        .filter(
-            (value, index, array) =>
-                array.indexOf(value) === index
-        );
-
     return {
 
-        name:
-            nameParts.join(", "),
+        name: [
+            mainName,
+            district,
+            state,
+            "India"
+        ]
+            .filter(Boolean)
+            .filter(
+                (value, index, array) =>
+                    array.indexOf(value) === index
+            )
+            .join(", "),
 
         latitude:
             Number(place.lat),
@@ -738,20 +688,14 @@ function createOSMLocation(place) {
 async function searchOpenMeteo(query) {
 
     const searches = [
-
         query,
-
         `${query}, Rajasthan`,
-
         `${query}, Rajasthan, India`
-
     ];
 
     let allResults = [];
 
-    for (
-        const searchTerm of searches
-    ) {
+    for (const searchTerm of searches) {
 
         try {
 
@@ -768,7 +712,7 @@ async function searchOpenMeteo(query) {
             const data =
                 await response.json();
 
-            if (data.results) {
+            if (Array.isArray(data.results)) {
 
                 allResults =
                     allResults.concat(
@@ -788,24 +732,20 @@ async function searchOpenMeteo(query) {
 
     }
 
-    const uniqueResults =
+    const unique =
         Array.from(
-
             new Map(
-
                 allResults.map(
                     place => [
                         `${place.latitude},${place.longitude}`,
                         place
                     ]
                 )
-
             ).values()
-
         );
 
-    const rajasthanResults =
-        uniqueResults.filter(
+    const rajasthan =
+        unique.filter(
             place =>
                 place.country_code === "IN" &&
                 (
@@ -816,21 +756,15 @@ async function searchOpenMeteo(query) {
                 )
         );
 
-    if (
-        rajasthanResults.length > 0
-    ) {
-
-        return rajasthanResults;
-
-    }
-
-    return uniqueResults;
+    return rajasthan.length
+        ? rajasthan
+        : unique;
 
 }
 
 
 // =======================================================
-// OPENSTREETMAP / NOMINATIM FALLBACK
+// OSM SEARCH
 // =======================================================
 
 async function searchOpenStreetMap(query) {
@@ -846,20 +780,14 @@ async function searchOpenStreetMap(query) {
             await fetch(url);
 
         if (!response.ok) {
-
-            throw new Error(
-                "OpenStreetMap search failed."
-            );
-
+            return [];
         }
 
         const data =
             await response.json();
 
         if (!Array.isArray(data)) {
-
             return [];
-
         }
 
         return data.filter(
@@ -870,7 +798,7 @@ async function searchOpenStreetMap(query) {
     } catch (error) {
 
         console.error(
-            "OpenStreetMap fallback failed:",
+            "OSM search failed:",
             error
         );
 
@@ -882,7 +810,7 @@ async function searchOpenStreetMap(query) {
 
 
 // =======================================================
-// ADD OSM ATTRIBUTION
+// OSM ATTRIBUTION
 // =======================================================
 
 function addOSMAttribution() {
@@ -892,15 +820,11 @@ function addOSMAttribution() {
             "osmAttribution"
         )
     ) {
-
         return;
-
     }
 
     const attribution =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     attribution.id =
         "osmAttribution";
@@ -917,14 +841,10 @@ function addOSMAttribution() {
     attribution.innerHTML =
         'Location search may use <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap contributors</a>.';
 
-    if (
-        locationInput?.parentElement
-    ) {
+    if (locationInput?.parentElement) {
 
         locationInput.parentElement
-            .appendChild(
-                attribution
-            );
+            .appendChild(attribution);
 
     }
 
@@ -938,7 +858,7 @@ function addOSMAttribution() {
 async function searchLocation() {
 
     const query =
-        locationInput.value.trim();
+        locationInput?.value.trim();
 
     if (!query) {
 
@@ -954,54 +874,46 @@ async function searchLocation() {
         "Searching location..."
     );
 
-    searchButton.disabled =
-        true;
+    if (searchButton) {
 
-    searchButton.textContent =
-        "Searching...";
+        searchButton.disabled = true;
+        searchButton.textContent =
+            "Searching...";
+
+    }
 
     const normalizedQuery =
         normalizeSearchText(query);
 
     try {
 
-        // ------------------------------------------------
-        // STEP 1 — LOCAL VILLAGE DATABASE
-        // ------------------------------------------------
+        // LOCAL DATABASE FIRST
 
         const localResults =
-            searchVillageDatabase(
-                query
-            );
+            searchVillageDatabase(query);
 
-        if (
-            localResults.length > 0
-        ) {
+        if (localResults.length) {
 
-            const selectedLocation =
+            const selected =
                 createVillageLocation(
                     localResults[0]
                 );
 
             if (
                 Number.isFinite(
-                    selectedLocation.latitude
+                    selected.latitude
                 ) &&
                 Number.isFinite(
-                    selectedLocation.longitude
+                    selected.longitude
                 )
             ) {
 
-                displayLocation(
-                    selectedLocation
-                );
+                displayLocation(selected);
 
                 locationInput.value =
-                    selectedLocation.name;
+                    selected.name;
 
-                await loadWeather(
-                    selectedLocation
-                );
+                await loadWeather(selected);
 
                 return;
 
@@ -1010,9 +922,7 @@ async function searchLocation() {
         }
 
 
-        // ------------------------------------------------
-        // STEP 2 — KNOWN LOCATIONS
-        // ------------------------------------------------
+        // KNOWN LOCATIONS
 
         if (
             KNOWN_LOCATIONS[
@@ -1020,44 +930,32 @@ async function searchLocation() {
             ]
         ) {
 
-            const selectedLocation =
+            const selected =
                 KNOWN_LOCATIONS[
                     normalizedQuery
                 ];
 
-            displayLocation(
-                selectedLocation
-            );
+            displayLocation(selected);
 
             locationInput.value =
-                selectedLocation.name;
+                selected.name;
 
-            await loadWeather(
-                selectedLocation
-            );
+            await loadWeather(selected);
 
             return;
 
         }
 
 
-        // ------------------------------------------------
-        // STEP 3 — OPEN-METEO
-        // ------------------------------------------------
+        // OPEN METEO
 
         let results =
-            await searchOpenMeteo(
-                query
-            );
+            await searchOpenMeteo(query);
 
 
-        // ------------------------------------------------
-        // STEP 4 — OSM FALLBACK
-        // ------------------------------------------------
+        // OSM FALLBACK
 
-        if (
-            results.length === 0
-        ) {
+        if (!results.length) {
 
             setStatus(
                 "Trying extended village search..."
@@ -1068,9 +966,7 @@ async function searchLocation() {
                     query
                 );
 
-            if (
-                osmResults.length > 0
-            ) {
+            if (osmResults.length) {
 
                 results =
                     osmResults;
@@ -1082,13 +978,7 @@ async function searchLocation() {
         }
 
 
-        // ------------------------------------------------
-        // NO RESULT
-        // ------------------------------------------------
-
-        if (
-            results.length === 0
-        ) {
+        if (!results.length) {
 
             throw new Error(
                 `Location "${query}" not found. Try village + district, for example "Kuchera Nagaur".`
@@ -1097,40 +987,17 @@ async function searchLocation() {
         }
 
 
-        // ------------------------------------------------
-        // SELECT BEST RESULT
-        // ------------------------------------------------
-
         const place =
             results[0];
 
-        let selectedLocation;
-
-
-        // OpenStreetMap result
-
-        if (
+        const selectedLocation =
             place.lat !== undefined &&
             place.lon !== undefined
-        ) {
 
-            selectedLocation =
-                createOSMLocation(
-                    place
-                );
+                ? createOSMLocation(place)
 
-        }
+                : createOpenMeteoLocation(place);
 
-        // Open-Meteo result
-
-        else {
-
-            selectedLocation =
-                createOpenMeteoLocation(
-                    place
-                );
-
-        }
 
         displayLocation(
             selectedLocation
@@ -1158,11 +1025,15 @@ async function searchLocation() {
 
     } finally {
 
-        searchButton.disabled =
-            false;
+        if (searchButton) {
 
-        searchButton.textContent =
-            "Search";
+            searchButton.disabled =
+                false;
+
+            searchButton.textContent =
+                "Search";
+
+        }
 
     }
 
@@ -1236,23 +1107,20 @@ async function loadWeather(location) {
         const data =
             await response.json();
 
-        updateCurrentWeather(
-            data
-        );
 
-        updateHourlyForecast(
-            data
-        );
+        updateCurrentWeather(data);
 
-        updateDailyForecast(
-            data
-        );
+        updateHourlyForecast(data);
 
-        // IMPORTANT:
-        // Live ECMWF / GFS / ICON comparison
+        updateDailyForecast(data);
+
+
+        // MODEL COMPARISON
+
         await updateModelStatus(
             location
         );
+
 
         setStatus(
             "Weather data updated"
@@ -1287,48 +1155,46 @@ function updateCurrentWeather(data) {
 
     if (
         !hourly ||
-        !hourly.time ||
-        hourly.time.length === 0
+        !hourly.time?.length
     ) {
-
         return;
-
     }
 
-    const nowIndex =
+    const index =
         findCurrentHourIndex(
             hourly.time
         );
 
     const probability =
         hourly.precipitation_probability?.[
-            nowIndex
+            index
         ] ?? 0;
 
     const precipitation =
         hourly.precipitation?.[
-            nowIndex
+            index
         ] ?? 0;
 
     const temp =
         hourly.temperature_2m?.[
-            nowIndex
+            index
         ];
 
     const humidityValue =
         hourly.relative_humidity_2m?.[
-            nowIndex
+            index
         ];
 
     const windValue =
         hourly.wind_speed_10m?.[
-            nowIndex
+            index
         ];
 
     const weatherCode =
         hourly.weather_code?.[
-            nowIndex
+            index
         ];
+
 
     if (rainProbability) {
 
@@ -1384,7 +1250,7 @@ function updateCurrentWeather(data) {
 
 
 // =======================================================
-// FIND CURRENT HOUR
+// CURRENT HOUR INDEX
 // =======================================================
 
 function findCurrentHourIndex(times) {
@@ -1392,21 +1258,15 @@ function findCurrentHourIndex(times) {
     const now =
         new Date();
 
-    let closestIndex =
-        0;
-
-    let smallestDifference =
-        Infinity;
+    let closestIndex = 0;
+    let smallestDifference = Infinity;
 
     times.forEach(
         (time, index) => {
 
-            const forecastTime =
-                new Date(time);
-
             const difference =
                 Math.abs(
-                    forecastTime.getTime() -
+                    new Date(time).getTime() -
                     now.getTime()
                 );
 
@@ -1440,11 +1300,10 @@ function updateHourlyForecast(data) {
     const hourly =
         data.hourly;
 
-    if (!hourly) {
-        return;
-    }
-
-    if (!hourlyForecast) {
+    if (
+        !hourly ||
+        !hourlyForecast
+    ) {
         return;
     }
 
@@ -1461,6 +1320,7 @@ function updateHourlyForecast(data) {
             currentIndex + 24,
             hourly.time.length
         );
+
 
     for (
         let i = currentIndex;
@@ -1516,9 +1376,7 @@ function updateHourlyForecast(data) {
 
         `;
 
-        hourlyForecast.appendChild(
-            card
-        );
+        hourlyForecast.appendChild(card);
 
     }
 
@@ -1534,16 +1392,16 @@ function updateDailyForecast(data) {
     const daily =
         data.daily;
 
-    if (!daily) {
-        return;
-    }
-
-    if (!dailyForecast) {
+    if (
+        !daily ||
+        !dailyForecast
+    ) {
         return;
     }
 
     dailyForecast.innerHTML =
         "";
+
 
     for (
         let i = 0;
@@ -1608,15 +1466,17 @@ function updateDailyForecast(data) {
             </div>
 
             <div class="day-temp">
-                ${Math.round(maxTemp)}° /
-                ${Math.round(minTemp)}°
+                ${maxTemp !== undefined
+                    ? Math.round(maxTemp)
+                    : "--"}° /
+                ${minTemp !== undefined
+                    ? Math.round(minTemp)
+                    : "--"}°
             </div>
 
         `;
 
-        dailyForecast.appendChild(
-            card
-        );
+        dailyForecast.appendChild(card);
 
     }
 
@@ -1638,57 +1498,43 @@ function getWeatherIcon(code) {
         code === 96 ||
         code === 99
     ) {
-
         return "⛈️";
-
     }
 
     if (
         code >= 61 &&
         code <= 67
     ) {
-
         return "🌧️";
-
     }
 
     if (
         code >= 80 &&
         code <= 82
     ) {
-
         return "🌦️";
-
     }
 
     if (
         code >= 51 &&
         code <= 57
     ) {
-
         return "🌦️";
-
     }
 
     if (
         code === 1 ||
         code === 2
     ) {
-
         return "⛅";
-
     }
 
     if (code === 3) {
-
         return "☁️";
-
     }
 
     if (code === 0) {
-
         return "☀️";
-
     }
 
     return "🌤️";
@@ -1747,6 +1593,7 @@ function formatDay(date) {
 
 // =======================================================
 // MODEL STATUS
+// ECMWF + GFS + ICON
 // =======================================================
 
 async function updateModelStatus(location) {
@@ -1760,10 +1607,9 @@ async function updateModelStatus(location) {
             Number(location.longitude)
         )
     ) {
-
         return;
-
     }
+
 
     const models = [
 
@@ -1787,9 +1633,9 @@ async function updateModelStatus(location) {
 
     ];
 
+
     const modelResults = [];
 
-    // Initial loading text
 
     models.forEach(
         model => {
@@ -1806,12 +1652,10 @@ async function updateModelStatus(location) {
 
 
     // ===================================================
-    // FETCH ALL MODELS
+    // FETCH EACH MODEL
     // ===================================================
 
-    for (
-        const model of models
-    ) {
+    for (const model of models) {
 
         try {
 
@@ -1823,6 +1667,15 @@ async function updateModelStatus(location) {
 
                     longitude:
                         location.longitude,
+
+                    hourly:
+                        [
+                            "precipitation",
+                            "rain",
+                            "showers",
+                            "precipitation_probability",
+                            "weather_code"
+                        ].join(","),
 
                     daily:
                         "precipitation_sum,precipitation_probability_max",
@@ -1838,10 +1691,12 @@ async function updateModelStatus(location) {
 
                 });
 
+
             const response =
                 await fetch(
                     `${WEATHER_API}?${params}`
                 );
+
 
             if (!response.ok) {
 
@@ -1851,11 +1706,17 @@ async function updateModelStatus(location) {
 
             }
 
+
             const data =
                 await response.json();
 
+
             const daily =
                 data.daily;
+
+            const hourly =
+                data.hourly;
+
 
             if (
                 !daily ||
@@ -1870,11 +1731,15 @@ async function updateModelStatus(location) {
 
             }
 
+
+            // 7 DAY RAIN
+
             const rainfall =
-                daily.precipitation_sum
-                    .map(value =>
+                daily.precipitation_sum.map(
+                    value =>
                         Number(value) || 0
-                    );
+                );
+
 
             const totalRain =
                 rainfall.reduce(
@@ -1882,6 +1747,9 @@ async function updateModelStatus(location) {
                         sum + value,
                     0
                 );
+
+
+            // RAIN PROBABILITY
 
             const probabilities =
                 Array.isArray(
@@ -1895,16 +1763,44 @@ async function updateModelStatus(location) {
                         )
                     : [];
 
+
             const averageProbability =
-                probabilities.length > 0
+                probabilities.length
 
                     ? probabilities.reduce(
                         (sum, value) =>
                             sum + value,
                         0
-                    ) / probabilities.length
+                    ) /
+                    probabilities.length
 
                     : 0;
+
+
+            // HOURLY DATA
+
+            const hourlyData = {
+
+                time:
+                    hourly?.time || [],
+
+                precipitation:
+                    hourly?.precipitation || [],
+
+                rain:
+                    hourly?.rain || [],
+
+                showers:
+                    hourly?.showers || [],
+
+                probability:
+                    hourly?.precipitation_probability || [],
+
+                weatherCode:
+                    hourly?.weather_code || []
+
+            };
+
 
             modelResults.push({
 
@@ -1917,10 +1813,14 @@ async function updateModelStatus(location) {
 
                 averageProbability,
 
+                hourly:
+                    hourlyData,
+
                 success:
                     true
 
             });
+
 
             if (model.element) {
 
@@ -1929,12 +1829,14 @@ async function updateModelStatus(location) {
 
             }
 
+
         } catch (error) {
 
             console.error(
-                `${model.name} model failed:`,
+                `${model.name} failed:`,
                 error
             );
+
 
             modelResults.push({
 
@@ -1943,16 +1845,16 @@ async function updateModelStatus(location) {
 
                 rainfall: [],
 
-                totalRain:
-                    null,
+                totalRain: null,
 
-                averageProbability:
-                    null,
+                averageProbability: null,
 
-                success:
-                    false
+                hourly: null,
+
+                success: false
 
             });
+
 
             if (model.element) {
 
@@ -1966,11 +1868,16 @@ async function updateModelStatus(location) {
     }
 
 
-    // ===================================================
-    // MODEL CONSENSUS
-    // ===================================================
+    // 7 DAY CONSENSUS
 
     renderModelConsensus(
+        modelResults
+    );
+
+
+    // HOURLY COMPARISON
+
+    renderHourlyModelComparison(
         modelResults
     );
 
@@ -1978,7 +1885,7 @@ async function updateModelStatus(location) {
 
 
 // =======================================================
-// MODEL CONSENSUS DISPLAY
+// 7-DAY MODEL CONSENSUS
 // =======================================================
 
 function renderModelConsensus(results) {
@@ -1987,6 +1894,7 @@ function renderModelConsensus(results) {
         document.getElementById(
             "modelConsensus"
         );
+
 
     if (!consensus) {
 
@@ -2013,26 +1921,13 @@ function renderModelConsensus(results) {
         consensus.style.border =
             "1px solid rgba(100,116,139,0.18)";
 
-        const modelContainer =
-            ecmwfRain?.closest(
-                ".card, .model-card, section, div"
-            );
 
         if (
-            modelContainer &&
-            modelContainer.parentElement
+            ecmwfRain?.parentElement?.parentElement
         ) {
 
-            modelContainer.parentElement
-                .appendChild(
-                    consensus
-                );
-
-        } else if (
-            dailyForecast?.parentElement
-        ) {
-
-            dailyForecast.parentElement
+            ecmwfRain.parentElement
+                .parentElement
                 .appendChild(
                     consensus
                 );
@@ -2052,17 +1947,17 @@ function renderModelConsensus(results) {
         );
 
 
-    if (
-        successful.length === 0
-    ) {
+    if (!successful.length) {
 
         consensus.innerHTML = `
 
-            <strong>Model Consensus</strong>
+            <strong>
+                🌧️ Model Consensus
+            </strong>
 
             <div style="margin-top:8px;">
                 ECMWF, GFS aur ICON data
-                abhi available nahi hai.
+                available nahi hai.
             </div>
 
         `;
@@ -2084,19 +1979,16 @@ function renderModelConsensus(results) {
             (sum, value) =>
                 sum + value,
             0
-        ) / totals.length;
+        ) /
+        totals.length;
 
 
     const minimumRain =
-        Math.min(
-            ...totals
-        );
+        Math.min(...totals);
 
 
     const maximumRain =
-        Math.max(
-            ...totals
-        );
+        Math.max(...totals);
 
 
     const spread =
@@ -2104,7 +1996,7 @@ function renderModelConsensus(results) {
         minimumRain;
 
 
-    const probabilityValues =
+    const probabilities =
         successful
             .map(
                 item =>
@@ -2117,39 +2009,32 @@ function renderModelConsensus(results) {
 
 
     const averageProbability =
-        probabilityValues.length > 0
+        probabilities.length
 
-            ? probabilityValues.reduce(
+            ? probabilities.reduce(
                 (sum, value) =>
                     sum + value,
                 0
             ) /
-            probabilityValues.length
+            probabilities.length
 
             : 0;
 
 
-    // ===================================================
-    // AGREEMENT
-    // ===================================================
-
     let agreement =
         "Low";
+
 
     if (
         averageRain < 1
     ) {
 
-        if (
-            spread <= 2
-        ) {
+        if (spread <= 2) {
 
             agreement =
                 "High";
 
-        } else if (
-            spread <= 5
-        ) {
+        } else if (spread <= 5) {
 
             agreement =
                 "Moderate";
@@ -2185,11 +2070,7 @@ function renderModelConsensus(results) {
     }
 
 
-    // ===================================================
-    // MODEL ROWS
-    // ===================================================
-
-    const modelRows =
+    const rows =
         successful
             .map(
                 item => `
@@ -2197,9 +2078,10 @@ function renderModelConsensus(results) {
                     <div style="
                         display:flex;
                         justify-content:space-between;
-                        gap:10px;
                         padding:6px 0;
-                        border-bottom:1px solid rgba(100,116,139,0.12);
+                        border-bottom:
+                            1px solid
+                            rgba(100,116,139,0.12);
                     ">
 
                         <span>
@@ -2227,59 +2109,441 @@ function renderModelConsensus(results) {
             🌧️ Model Consensus
         </div>
 
-        <div style="
-            display:grid;
-            gap:4px;
-        ">
 
-            ${modelRows}
+        ${rows}
 
-        </div>
 
         <div style="
             margin-top:12px;
-            display:grid;
-            gap:6px;
+            line-height:1.7;
         ">
 
             <div>
-                <strong>7-Day Average:</strong>
+                <strong>
+                    7-Day Average:
+                </strong>
                 ${averageRain.toFixed(1)} mm
             </div>
 
             <div>
-                <strong>Model Range:</strong>
+                <strong>
+                    Model Range:
+                </strong>
                 ${minimumRain.toFixed(1)}
                 –
                 ${maximumRain.toFixed(1)} mm
             </div>
 
             <div>
-                <strong>Model Spread:</strong>
+                <strong>
+                    Model Spread:
+                </strong>
                 ${spread.toFixed(1)} mm
             </div>
 
             <div>
-                <strong>Agreement:</strong>
+                <strong>
+                    Agreement:
+                </strong>
                 ${agreement}
             </div>
 
             <div>
-                <strong>Average Rain Probability:</strong>
-                ${Math.round(averageProbability)}%
+                <strong>
+                    Average Rain Probability:
+                </strong>
+                ${Math.round(
+                    averageProbability
+                )}%
             </div>
 
         </div>
 
+
         <div style="
             margin-top:10px;
             font-size:12px;
-            opacity:0.70;
+            opacity:0.7;
+        ">
+            Model consensus comparison hai,
+            guaranteed accuracy percentage nahi.
+        </div>
+
+    `;
+
+}
+
+
+// =======================================================
+// HOURLY MODEL COMPARISON
+// =======================================================
+
+function renderHourlyModelComparison(results) {
+
+    let container =
+        document.getElementById(
+            "hourlyModelComparison"
+        );
+
+
+    // CREATE CONTAINER
+
+    if (!container) {
+
+        container =
+            document.createElement(
+                "div"
+            );
+
+        container.id =
+            "hourlyModelComparison";
+
+        container.style.marginTop =
+            "20px";
+
+        container.style.padding =
+            "16px";
+
+        container.style.borderRadius =
+            "14px";
+
+        container.style.background =
+            "rgba(15,23,42,0.06)";
+
+        container.style.border =
+            "1px solid rgba(100,116,139,0.18)";
+
+
+        if (
+            hourlyForecast?.parentElement
+        ) {
+
+            hourlyForecast.parentElement
+                .appendChild(
+                    container
+                );
+
+        }
+
+    }
+
+
+    const successful =
+        results.filter(
+            item =>
+                item.success &&
+                item.hourly &&
+                Array.isArray(
+                    item.hourly.time
+                )
+        );
+
+
+    if (!successful.length) {
+
+        container.innerHTML = `
+
+            <div style="
+                font-size:18px;
+                font-weight:700;
+            ">
+                🕐 Hourly Model Comparison
+            </div>
+
+            <div style="
+                margin-top:8px;
+            ">
+                Hourly model data available nahi hai.
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    const reference =
+        successful[0];
+
+
+    const startIndex =
+        findCurrentHourIndex(
+            reference.hourly.time
+        );
+
+
+    const endIndex =
+        Math.min(
+            startIndex + 24,
+            reference.hourly.time.length
+        );
+
+
+    let rows = "";
+
+
+    // ===================================================
+    // CREATE 24 HOUR ROWS
+    // ===================================================
+
+    for (
+        let i = startIndex;
+        i < endIndex;
+        i++
+    ) {
+
+        const time =
+            reference.hourly.time[i];
+
+        const date =
+            new Date(time);
+
+
+        const values = {};
+
+
+        successful.forEach(
+            model => {
+
+                const index =
+                    model.hourly.time.indexOf(
+                        time
+                    );
+
+
+                if (index >= 0) {
+
+                    values[
+                        model.name
+                    ] = {
+
+                        rain:
+                            Number(
+                                model.hourly
+                                    .precipitation[
+                                        index
+                                    ] || 0
+                            ),
+
+                        probability:
+                            Number(
+                                model.hourly
+                                    .probability[
+                                        index
+                                    ] || 0
+                            ),
+
+                        code:
+                            model.hourly
+                                .weatherCode[
+                                    index
+                                ]
+
+                    };
+
+                }
+
+            }
+        );
+
+
+        const ecmwf =
+            values.ECMWF || {};
+
+        const gfs =
+            values.GFS || {};
+
+        const icon =
+            values.ICON || {};
+
+
+        const rains = [
+
+            Number(ecmwf.rain || 0),
+
+            Number(gfs.rain || 0),
+
+            Number(icon.rain || 0)
+
+        ];
+
+
+        const maxRain =
+            Math.max(...rains);
+
+
+        const rainModels =
+            rains.filter(
+                value =>
+                    value >= 0.1
+            ).length;
+
+
+        let signal =
+            "No significant rain";
+
+
+        if (
+            rainModels >= 2
+        ) {
+
+            signal =
+                "🌧️ Model agreement";
+
+        } else if (
+            rainModels === 1
+        ) {
+
+            signal =
+                "🌦️ One model";
+
+        } else if (
+            maxRain >= 0.1
+        ) {
+
+            signal =
+                "🌦️ Weak signal";
+
+        }
+
+
+        let storm =
+            false;
+
+
+        successful.forEach(
+            model => {
+
+                const index =
+                    model.hourly.time.indexOf(
+                        time
+                    );
+
+
+                if (
+                    index >= 0 &&
+                    isThunderstorm(
+                        model.hourly.weatherCode[
+                            index
+                        ]
+                    )
+                ) {
+
+                    storm = true;
+
+                }
+
+            }
+        );
+
+
+        rows += `
+
+            <div style="
+                padding:10px 0;
+                border-bottom:
+                    1px solid
+                    rgba(100,116,139,0.15);
+            ">
+
+                <div style="
+                    display:grid;
+                    grid-template-columns:
+                        70px 1fr 1fr 1fr;
+                    gap:6px;
+                    align-items:center;
+                    font-size:13px;
+                ">
+
+                    <strong>
+                        ${formatTime(date)}
+                    </strong>
+
+
+                    <span>
+                        ECMWF:
+                        ${Number(
+                            ecmwf.rain || 0
+                        ).toFixed(1)} mm
+                    </span>
+
+
+                    <span>
+                        GFS:
+                        ${Number(
+                            gfs.rain || 0
+                        ).toFixed(1)} mm
+                    </span>
+
+
+                    <span>
+                        ICON:
+                        ${Number(
+                            icon.rain || 0
+                        ).toFixed(1)} mm
+                    </span>
+
+                </div>
+
+
+                <div style="
+                    margin-top:5px;
+                    font-size:12px;
+                    opacity:0.75;
+                ">
+
+                    ${signal}
+
+                    ${
+                        storm
+                            ? " ⚡ Thunderstorm signal"
+                            : ""
+                    }
+
+                </div>
+
+            </div>
+
+        `;
+
+    }
+
+
+    container.innerHTML = `
+
+        <div style="
+            font-size:18px;
+            font-weight:700;
+            margin-bottom:4px;
+        ">
+            🕐 Hourly Rain Model Comparison
+        </div>
+
+
+        <div style="
+            font-size:12px;
+            opacity:0.7;
+            margin-bottom:12px;
+        ">
+            Next 24 hours — ECMWF vs GFS vs ICON
+        </div>
+
+
+        <div>
+            ${rows}
+        </div>
+
+
+        <div style="
+            margin-top:12px;
+            font-size:12px;
+            opacity:0.7;
             line-height:1.5;
         ">
-            Consensus multiple weather models ka
-            comparison hai. Ye guaranteed accuracy
-            percentage nahi hai.
+            🌧️ Model agreement ka matlab hai ki
+            multiple models us hour me rain signal
+            de rahe hain. Ye guaranteed rainfall nahi hai.
         </div>
 
     `;
@@ -2309,7 +2573,7 @@ if (locationInput) {
 
     locationInput.addEventListener(
         "keydown",
-        function (event) {
+        event => {
 
             if (
                 event.key === "Enter"
@@ -2326,17 +2590,13 @@ if (locationInput) {
 
 
 // =======================================================
-// INITIAL LOAD
+// INITIALIZE
 // =======================================================
 
 async function initialize() {
 
-    // Load village database first
-
     await loadVillageDatabase();
 
-
-    // Show default location
 
     displayLocation(
         DEFAULT_LOCATION
@@ -2350,8 +2610,6 @@ async function initialize() {
 
     }
 
-
-    // Load weather
 
     await loadWeather(
         DEFAULT_LOCATION
