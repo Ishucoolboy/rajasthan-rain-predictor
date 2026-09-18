@@ -1,0 +1,832 @@
+/* =========================================================
+   Rajasthan Rain Predictor
+   Main Website Styles
+   ========================================================= */
+
+
+/* =========================
+   GLOBAL
+   ========================= */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f4f7fb;
+    color: #172033;
+    line-height: 1.6;
+}
+
+
+button,
+input {
+    font-family: inherit;
+}
+
+
+.container {
+    width: min(1180px, 92%);
+    margin: 0 auto;
+}
+
+
+/* =========================
+   HEADER
+   ========================= */
+
+.header {
+    background: linear-gradient(
+        135deg,
+        #075985,
+        #0284c7
+    );
+
+    color: white;
+    padding: 28px 0;
+
+    box-shadow:
+        0 4px 15px rgba(0, 0, 0, 0.12);
+}
+
+
+.header-content {
+    width: min(1180px, 92%);
+    margin: 0 auto;
+
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+
+
+.logo {
+    width: 58px;
+    height: 58px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(255, 255, 255, 0.16);
+    border-radius: 16px;
+
+    font-size: 30px;
+}
+
+
+.header h1 {
+    font-size: 30px;
+    margin-bottom: 3px;
+}
+
+
+.header p {
+    opacity: 0.9;
+    font-size: 15px;
+}
+
+
+/* =========================
+   SEARCH SECTION
+   ========================= */
+
+.search-section {
+    margin-top: 28px;
+
+    background: white;
+    padding: 25px;
+
+    border-radius: 18px;
+
+    box-shadow:
+        0 5px 20px rgba(15, 23, 42, 0.07);
+}
+
+
+.search-section h2 {
+    margin-bottom: 5px;
+}
+
+
+.section-description {
+    color: #64748b;
+    margin-bottom: 18px;
+}
+
+
+.search-box {
+    display: flex;
+    gap: 10px;
+}
+
+
+.search-box input {
+    flex: 1;
+
+    min-width: 0;
+
+    padding: 14px 16px;
+
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+
+    outline: none;
+
+    font-size: 16px;
+}
+
+
+.search-box input:focus {
+    border-color: #0284c7;
+
+    box-shadow:
+        0 0 0 3px rgba(2, 132, 199, 0.12);
+}
+
+
+.search-box button {
+    border: none;
+
+    padding: 0 25px;
+
+    border-radius: 10px;
+
+    background: #0284c7;
+    color: white;
+
+    font-size: 16px;
+    font-weight: bold;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+
+.search-box button:hover {
+    background: #0369a1;
+}
+
+
+.search-example {
+    margin-top: 10px;
+
+    color: #64748b;
+
+    font-size: 13px;
+}
+
+
+/* =========================
+   LOCATION
+   ========================= */
+
+.location-section {
+    margin-top: 20px;
+
+    background: white;
+
+    padding: 24px;
+
+    border-radius: 18px;
+
+    box-shadow:
+        0 5px 20px rgba(15, 23, 42, 0.07);
+}
+
+
+.location-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 20px;
+}
+
+
+.small-label {
+    color: #64748b;
+
+    font-size: 12px;
+
+    font-weight: bold;
+
+    letter-spacing: 1px;
+}
+
+
+#locationName {
+    font-size: 26px;
+
+    margin: 2px 0;
+}
+
+
+#locationCoordinates {
+    color: #64748b;
+    font-size: 14px;
+}
+
+
+.status {
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+
+    color: #475569;
+
+    font-size: 14px;
+}
+
+
+.status-dot {
+    width: 10px;
+    height: 10px;
+
+    background: #22c55e;
+
+    border-radius: 50%;
+
+    display: inline-block;
+}
+
+
+/* =========================
+   WEATHER SECTION
+   ========================= */
+
+.weather-section,
+.forecast-section,
+.model-section,
+.map-section,
+.accuracy-section,
+.info-section {
+    margin-top: 28px;
+}
+
+
+.weather-section h2,
+.forecast-section h2,
+.model-section h2,
+.map-section h2,
+.accuracy-section h2,
+.info-section h2 {
+    margin-bottom: 8px;
+}
+
+
+.weather-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 16px;
+}
+
+
+.weather-card {
+    background: white;
+
+    padding: 22px;
+
+    border-radius: 16px;
+
+    box-shadow:
+        0 5px 20px rgba(15, 23, 42, 0.06);
+
+    transition:
+        transform 0.2s,
+        box-shadow 0.2s;
+}
+
+
+.weather-card:hover {
+    transform: translateY(-3px);
+
+    box-shadow:
+        0 9px 25px rgba(15, 23, 42, 0.10);
+}
+
+
+.weather-icon {
+    font-size: 28px;
+
+    margin-bottom: 8px;
+}
+
+
+.weather-card p {
+    color: #64748b;
+
+    font-size: 14px;
+
+    margin-bottom: 4px;
+}
+
+
+.weather-card strong {
+    font-size: 27px;
+
+    color: #0f172a;
+}
+
+
+/* =========================
+   HOURLY FORECAST
+   ========================= */
+
+.hourly-container {
+    display: flex;
+
+    gap: 12px;
+
+    overflow-x: auto;
+
+    padding: 5px 2px 12px;
+}
+
+
+.hour-card {
+    min-width: 125px;
+
+    background: white;
+
+    padding: 18px 14px;
+
+    border-radius: 14px;
+
+    text-align: center;
+
+    box-shadow:
+        0 5px 18px rgba(15, 23, 42, 0.06);
+}
+
+
+.hour-card .time {
+    color: #64748b;
+
+    font-size: 13px;
+
+    margin-bottom: 8px;
+}
+
+
+.hour-card .icon {
+    font-size: 26px;
+
+    margin-bottom: 7px;
+}
+
+
+.hour-card .rain {
+    font-size: 18px;
+
+    font-weight: bold;
+
+    color: #0284c7;
+}
+
+
+.hour-card .probability {
+    font-size: 12px;
+
+    color: #64748b;
+}
+
+
+/* =========================
+   DAILY FORECAST
+   ========================= */
+
+.daily-container {
+    display: grid;
+
+    grid-template-columns:
+        repeat(7, 1fr);
+
+    gap: 10px;
+}
+
+
+.day-card {
+    background: white;
+
+    padding: 18px 10px;
+
+    border-radius: 14px;
+
+    text-align: center;
+
+    box-shadow:
+        0 5px 18px rgba(15, 23, 42, 0.06);
+}
+
+
+.day-card .day {
+    font-weight: bold;
+
+    margin-bottom: 8px;
+}
+
+
+.day-card .day-icon {
+    font-size: 27px;
+
+    margin-bottom: 7px;
+}
+
+
+.day-card .day-rain {
+    color: #0284c7;
+
+    font-weight: bold;
+}
+
+
+.day-card .day-temp {
+    color: #64748b;
+
+    font-size: 13px;
+
+    margin-top: 5px;
+}
+
+
+/* =========================
+   MODEL COMPARISON
+   ========================= */
+
+.model-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 16px;
+}
+
+
+.model-card {
+    background: white;
+
+    padding: 22px;
+
+    border-radius: 16px;
+
+    box-shadow:
+        0 5px 20px rgba(15, 23, 42, 0.06);
+}
+
+
+.model-card h3 {
+    margin-bottom: 5px;
+}
+
+
+.model-card p {
+    color: #64748b;
+
+    font-size: 13px;
+
+    margin-bottom: 14px;
+}
+
+
+.model-card strong {
+    color: #0284c7;
+
+    font-size: 25px;
+}
+
+
+/* =========================
+   MAP
+   ========================= */
+
+.map-container {
+    min-height: 400px;
+
+    background: white;
+
+    border-radius: 18px;
+
+    box-shadow:
+        0 5px 20px rgba(15, 23, 42, 0.06);
+
+    overflow: hidden;
+}
+
+
+.map-placeholder {
+    min-height: 400px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+    justify-content: center;
+
+    text-align: center;
+
+    color: #64748b;
+}
+
+
+.map-placeholder div {
+    font-size: 55px;
+
+    margin-bottom: 12px;
+}
+
+
+/* =========================
+   ACCURACY
+   ========================= */
+
+.accuracy-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 16px;
+
+    margin-top: 15px;
+}
+
+
+.accuracy-card {
+    background: white;
+
+    padding: 22px;
+
+    border-radius: 16px;
+
+    box-shadow:
+        0 5px 20px rgba(15, 23, 42, 0.06);
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 5px;
+}
+
+
+.accuracy-card span {
+    color: #64748b;
+
+    font-size: 14px;
+}
+
+
+.accuracy-card strong {
+    font-size: 28px;
+}
+
+
+.accuracy-note {
+    margin-top: 15px;
+
+    padding: 15px;
+
+    border-radius: 12px;
+
+    background: #eff6ff;
+
+    color: #334155;
+
+    font-size: 14px;
+}
+
+
+/* =========================
+   EMPTY STATE
+   ========================= */
+
+.empty-state {
+    width: 100%;
+
+    background: white;
+
+    padding: 35px;
+
+    border-radius: 16px;
+
+    text-align: center;
+
+    color: #64748b;
+
+    box-shadow:
+        0 5px 20px rgba(15, 23, 42, 0.05);
+}
+
+
+.empty-state div {
+    font-size: 35px;
+
+    margin-bottom: 8px;
+}
+
+
+/* =========================
+   INFORMATION
+   ========================= */
+
+.info-section {
+    background: white;
+
+    padding: 25px;
+
+    border-radius: 18px;
+
+    box-shadow:
+        0 5px 20px rgba(15, 23, 42, 0.06);
+}
+
+
+.info-section p {
+    color: #64748b;
+
+    margin-bottom: 10px;
+}
+
+
+/* =========================
+   FOOTER
+   ========================= */
+
+.footer {
+    margin-top: 45px;
+
+    padding: 30px 5%;
+
+    text-align: center;
+
+    background: #0f172a;
+
+    color: white;
+}
+
+
+.footer h3 {
+    margin-bottom: 5px;
+}
+
+
+.footer p {
+    color: #cbd5e1;
+
+    font-size: 14px;
+
+    margin-bottom: 7px;
+}
+
+
+.footer-warning {
+    max-width: 700px;
+
+    margin: 10px auto !important;
+}
+
+
+.copyright {
+    margin-top: 15px;
+
+    font-size: 12px !important;
+
+    color: #94a3b8 !important;
+}
+
+
+/* =========================
+   MOBILE
+   ========================= */
+
+@media (max-width: 800px) {
+
+    .header h1 {
+        font-size: 23px;
+    }
+
+
+    .header p {
+        font-size: 13px;
+    }
+
+
+    .weather-grid {
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+
+
+    .model-grid {
+        grid-template-columns:
+            1fr;
+    }
+
+
+    .daily-container {
+        display: flex;
+
+        overflow-x: auto;
+
+        padding-bottom: 10px;
+    }
+
+
+    .day-card {
+        min-width: 115px;
+    }
+
+
+    .accuracy-grid {
+        grid-template-columns:
+            1fr;
+    }
+
+}
+
+
+@media (max-width: 520px) {
+
+    .header {
+        padding: 20px 0;
+    }
+
+
+    .header-content {
+        gap: 12px;
+    }
+
+
+    .logo {
+        width: 48px;
+        height: 48px;
+
+        font-size: 25px;
+    }
+
+
+    .header h1 {
+        font-size: 20px;
+    }
+
+
+    .search-section,
+    .location-section,
+    .info-section {
+        padding: 18px;
+    }
+
+
+    .search-box {
+        flex-direction: column;
+    }
+
+
+    .search-box button {
+        min-height: 48px;
+    }
+
+
+    .location-header {
+        align-items: flex-start;
+
+        flex-direction: column;
+    }
+
+
+    .weather-grid {
+        grid-template-columns:
+            1fr 1fr;
+
+        gap: 10px;
+    }
+
+
+    .weather-card {
+        padding: 16px;
+    }
+
+
+    .weather-card strong {
+        font-size: 22px;
+    }
+
+
+    .map-container,
+    .map-placeholder {
+        min-height: 300px;
+    }
+
+}
