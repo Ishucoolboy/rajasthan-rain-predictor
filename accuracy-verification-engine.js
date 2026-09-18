@@ -1,12 +1,14 @@
 /* =========================================================
    Rajasthan Rain Predictor
-   Actual Forecast Verification Engine
+   Model-wise Actual Forecast Verification Engine
    ---------------------------------------------------------
    Purpose:
    - Match saved forecast snapshots with actual rainfall
-   - Calculate measured forecast performance
-   - No invented accuracy
-   - Uses only saved observations
+   - Calculate ECMWF / GFS / ICON separately
+   - Calculate MAE / RMSE / Bias
+   - Calculate Rain / No-Rain accuracy
+   - Calculate Brier Score for rain probability
+   - Never invent accuracy
    ========================================================= */
 
 (function () {
@@ -19,7 +21,7 @@
     "rrp_forecast_snapshots_v1";
 
   const RESULT_KEY =
-    "rrp_verified_accuracy_v1";
+    "rrp_verified_accuracy_v2";
 
   const RAIN_THRESHOLD = 0.1;
 
@@ -29,6 +31,7 @@
      ======================================================= */
 
   function number(value, fallback = null) {
+
     const n = Number(value);
 
     return Number.isFinite(n)
@@ -38,6 +41,7 @@
 
 
   function round(value, digits = 2) {
+
     if (!Number.isFinite(Number(value))) {
       return null;
     }
@@ -74,7 +78,7 @@
     } catch (error) {
 
       console.warn(
-        "Accuracy storage error:",
+        "Verification storage error:",
         error
       );
 
@@ -95,33 +99,29 @@
     } catch (error) {
 
       console.warn(
-        "Accuracy save error:",
+        "Verification save error:",
         error
       );
+
     }
   }
 
 
-  function getDate(value) {
+  function escapeHTML(value) {
 
-    if (!value) {
-      return null;
-    }
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
 
-    const date =
-      new Date(value);
-
-    if (
-      Number.isNaN(
-        date.getTime()
-      )
-    ) {
-      return null;
-    }
-
-    return date;
   }
 
+
+  /* =======================================================
+     LOCATION MATCH
+     ======================================================= */
 
   function sameLocation(
     forecast,
@@ -157,6 +157,7 @@
     ) {
 
       return false;
+
     }
 
 
@@ -173,22 +174,18 @@
         fLon - oLon
       ) < 0.01
     );
+
   }
 
 
   /* =======================================================
-     FIND ACTUAL OBSERVATION
+     FIND OBSERVATION
      ======================================================= */
 
   function findObservation(
-    forecast
+    forecast,
+    observations
   ) {
-
-    const observations =
-      loadJSON(
-        OBSERVATION_KEY
-      );
-
 
     const forecastDate =
       forecast.validDate ||
@@ -201,7 +198,8 @@
 
 
     /*
-      First try exact location + date.
+      First:
+      exact date + coordinates
     */
 
     let matches =
@@ -223,8 +221,8 @@
 
 
     /*
-      If exact coordinates aren't available,
-      use location name as fallback.
+      Fallback:
+      date + location name
     */
 
     if (!matches.length) {
@@ -243,6 +241,7 @@
 
           }
         );
+
     }
 
 
@@ -252,25 +251,80 @@
 
 
     return matches[0];
+
   }
 
 
   /* =======================================================
-     EXTRACT FORECAST RAIN
+     GET MODEL NAME
+     ======================================================= */
+
+  function getModelName(
+    forecast
+  ) {
+
+    if (
+      forecast.model
+    ) {
+
+      return String(
+        forecast.model
+      ).toUpperCase();
+
+    }
+
+
+    if (
+      forecast.modelId
+    ) {
+
+      const id =
+        String(
+          forecast.modelId
+        ).toLowerCase();
+
+
+      if (
+        id.includes("ecmwf")
+      ) {
+        return "ECMWF";
+      }
+
+
+      if (
+        id.includes("gfs")
+      ) {
+        return "GFS";
+      }
+
+
+      if (
+        id.includes("icon")
+      ) {
+        return "ICON";
+      }
+
+    }
+
+
+    return "UNKNOWN";
+
+  }
+
+
+  /* =======================================================
+     FORECAST RAIN
      ======================================================= */
 
   function getForecastRain(
     forecast
   ) {
 
-    /*
-      Supported possible field names from
-      current / future forecast snapshots.
-    */
-
     const candidates = [
 
       forecast.forecastRainMm,
+
+      forecast.forecastRainOnlyMm,
 
       forecast.predictedRainMm,
 
@@ -293,16 +347,377 @@
         number(value);
 
       if (n !== null) {
+
         return Math.max(
           0,
           n
         );
+
       }
 
     }
 
 
     return null;
+
+  }
+
+
+  /* =======================================================
+     FORECAST PROBABILITY
+     ======================================================= */
+
+  function getProbability(
+    forecast
+  ) {
+
+    const candidates = [
+
+      forecast.rainProbability,
+
+      forecast.precipitationProbability,
+
+      forecast.probability
+
+    ];
+
+
+    for (
+      const value of candidates
+    ) {
+
+      const n =
+        number(value);
+
+      if (n !== null) {
+
+        return Math.min(
+          100,
+          Math.max(
+            0,
+            n
+          )
+        );
+
+      }
+
+    }
+
+
+    return null;
+
+  }
+
+
+  /* =======================================================
+     CREATE EMPTY MODEL METRICS
+     ======================================================= */
+
+  function emptyMetrics() {
+
+    return {
+
+      samples: 0,
+
+      mae: null,
+
+      rmse: null,
+
+      bias: null,
+
+      rainAccuracy: null,
+
+      brierScore: null,
+
+      hits: 0,
+
+      misses: 0,
+
+      falseAlarms: 0,
+
+      correctNoRain: 0
+
+    };
+
+  }
+
+
+  /* =======================================================
+     CALCULATE MODEL METRICS
+     ======================================================= */
+
+  function calculateMetrics(
+    records
+  ) {
+
+    if (
+      !records.length
+    ) {
+
+      return emptyMetrics();
+
+    }
+
+
+    const absoluteErrors = [];
+
+    const squaredErrors = [];
+
+    const signedErrors = [];
+
+    const brierErrors = [];
+
+
+    let hits = 0;
+
+    let misses = 0;
+
+    let falseAlarms = 0;
+
+    let correctNoRain = 0;
+
+
+    records.forEach(
+      function (item) {
+
+        const predicted =
+          number(
+            item.predictedRainMm
+          );
+
+        const actual =
+          number(
+            item.actualRainMm
+          );
+
+
+        if (
+          predicted !== null &&
+          actual !== null
+        ) {
+
+          const error =
+            predicted - actual;
+
+
+          absoluteErrors.push(
+            Math.abs(error)
+          );
+
+
+          squaredErrors.push(
+            error * error
+          );
+
+
+          signedErrors.push(
+            error
+          );
+
+
+          const predictedRain =
+            predicted >=
+            RAIN_THRESHOLD;
+
+
+          const actualRain =
+            actual >=
+            RAIN_THRESHOLD;
+
+
+          if (
+            predictedRain &&
+            actualRain
+          ) {
+
+            hits++;
+
+          } else if (
+            !predictedRain &&
+            actualRain
+          ) {
+
+            misses++;
+
+          } else if (
+            predictedRain &&
+            !actualRain
+          ) {
+
+            falseAlarms++;
+
+          } else {
+
+            correctNoRain++;
+
+          }
+
+        }
+
+
+        /*
+          Brier Score
+
+          Probability:
+          0 to 1
+
+          Observation:
+          1 = rain
+          0 = no rain
+        */
+
+        const probability =
+          number(
+            item.rainProbability
+          );
+
+
+        if (
+          probability !== null &&
+          actual !== null
+        ) {
+
+          const p =
+            probability / 100;
+
+          const observation =
+            actual >=
+            RAIN_THRESHOLD
+              ? 1
+              : 0;
+
+
+          const brier =
+            Math.pow(
+              p - observation,
+              2
+            );
+
+
+          brierErrors.push(
+            brier
+          );
+
+        }
+
+      }
+    );
+
+
+    const samples =
+      records.length;
+
+
+    const mae =
+      absoluteErrors.length
+        ? absoluteErrors.reduce(
+            (sum, value) =>
+              sum + value,
+            0
+          ) /
+          absoluteErrors.length
+        : null;
+
+
+    const rmse =
+      squaredErrors.length
+        ? Math.sqrt(
+            squaredErrors.reduce(
+              (sum, value) =>
+                sum + value,
+              0
+            ) /
+            squaredErrors.length
+          )
+        : null;
+
+
+    const bias =
+      signedErrors.length
+        ? signedErrors.reduce(
+            (sum, value) =>
+              sum + value,
+            0
+          ) /
+          signedErrors.length
+        : null;
+
+
+    const classificationSamples =
+      hits +
+      misses +
+      falseAlarms +
+      correctNoRain;
+
+
+    const rainAccuracy =
+      classificationSamples
+        ? (
+            (
+              hits +
+              correctNoRain
+            ) /
+            classificationSamples
+          ) *
+          100
+        : null;
+
+
+    const brierScore =
+      brierErrors.length
+        ? brierErrors.reduce(
+            (sum, value) =>
+              sum + value,
+            0
+          ) /
+          brierErrors.length
+        : null;
+
+
+    return {
+
+      samples,
+
+      mae:
+        round(
+          mae,
+          3
+        ),
+
+      rmse:
+        round(
+          rmse,
+          3
+        ),
+
+      bias:
+        round(
+          bias,
+          3
+        ),
+
+      rainAccuracy:
+        round(
+          rainAccuracy,
+          1
+        ),
+
+      brierScore:
+        round(
+          brierScore,
+          4
+        ),
+
+      hits,
+
+      misses,
+
+      falseAlarms,
+
+      correctNoRain
+
+    };
+
   }
 
 
@@ -324,37 +739,23 @@
       );
 
 
-    if (
-      !snapshots.length ||
-      !observations.length
-    ) {
-
-      return {
-        matched: [],
-        metrics: {
-          samples: 0,
-          mae: null,
-          rmse: null,
-          bias: null,
-          rainAccuracy: null,
-          hits: 0,
-          misses: 0,
-          falseAlarms: 0,
-          correctNoRain: 0
-        }
-      };
-    }
+    const modelRecords = {};
 
 
-    const matched = [];
+    const allMatched = [];
 
+
+    /*
+      Process every saved forecast.
+    */
 
     snapshots.forEach(
       function (forecast) {
 
         const observation =
           findObservation(
-            forecast
+            forecast,
+            observations
           );
 
 
@@ -381,7 +782,20 @@
         ) {
 
           return;
+
         }
+
+
+        const model =
+          getModelName(
+            forecast
+          );
+
+
+        const probability =
+          getProbability(
+            forecast
+          );
 
 
         const error =
@@ -389,43 +803,40 @@
           actual;
 
 
-        const absoluteError =
-          Math.abs(
-            error
-          );
-
-
-        const predictedRain =
-          predicted >=
-          RAIN_THRESHOLD;
-
-
-        const actualRain =
-          actual >=
-          RAIN_THRESHOLD;
-
-
-        matched.push({
+        const record = {
 
           forecastId:
             forecast.id ||
             null,
 
-          observationId:
-            observation.id ||
+          forecastCreatedAt:
+            forecast.forecastCreatedAt ||
             null,
 
-          date:
-            observation.date,
+          validDate:
+            forecast.validDate ||
+            null,
+
+          model,
+
+          modelId:
+            forecast.modelId ||
+            null,
 
           locationName:
-            observation.locationName,
+            forecast.locationName ||
+            observation.locationName ||
+            null,
 
           latitude:
-            observation.latitude,
+            number(
+              forecast.latitude
+            ),
 
           longitude:
-            observation.longitude,
+            number(
+              forecast.longitude
+            ),
 
           predictedRainMm:
             round(
@@ -439,6 +850,14 @@
               2
             ),
 
+          rainProbability:
+            probability !== null
+              ? round(
+                  probability,
+                  1
+                )
+              : null,
+
           errorMm:
             round(
               error,
@@ -447,17 +866,9 @@
 
           absoluteErrorMm:
             round(
-              absoluteError,
+              Math.abs(error),
               2
             ),
-
-          predictedRain,
-
-          actualRain,
-
-          correct:
-            predictedRain ===
-            actualRain,
 
           source:
             observation.source ||
@@ -467,194 +878,97 @@
             new Date()
               .toISOString()
 
-        });
+        };
+
+
+        allMatched.push(
+          record
+        );
+
+
+        if (
+          !modelRecords[model]
+        ) {
+
+          modelRecords[model] =
+            [];
+
+        }
+
+
+        modelRecords[model].push(
+          record
+        );
+
+      }
+    );
+
+
+    const models = {};
+
+
+    Object.keys(
+      modelRecords
+    ).forEach(
+      function (model) {
+
+        models[model] =
+          calculateMetrics(
+            modelRecords[model]
+          );
 
       }
     );
 
 
     /*
-      Metrics
+      Overall metrics
     */
 
-    if (!matched.length) {
-
-      return {
-
-        matched: [],
-
-        metrics: {
-          samples: 0,
-          mae: null,
-          rmse: null,
-          bias: null,
-          rainAccuracy: null,
-          hits: 0,
-          misses: 0,
-          falseAlarms: 0,
-          correctNoRain: 0
-        }
-
-      };
-    }
-
-
-    const absoluteErrors =
-      matched.map(
-        item =>
-          item.absoluteErrorMm
+    const overall =
+      calculateMetrics(
+        allMatched
       );
-
-
-    const signedErrors =
-      matched.map(
-        item =>
-          item.errorMm
-      );
-
-
-    const squaredErrors =
-      matched.map(
-        item =>
-          item.errorMm *
-          item.errorMm
-      );
-
-
-    const mae =
-      absoluteErrors.reduce(
-        (sum, value) =>
-          sum + value,
-        0
-      ) /
-      matched.length;
-
-
-    const bias =
-      signedErrors.reduce(
-        (sum, value) =>
-          sum + value,
-        0
-      ) /
-      matched.length;
-
-
-    const rmse =
-      Math.sqrt(
-        squaredErrors.reduce(
-          (sum, value) =>
-            sum + value,
-          0
-        ) /
-        matched.length
-      );
-
-
-    let hits = 0;
-    let misses = 0;
-    let falseAlarms = 0;
-    let correctNoRain = 0;
-
-
-    matched.forEach(
-      function (item) {
-
-        if (
-          item.predictedRain &&
-          item.actualRain
-        ) {
-
-          hits++;
-
-        } else if (
-          !item.predictedRain &&
-          item.actualRain
-        ) {
-
-          misses++;
-
-        } else if (
-          item.predictedRain &&
-          !item.actualRain
-        ) {
-
-          falseAlarms++;
-
-        } else {
-
-          correctNoRain++;
-
-        }
-
-      }
-    );
-
-
-    const rainAccuracy =
-      (
-        (
-          hits +
-          correctNoRain
-        ) /
-        matched.length
-      ) *
-      100;
 
 
     const result = {
 
-      samples:
-        matched.length,
-
-      mae:
-        round(
-          mae,
-          3
-        ),
-
-      rmse:
-        round(
-          rmse,
-          3
-        ),
-
-      bias:
-        round(
-          bias,
-          3
-        ),
-
-      rainAccuracy:
-        round(
-          rainAccuracy,
-          1
-        ),
-
-      hits,
-
-      misses,
-
-      falseAlarms,
-
-      correctNoRain,
-
       calculatedAt:
         new Date()
-          .toISOString()
+          .toISOString(),
+
+      totalSnapshots:
+        snapshots.length,
+
+      totalObservations:
+        observations.length,
+
+      matchedRecords:
+        allMatched.length,
+
+      models,
+
+      overall,
+
+      matched:
+        allMatched
 
     };
 
 
-    return {
-      matched,
-      metrics:
-        result
-    };
+    saveJSON(
+      RESULT_KEY,
+      result
+    );
+
+
+    return result;
+
   }
 
 
   /* =======================================================
-     RENDER
+     GET CONTAINER
      ======================================================= */
 
   function getContainer() {
@@ -701,8 +1015,223 @@
 
 
     return container;
+
   }
 
+
+  /* =======================================================
+     MODEL CARD
+     ======================================================= */
+
+  function modelCard(
+    name,
+    metrics
+  ) {
+
+    return `
+
+      <div style="
+        padding:18px;
+        border-radius:16px;
+        background:rgba(255,255,255,.06);
+        border:1px solid rgba(255,255,255,.12);
+      ">
+
+        <h4 style="
+          margin:0 0 12px;
+          font-size:18px;
+        ">
+          ${escapeHTML(name)}
+        </h4>
+
+
+        <div style="
+          display:grid;
+          grid-template-columns:
+          repeat(2,minmax(0,1fr));
+          gap:10px;
+        ">
+
+
+          <div style="
+            padding:11px;
+            border-radius:10px;
+            background:rgba(0,0,0,.18);
+          ">
+
+            <div style="
+              font-size:11px;
+              opacity:.65;
+            ">
+              Samples
+            </div>
+
+            <strong>
+              ${metrics.samples}
+            </strong>
+
+          </div>
+
+
+          <div style="
+            padding:11px;
+            border-radius:10px;
+            background:rgba(0,0,0,.18);
+          ">
+
+            <div style="
+              font-size:11px;
+              opacity:.65;
+            ">
+              Rain Accuracy
+            </div>
+
+            <strong>
+              ${
+                metrics.rainAccuracy === null
+                  ? "—"
+                  : metrics.rainAccuracy + "%"
+              }
+            </strong>
+
+          </div>
+
+
+          <div style="
+            padding:11px;
+            border-radius:10px;
+            background:rgba(0,0,0,.18);
+          ">
+
+            <div style="
+              font-size:11px;
+              opacity:.65;
+            ">
+              MAE
+            </div>
+
+            <strong>
+              ${
+                metrics.mae === null
+                  ? "—"
+                  : metrics.mae + " mm"
+              }
+            </strong>
+
+          </div>
+
+
+          <div style="
+            padding:11px;
+            border-radius:10px;
+            background:rgba(0,0,0,.18);
+          ">
+
+            <div style="
+              font-size:11px;
+              opacity:.65;
+            ">
+              RMSE
+            </div>
+
+            <strong>
+              ${
+                metrics.rmse === null
+                  ? "—"
+                  : metrics.rmse + " mm"
+              }
+            </strong>
+
+          </div>
+
+
+          <div style="
+            padding:11px;
+            border-radius:10px;
+            background:rgba(0,0,0,.18);
+          ">
+
+            <div style="
+              font-size:11px;
+              opacity:.65;
+            ">
+              Bias
+            </div>
+
+            <strong>
+              ${
+                metrics.bias === null
+                  ? "—"
+                  : metrics.bias + " mm"
+              }
+            </strong>
+
+          </div>
+
+
+          <div style="
+            padding:11px;
+            border-radius:10px;
+            background:rgba(0,0,0,.18);
+          ">
+
+            <div style="
+              font-size:11px;
+              opacity:.65;
+            ">
+              Brier Score
+            </div>
+
+            <strong>
+              ${
+                metrics.brierScore === null
+                  ? "—"
+                  : metrics.brierScore
+              }
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <div style="
+          margin-top:12px;
+          font-size:12px;
+          line-height:1.8;
+          opacity:.8;
+        ">
+
+          🌧️ Hits:
+          <strong>${metrics.hits}</strong>
+
+          &nbsp; · &nbsp;
+
+          ❌ Misses:
+          <strong>${metrics.misses}</strong>
+
+          &nbsp; · &nbsp;
+
+          ⚠️ False:
+          <strong>${metrics.falseAlarms}</strong>
+
+          &nbsp; · &nbsp;
+
+          ☀️ Correct:
+          <strong>${metrics.correctNoRain}</strong>
+
+        </div>
+
+      </div>
+
+    `;
+
+  }
+
+
+  /* =======================================================
+     RENDER
+     ======================================================= */
 
   function render() {
 
@@ -719,12 +1248,12 @@
       calculate();
 
 
-    const metrics =
-      result.metrics;
+    const models =
+      result.models || {};
 
 
     if (
-      !metrics.samples
+      !result.matchedRecords
     ) {
 
       container.innerHTML = `
@@ -739,8 +1268,9 @@
           <h3 style="
             margin:0 0 8px;
           ">
-            🎯 Verified Forecast Accuracy
+            🎯 Verified Model Accuracy
           </h3>
+
 
           <p style="
             margin:0;
@@ -754,9 +1284,11 @@
 
             <br><br>
 
-            Pehle actual rainfall observations
-            save karo. Matching forecast milne ke
-            baad yahan measured accuracy calculate hogi.
+            Forecast snapshots already save ho rahe hain.
+
+            Actual rainfall observation available
+            hone ke baad ECMWF, GFS aur ICON ki
+            measured accuracy yahan calculate hogi.
 
           </p>
 
@@ -765,7 +1297,35 @@
       `;
 
       return;
+
     }
+
+
+    const modelNames =
+      [
+        "ECMWF",
+        "GFS",
+        "ICON"
+      ];
+
+
+    const availableModels =
+      modelNames.filter(
+        name =>
+          models[name]
+      );
+
+
+    const cards =
+      availableModels
+        .map(
+          name =>
+            modelCard(
+              name,
+              models[name]
+            )
+        )
+        .join("");
 
 
     container.innerHTML = `
@@ -777,21 +1337,22 @@
         border:1px solid rgba(255,255,255,.12);
       ">
 
+
         <h3 style="
           margin:0 0 6px;
         ">
-          🎯 Verified Forecast Accuracy
+          🎯 Verified Model Accuracy
         </h3>
 
 
         <p style="
-          margin:0 0 20px;
+          margin:0 0 18px;
           font-size:12px;
           opacity:.7;
         ">
 
-          ${metrics.samples}
-          matched forecast/observation records
+          ${result.matchedRecords}
+          forecast/observation matches
 
         </p>
 
@@ -799,165 +1360,91 @@
         <div style="
           display:grid;
           grid-template-columns:
-          repeat(auto-fit,minmax(150px,1fr));
+          repeat(auto-fit,minmax(250px,1fr));
           gap:12px;
         ">
 
-
-          <div style="
-            padding:15px;
-            border-radius:12px;
-            background:rgba(0,0,0,.18);
-          ">
-
-            <div style="
-              font-size:12px;
-              opacity:.7;
-            ">
-              Rain/No-Rain
-            </div>
-
-            <strong style="
-              font-size:24px;
-            ">
-              ${metrics.rainAccuracy}%
-            </strong>
-
-          </div>
-
-
-          <div style="
-            padding:15px;
-            border-radius:12px;
-            background:rgba(0,0,0,.18);
-          ">
-
-            <div style="
-              font-size:12px;
-              opacity:.7;
-            ">
-              MAE
-            </div>
-
-            <strong style="
-              font-size:24px;
-            ">
-              ${metrics.mae}
-              mm
-            </strong>
-
-          </div>
-
-
-          <div style="
-            padding:15px;
-            border-radius:12px;
-            background:rgba(0,0,0,.18);
-          ">
-
-            <div style="
-              font-size:12px;
-              opacity:.7;
-            ">
-              RMSE
-            </div>
-
-            <strong style="
-              font-size:24px;
-            ">
-              ${metrics.rmse}
-              mm
-            </strong>
-
-          </div>
-
-
-          <div style="
-            padding:15px;
-            border-radius:12px;
-            background:rgba(0,0,0,.18);
-          ">
-
-            <div style="
-              font-size:12px;
-              opacity:.7;
-            ">
-              Bias
-            </div>
-
-            <strong style="
-              font-size:24px;
-            ">
-              ${metrics.bias}
-              mm
-            </strong>
-
-          </div>
+          ${cards}
 
         </div>
 
 
         <div style="
           margin-top:20px;
-          display:grid;
-          grid-template-columns:
-          repeat(auto-fit,minmax(130px,1fr));
-          gap:10px;
+          padding:16px;
+          border-radius:14px;
+          background:rgba(255,255,255,.04);
         ">
 
-
-          <div style="
-            padding:12px;
-            border-radius:10px;
-            background:rgba(255,255,255,.04);
+          <h4 style="
+            margin:0 0 12px;
           ">
-
-            🌧️ Hits:
-            <strong>
-              ${metrics.hits}
-            </strong>
-
-          </div>
+            📊 Overall Verification
+          </h4>
 
 
           <div style="
-            padding:12px;
-            border-radius:10px;
-            background:rgba(255,255,255,.04);
+            display:grid;
+            grid-template-columns:
+            repeat(auto-fit,minmax(130px,1fr));
+            gap:10px;
           ">
 
-            ❌ Misses:
-            <strong>
-              ${metrics.misses}
-            </strong>
 
-          </div>
-
-
-          <div style="
-            padding:12px;
-            border-radius:10px;
-            background:rgba(255,255,255,.04);
-          ">
-
-            ⚠️ False Alarms:
-            <strong>
-              ${metrics.falseAlarms}
-            </strong>
-
-          </div>
+            <div>
+              Samples:
+              <strong>
+                ${result.overall.samples}
+              </strong>
+            </div>
 
 
-          <div style="
-            padding:12px;
-            border-radius:10px;
-            background:rgba(255,255,255,.04);
-          ">
+            <div>
+              Accuracy:
+              <strong>
+                ${
+                  result.overall.rainAccuracy === null
+                    ? "—"
+                    : result.overall.rainAccuracy + "%"
+                }
+              </strong>
+            </div>
 
-            ☀️ Correct No Rain:
-            <strong>
-              ${metrics.correctNoRain}
-            </strong>
+
+            <div>
+              MAE:
+              <strong>
+                ${
+                  result.overall.mae === null
+                    ? "—"
+                    : result.overall.mae + " mm"
+                }
+              </strong>
+            </div>
+
+
+            <div>
+              RMSE:
+              <strong>
+                ${
+                  result.overall.rmse === null
+                    ? "—"
+                    : result.overall.rmse + " mm"
+                }
+              </strong>
+            </div>
+
+
+            <div>
+              Bias:
+              <strong>
+                ${
+                  result.overall.bias === null
+                    ? "—"
+                    : result.overall.bias + " mm"
+                }
+              </strong>
+            </div>
 
           </div>
 
@@ -965,9 +1452,16 @@
 
 
         <div style="
-          margin-top:20px;
+          margin-top:18px;
           overflow-x:auto;
         ">
+
+          <h4 style="
+            margin:0 0 10px;
+          ">
+            📋 Matched Records
+          </h4>
+
 
           <table style="
             width:100%;
@@ -980,38 +1474,45 @@
               <tr>
 
                 <th style="
-                  padding:9px;
+                  padding:8px;
                   text-align:left;
                 ">
                   Date
                 </th>
 
                 <th style="
-                  padding:9px;
+                  padding:8px;
+                  text-align:left;
+                ">
+                  Model
+                </th>
+
+                <th style="
+                  padding:8px;
                   text-align:left;
                 ">
                   Forecast
                 </th>
 
                 <th style="
-                  padding:9px;
+                  padding:8px;
                   text-align:left;
                 ">
                   Actual
                 </th>
 
                 <th style="
-                  padding:9px;
+                  padding:8px;
                   text-align:left;
                 ">
-                  Error
+                  Probability
                 </th>
 
                 <th style="
-                  padding:9px;
+                  padding:8px;
                   text-align:left;
                 ">
-                  Result
+                  Error
                 </th>
 
               </tr>
@@ -1021,80 +1522,94 @@
 
             <tbody>
 
-              ${result.matched
-                .slice(0, 30)
-                .map(
-                  function (item) {
+              ${
+                result.matched
+                  .slice(0, 50)
+                  .map(
+                    function (item) {
 
-                    return `
+                      return `
 
-                      <tr>
+                        <tr>
 
-                        <td style="
-                          padding:9px;
-                          border-top:
-                          1px solid
-                          rgba(255,255,255,.08);
-                        ">
-                          ${escapeHTML(
-                            item.date
-                          )}
-                        </td>
-
-
-                        <td style="
-                          padding:9px;
-                          border-top:
-                          1px solid
-                          rgba(255,255,255,.08);
-                        ">
-                          ${item.predictedRainMm}
-                          mm
-                        </td>
+                          <td style="
+                            padding:8px;
+                            border-top:
+                            1px solid
+                            rgba(255,255,255,.08);
+                          ">
+                            ${escapeHTML(
+                              item.validDate
+                            )}
+                          </td>
 
 
-                        <td style="
-                          padding:9px;
-                          border-top:
-                          1px solid
-                          rgba(255,255,255,.08);
-                        ">
-                          ${item.actualRainMm}
-                          mm
-                        </td>
+                          <td style="
+                            padding:8px;
+                            border-top:
+                            1px solid
+                            rgba(255,255,255,.08);
+                          ">
+                            ${escapeHTML(
+                              item.model
+                            )}
+                          </td>
 
 
-                        <td style="
-                          padding:9px;
-                          border-top:
-                          1px solid
-                          rgba(255,255,255,.08);
-                        ">
-                          ${item.errorMm}
-                          mm
-                        </td>
+                          <td style="
+                            padding:8px;
+                            border-top:
+                            1px solid
+                            rgba(255,255,255,.08);
+                          ">
+                            ${item.predictedRainMm}
+                            mm
+                          </td>
 
 
-                        <td style="
-                          padding:9px;
-                          border-top:
-                          1px solid
-                          rgba(255,255,255,.08);
-                        ">
-                          ${
-                            item.correct
-                              ? "✅ Correct"
-                              : "❌ Incorrect"
-                          }
-                        </td>
+                          <td style="
+                            padding:8px;
+                            border-top:
+                            1px solid
+                            rgba(255,255,255,.08);
+                          ">
+                            ${item.actualRainMm}
+                            mm
+                          </td>
 
-                      </tr>
 
-                    `;
+                          <td style="
+                            padding:8px;
+                            border-top:
+                            1px solid
+                            rgba(255,255,255,.08);
+                          ">
+                            ${
+                              item.rainProbability === null
+                                ? "—"
+                                : item.rainProbability + "%"
+                            }
+                          </td>
 
-                  }
-                )
-                .join("")}
+
+                          <td style="
+                            padding:8px;
+                            border-top:
+                            1px solid
+                            rgba(255,255,255,.08);
+                          ">
+                            ${item.errorMm}
+                            mm
+                          </td>
+
+                        </tr>
+
+                      `;
+
+                    }
+                  )
+                  .join("")
+              }
 
             </tbody>
 
@@ -1104,7 +1619,7 @@
 
 
         <div style="
-          margin-top:16px;
+          margin-top:18px;
           padding:13px;
           border-radius:10px;
           font-size:12px;
@@ -1112,14 +1627,17 @@
           opacity:.75;
         ">
 
-          📌 Accuracy yahan sirf un records se
-          calculate hoti hai jahan forecast aur
-          actual observation dono available hain.
+          📌 Ye measured verification hai.
 
           <br>
 
-          Ye measured result hai; website
-          automatically 95% ya koi fixed accuracy
+          Accuracy tabhi calculate hogi jab
+          forecast ke corresponding date/location
+          ka actual rainfall observation available ho.
+
+          <br>
+
+          Website kisi fixed 95% accuracy ko
           assume nahi karti.
 
         </div>
@@ -1130,7 +1648,7 @@
 
 
     /*
-      Update main accuracy counters if available.
+      Update main counters
     */
 
     const accuracyPercent =
@@ -1138,10 +1656,12 @@
         "accuracyPercent"
       );
 
+
     const dataPoints =
       document.getElementById(
         "dataPoints"
       );
+
 
     const historicalRecords =
       document.getElementById(
@@ -1152,7 +1672,9 @@
     if (accuracyPercent) {
 
       accuracyPercent.textContent =
-        `${metrics.rainAccuracy}%`;
+        result.overall.rainAccuracy === null
+          ? "—"
+          : `${result.overall.rainAccuracy}%`;
 
     }
 
@@ -1161,7 +1683,7 @@
 
       dataPoints.textContent =
         String(
-          metrics.samples
+          result.matchedRecords
         );
 
     }
@@ -1171,20 +1693,11 @@
 
       historicalRecords.textContent =
         String(
-          metrics.samples
+          result.matchedRecords
         );
 
     }
 
-
-    saveJSON(
-      RESULT_KEY,
-      {
-        metrics,
-        matched:
-          result.matched
-      }
-    );
   }
 
 
@@ -1201,9 +1714,22 @@
     getResults:
       function () {
 
-        return loadJSON(
-          RESULT_KEY
-        );
+        try {
+
+          const raw =
+            localStorage.getItem(
+              RESULT_KEY
+            );
+
+          return raw
+            ? JSON.parse(raw)
+            : null;
+
+        } catch (error) {
+
+          return null;
+
+        }
 
       },
 
