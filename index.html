@@ -41,7 +41,7 @@
 
   <link
     rel="stylesheet"
-    href="style.css?v=9"
+    href="style.css?v=10"
   >
 
 </head>
@@ -229,8 +229,6 @@
       <div class="weather-grid">
 
 
-        <!-- Rain Probability -->
-
         <div class="weather-card">
 
           <div class="weather-card-icon">
@@ -251,8 +249,6 @@
         </div>
 
 
-
-        <!-- Rain Amount -->
 
         <div class="weather-card">
 
@@ -275,8 +271,6 @@
 
 
 
-        <!-- Temperature -->
-
         <div class="weather-card">
 
           <div class="weather-card-icon">
@@ -297,8 +291,6 @@
         </div>
 
 
-
-        <!-- Humidity -->
 
         <div class="weather-card">
 
@@ -321,8 +313,6 @@
 
 
 
-        <!-- Wind -->
-
         <div class="weather-card">
 
           <div class="weather-card-icon">
@@ -343,8 +333,6 @@
         </div>
 
 
-
-        <!-- Thunderstorm -->
 
         <div class="weather-card">
 
@@ -658,11 +646,6 @@
       </div>
 
 
-
-      <!-- ===============================================
-           ACCURACY SUMMARY
-           =============================================== -->
-
       <div class="accuracy-summary">
 
 
@@ -719,11 +702,6 @@
       </div>
 
 
-
-      <!-- ===============================================
-           ACCURACY INFO
-           =============================================== -->
-
       <div class="accuracy-info">
 
         <h3>
@@ -743,6 +721,91 @@
 
       </div>
 
+    </section>
+
+
+
+    <!-- ===================================================
+         HISTORICAL MODEL ACCURACY
+         =================================================== -->
+
+    <section
+      id="historicalAccuracy"
+      class="accuracy-section"
+    >
+
+      <div class="section-title">
+
+        <h2>
+          🧪 Historical Model Accuracy
+        </h2>
+
+        <p>
+          ECMWF, GFS aur ICON ko 1–7 day lead time par
+          historical data ke against test karein.
+        </p>
+
+      </div>
+
+
+      <!-- RUN BUTTON -->
+
+      <button
+        id="runHistoricalAccuracy"
+        type="button"
+        style="
+          width:100%;
+          padding:14px 18px;
+          border:0;
+          border-radius:12px;
+          cursor:pointer;
+          font-size:15px;
+          font-weight:700;
+          margin-bottom:16px;
+        "
+      >
+        🧪 Run Historical Accuracy Test
+      </button>
+
+
+      <!-- STATUS -->
+
+      <div
+        id="historicalAccuracyStatus"
+        style="
+          margin-bottom:16px;
+          font-size:13px;
+          line-height:1.6;
+        "
+      >
+        Historical test abhi run nahi hua.
+      </div>
+
+
+      <!-- RESULTS -->
+
+      <div
+        id="historicalAccuracyResults"
+      >
+
+        <div style="
+          padding:18px;
+          border-radius:16px;
+          background:rgba(255,255,255,.06);
+          border:1px solid rgba(255,255,255,.12);
+          font-size:13px;
+          line-height:1.7;
+        ">
+
+          📌 Location search karne ke baad
+          <strong>
+            Run Historical Accuracy Test
+          </strong>
+          button dabayein.
+
+        </div>
+
+      </div>
 
     </section>
 
@@ -844,7 +907,7 @@
   <!-- Forecast Verification -->
 
   <script
-    src="accuracy-verification-engine.js?v=1"
+    src="accuracy-verification-engine.js?v=2"
   ></script>
 
 
@@ -852,8 +915,608 @@
   <!-- Forecast Snapshot -->
 
   <script
-    src="forecast-snapshot-engine.js?v=1"
+    src="forecast-snapshot-engine.js?v=2"
   ></script>
+
+
+
+  <!-- Historical Model Accuracy -->
+
+  <script
+    src="historical-model-accuracy-engine.js?v=1"
+  ></script>
+
+
+
+  <!-- =====================================================
+       HISTORICAL ACCURACY DASHBOARD
+       ===================================================== -->
+
+  <script>
+
+    (function () {
+
+      "use strict";
+
+
+      const button =
+        document.getElementById(
+          "runHistoricalAccuracy"
+        );
+
+
+      const status =
+        document.getElementById(
+          "historicalAccuracyStatus"
+        );
+
+
+      const results =
+        document.getElementById(
+          "historicalAccuracyResults"
+        );
+
+
+      if (!button) {
+        return;
+      }
+
+
+      function escapeHTML(value) {
+
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+
+      }
+
+
+      function metricValue(
+        value,
+        suffix = ""
+      ) {
+
+        if (
+          value === null ||
+          value === undefined
+        ) {
+
+          return "—";
+
+        }
+
+        return (
+          String(value) +
+          suffix
+        );
+
+      }
+
+
+      function renderModel(
+        modelName,
+        modelData
+      ) {
+
+        const leadDays = [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ];
+
+
+        const rows =
+          leadDays
+            .map(
+              function (day) {
+
+                const data =
+                  modelData[
+                    "day" + day
+                  ];
+
+
+                if (!data) {
+
+                  return `
+
+                    <tr>
+
+                      <td style="
+                        padding:9px;
+                        border-top:
+                        1px solid
+                        rgba(255,255,255,.08);
+                      ">
+                        Day ${day}
+                      </td>
+
+                      <td style="
+                        padding:9px;
+                        border-top:
+                        1px solid
+                        rgba(255,255,255,.08);
+                      ">
+                        —
+                      </td>
+
+                      <td style="
+                        padding:9px;
+                        border-top:
+                        1px solid
+                        rgba(255,255,255,.08);
+                      ">
+                        —
+                      </td>
+
+                      <td style="
+                        padding:9px;
+                        border-top:
+                        1px solid
+                        rgba(255,255,255,.08);
+                      ">
+                        —
+                      </td>
+
+                      <td style="
+                        padding:9px;
+                        border-top:
+                        1px solid
+                        rgba(255,255,255,.08);
+                      ">
+                        —
+                      </td>
+
+                    </tr>
+
+                  `;
+
+                }
+
+
+                return `
+
+                  <tr>
+
+                    <td style="
+                      padding:9px;
+                      border-top:
+                      1px solid
+                      rgba(255,255,255,.08);
+                    ">
+                      Day ${day}
+                    </td>
+
+                    <td style="
+                      padding:9px;
+                      border-top:
+                      1px solid
+                      rgba(255,255,255,.08);
+                    ">
+                      ${metricValue(
+                        data.samples
+                      )}
+                    </td>
+
+                    <td style="
+                      padding:9px;
+                      border-top:
+                      1px solid
+                      rgba(255,255,255,.08);
+                    ">
+                      ${metricValue(
+                        data.mae,
+                        " mm"
+                      )}
+                    </td>
+
+                    <td style="
+                      padding:9px;
+                      border-top:
+                      1px solid
+                      rgba(255,255,255,.08);
+                    ">
+                      ${metricValue(
+                        data.rmse,
+                        " mm"
+                      )}
+                    </td>
+
+                    <td style="
+                      padding:9px;
+                      border-top:
+                      1px solid
+                      rgba(255,255,255,.08);
+                    ">
+                      ${metricValue(
+                        data.rainAccuracy,
+                        "%"
+                      )}
+                    </td>
+
+                  </tr>
+
+                `;
+
+              }
+            )
+            .join("");
+
+
+        return `
+
+          <div style="
+            padding:18px;
+            border-radius:16px;
+            background:rgba(255,255,255,.06);
+            border:1px solid rgba(255,255,255,.12);
+          ">
+
+            <h3 style="
+              margin:0 0 14px;
+            ">
+
+              🛰️
+              ${escapeHTML(
+                modelName
+              )}
+
+            </h3>
+
+
+            <div style="
+              overflow-x:auto;
+            ">
+
+              <table style="
+                width:100%;
+                border-collapse:collapse;
+                font-size:12px;
+              ">
+
+                <thead>
+
+                  <tr>
+
+                    <th style="
+                      padding:9px;
+                      text-align:left;
+                    ">
+                      Lead
+                    </th>
+
+                    <th style="
+                      padding:9px;
+                      text-align:left;
+                    ">
+                      Samples
+                    </th>
+
+                    <th style="
+                      padding:9px;
+                      text-align:left;
+                    ">
+                      MAE
+                    </th>
+
+                    <th style="
+                      padding:9px;
+                      text-align:left;
+                    ">
+                      RMSE
+                    </th>
+
+                    <th style="
+                      padding:9px;
+                      text-align:left;
+                    ">
+                      Rain Accuracy
+                    </th>
+
+                  </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                  ${rows}
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+          </div>
+
+        `;
+
+      }
+
+
+      function renderResult(
+        result
+      ) {
+
+        if (!result) {
+
+          results.innerHTML = `
+
+            <div style="
+              padding:18px;
+              border-radius:16px;
+              background:rgba(255,255,255,.06);
+            ">
+
+              ❌ Historical result available nahi hai.
+
+            </div>
+
+          `;
+
+          return;
+
+        }
+
+
+        const modelNames = [
+          "ECMWF",
+          "GFS",
+          "ICON"
+        ];
+
+
+        const cards =
+          modelNames
+            .filter(
+              function (name) {
+
+                return (
+                  result.models &&
+                  result.models[name]
+                );
+
+              }
+            )
+            .map(
+              function (name) {
+
+                return renderModel(
+                  name,
+                  result.models[name]
+                );
+
+              }
+            )
+            .join("");
+
+
+        results.innerHTML = `
+
+          <div style="
+            display:grid;
+            gap:14px;
+          ">
+
+            <div style="
+              padding:16px;
+              border-radius:14px;
+              background:rgba(255,255,255,.05);
+              border:1px solid rgba(255,255,255,.10);
+              font-size:13px;
+              line-height:1.7;
+            ">
+
+              <strong>
+                📍 Location:
+              </strong>
+
+              ${escapeHTML(
+                result.location?.name ||
+                "Selected Location"
+              )}
+
+              <br>
+
+              <strong>
+                📅 Period:
+              </strong>
+
+              ${escapeHTML(
+                result.period?.startDate ||
+                ""
+              )}
+
+              →
+              ${escapeHTML(
+                result.period?.endDate ||
+                ""
+              )}
+
+              <br>
+
+              <strong>
+                📚 Reference:
+              </strong>
+
+              ERA5 / reanalysis
+
+            </div>
+
+
+            ${cards}
+
+
+            <div style="
+              padding:15px;
+              border-radius:12px;
+              background:rgba(255,193,7,.08);
+              border:1px solid rgba(255,193,7,.20);
+              font-size:12px;
+              line-height:1.7;
+            ">
+
+              ⚠️
+
+              Ye test
+              <strong>
+                reanalysis reference
+              </strong>
+              ke against hai.
+
+              Isko independent
+              <strong>
+                rain-gauge / IMD accuracy
+              </strong>
+              nahi maana jayega.
+
+              Actual local accuracy ke liye
+              verified rainfall observations
+              alag se collect ki jayengi.
+
+            </div>
+
+          </div>
+
+        `;
+
+      }
+
+
+      button.addEventListener(
+        "click",
+        async function () {
+
+          if (
+            typeof window.RRP_HISTORICAL_ACCURACY !==
+            "object"
+          ) {
+
+            status.innerHTML =
+              "❌ Historical Accuracy Engine load nahi hua.";
+
+            return;
+
+          }
+
+
+          button.disabled =
+            true;
+
+
+          button.style.opacity =
+            "0.6";
+
+
+          status.innerHTML =
+            "⏳ Historical ECMWF/GFS/ICON data fetch ho raha hai...";
+
+
+          results.innerHTML = `
+
+            <div style="
+              padding:18px;
+              border-radius:16px;
+              background:rgba(255,255,255,.06);
+            ">
+
+              ⏳ Please wait...
+
+              <br><br>
+
+              3 weather models × multiple lead times
+              verify kiye ja rahe hain.
+
+            </div>
+
+          `;
+
+
+          try {
+
+            const result =
+              await window
+                .RRP_HISTORICAL_ACCURACY
+                .run({
+                  days: 7
+                });
+
+
+            renderResult(
+              result
+            );
+
+
+            status.innerHTML =
+              "✅ Historical accuracy test complete.";
+
+
+          } catch (error) {
+
+            console.error(
+              "Historical accuracy error:",
+              error
+            );
+
+
+            status.innerHTML = `
+
+              ❌ Test failed:
+
+              ${escapeHTML(
+                error?.message ||
+                String(error)
+              )}
+
+            `;
+
+
+            results.innerHTML = `
+
+              <div style="
+                padding:18px;
+                border-radius:16px;
+                background:rgba(255,0,0,.08);
+                border:1px solid rgba(255,0,0,.18);
+                line-height:1.7;
+              ">
+
+                ❌ Historical test complete nahi ho saka.
+
+                <br><br>
+
+                Browser Console mein exact error
+                check kiya ja sakta hai.
+
+              </div>
+
+            `;
+
+          } finally {
+
+            button.disabled =
+              false;
+
+            button.style.opacity =
+              "1";
+
+          }
+
+        }
+      );
+
+
+    })();
+
+  </script>
 
 
 
@@ -916,10 +1579,11 @@
         );
 
 
-        /*
-          Helpful diagnostic:
-          All engines should show "object".
-        */
+        console.log(
+          "Historical Accuracy Engine:",
+          typeof window.RRP_HISTORICAL_ACCURACY
+        );
+
 
         if (
           typeof window.RRP_SNAPSHOT ===
@@ -930,10 +1594,16 @@
             "✅ Forecast Snapshot Engine ready."
           );
 
-        } else {
+        }
 
-          console.warn(
-            "⚠️ Forecast Snapshot Engine not loaded."
+
+        if (
+          typeof window.RRP_HISTORICAL_ACCURACY ===
+          "object"
+        ) {
+
+          console.log(
+            "✅ Historical Accuracy Engine ready."
           );
 
         }
