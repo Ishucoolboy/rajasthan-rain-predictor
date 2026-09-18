@@ -891,3 +891,101 @@ input {
     max-width: none !important;
     max-height: none !important;
 }
+/* =========================================================
+   LEAFLET COMPLETE RESET / MAP TILE FIX
+   ========================================================= */
+
+#rainMap,
+#rainMap.leaflet-container {
+    position: relative !important;
+    width: 100% !important;
+    height: 480px !important;
+    min-height: 360px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+
+/* Leaflet panes */
+#rainMap .leaflet-map-pane,
+#rainMap .leaflet-tile-pane,
+#rainMap .leaflet-overlay-pane,
+#rainMap .leaflet-shadow-pane,
+#rainMap .leaflet-marker-pane,
+#rainMap .leaflet-tooltip-pane,
+#rainMap .leaflet-popup-pane {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+}
+
+/* Tile containers — IMPORTANT */
+#rainMap .leaflet-tile-container {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: auto !important;
+    height: auto !important;
+}
+
+/* Tile images — do NOT let website responsive CSS resize them */
+#rainMap .leaflet-tile-pane img,
+#rainMap img.leaflet-tile {
+    display: block !important;
+    position: absolute !important;
+
+    width: 256px !important;
+    height: 256px !important;
+
+    max-width: none !important;
+    max-height: none !important;
+
+    min-width: 256px !important;
+    min-height: 256px !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    border: 0 !important;
+    outline: none !important;
+
+    box-sizing: content-box !important;
+}
+
+/* Do not let generic img rules affect map */
+#rainMap img {
+    max-width: none !important;
+}
+
+/* Leaflet controls */
+#rainMap .leaflet-control {
+    box-sizing: content-box !important;
+}
+
+/* Marker images must remain normal Leaflet size */
+#rainMap .leaflet-marker-icon,
+#rainMap .leaflet-marker-shadow {
+    max-width: none !important;
+    max-height: none !important;
+}
+
+/* Make sure Leaflet panes don't inherit weird transforms */
+#rainMap .leaflet-tile-pane {
+    overflow: visible !important;
+}
+
+/* Map wrapper */
+#rainMap .leaflet-map-pane {
+    width: auto !important;
+    height: auto !important;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+
+    #rainMap,
+    #rainMap.leaflet-container {
+        height: 420px !important;
+        min-height: 320px !important;
+    }
+
+}
