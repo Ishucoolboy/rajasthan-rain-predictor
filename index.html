@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+
     <meta charset="UTF-8">
 
     <meta
@@ -16,13 +17,26 @@
         content="Rajasthan-wide rainfall prediction and weather analysis system"
     >
 
+    <!-- Main CSS -->
     <link rel="stylesheet" href="style.css">
+
+    <!-- Leaflet Map CSS -->
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIINfQ3jK2nJQk0b6J8tT6q2t7sVJvF3M0E="
+        crossorigin=""
+    >
+
 </head>
 
 
 <body>
 
-    <!-- ================= HEADER ================= -->
+
+    <!-- =====================================================
+         HEADER
+    ====================================================== -->
 
     <header class="header">
 
@@ -33,11 +47,15 @@
             </div>
 
             <div>
-                <h1>Rajasthan Rain Predictor</h1>
+
+                <h1>
+                    Rajasthan Rain Predictor
+                </h1>
 
                 <p>
                     Rajasthan-wide rainfall & weather analysis
                 </p>
+
             </div>
 
         </div>
@@ -45,16 +63,23 @@
     </header>
 
 
-    <!-- ================= MAIN ================= -->
+
+    <!-- =====================================================
+         MAIN
+    ====================================================== -->
 
     <main class="container">
 
 
-        <!-- ================= LOCATION SEARCH ================= -->
+        <!-- =================================================
+             LOCATION SEARCH
+        ================================================== -->
 
         <section class="search-section">
 
-            <h2>📍 Search Location</h2>
+            <h2>
+                📍 Search Location
+            </h2>
 
             <p class="section-description">
                 Search any village, town, city or district in Rajasthan.
@@ -88,7 +113,9 @@
 
 
 
-        <!-- ================= LOCATION ================= -->
+        <!-- =================================================
+             LOCATION
+        ================================================== -->
 
         <section class="location-section">
 
@@ -130,11 +157,15 @@
 
 
 
-        <!-- ================= CURRENT WEATHER ================= -->
+        <!-- =================================================
+             CURRENT WEATHER
+        ================================================== -->
 
         <section class="weather-section">
 
-            <h2>🌦️ Current Weather</h2>
+            <h2>
+                🌦️ Current Weather
+            </h2>
 
 
             <div class="weather-grid">
@@ -159,6 +190,7 @@
                 </div>
 
 
+
                 <!-- Expected Rain -->
 
                 <div class="weather-card">
@@ -176,6 +208,7 @@
                     </strong>
 
                 </div>
+
 
 
                 <!-- Temperature -->
@@ -197,6 +230,7 @@
                 </div>
 
 
+
                 <!-- Humidity -->
 
                 <div class="weather-card">
@@ -214,6 +248,7 @@
                     </strong>
 
                 </div>
+
 
 
                 <!-- Wind -->
@@ -235,6 +270,7 @@
                 </div>
 
 
+
                 <!-- Thunderstorm -->
 
                 <div class="weather-card">
@@ -253,13 +289,16 @@
 
                 </div>
 
+
             </div>
 
         </section>
 
 
 
-        <!-- ================= HOURLY FORECAST ================= -->
+        <!-- =================================================
+             HOURLY FORECAST
+        ================================================== -->
 
         <section class="forecast-section">
 
@@ -267,7 +306,9 @@
 
                 <div>
 
-                    <h2>⏰ Hourly Rain Forecast</h2>
+                    <h2>
+                        ⏰ Hourly Rain Forecast
+                    </h2>
 
                     <p>
                         Expected rainfall and probability by hour
@@ -301,11 +342,15 @@
 
 
 
-        <!-- ================= DAILY FORECAST ================= -->
+        <!-- =================================================
+             DAILY FORECAST
+        ================================================== -->
 
         <section class="forecast-section">
 
-            <h2>📅 7-Day Forecast</h2>
+            <h2>
+                📅 7-Day Forecast
+            </h2>
 
             <p class="section-description">
                 Rainfall and weather outlook for the coming days.
@@ -335,17 +380,19 @@
 
 
 
-        <!-- ================= MODEL COMPARISON ================= -->
+        <!-- =================================================
+             MODEL COMPARISON
+        ================================================== -->
 
         <section class="model-section">
 
-            <h2>🤖 Weather Model Comparison</h2>
+            <h2>
+                🤖 Weather Model Comparison
+            </h2>
 
             <p class="section-description">
-
                 Compare rainfall forecasts from available
                 numerical weather prediction models.
-
             </p>
 
 
@@ -369,6 +416,7 @@
                 </div>
 
 
+
                 <div class="model-card">
 
                     <h3>
@@ -384,6 +432,7 @@
                     </strong>
 
                 </div>
+
 
 
                 <div class="model-card">
@@ -409,18 +458,26 @@
 
 
 
-        <!-- ================= RAIN MAP ================= -->
+        <!-- =================================================
+             RAIN MAP
+        ================================================== -->
 
         <section class="map-section">
 
-            <h2>🗺️ Rajasthan Rainfall Map</h2>
+            <h2>
+                🗺️ Rajasthan Rainfall Map
+            </h2>
 
             <p class="section-description">
-
                 Interactive rainfall map for Rajasthan.
-
             </p>
 
+
+            <!--
+                IMPORTANT:
+                app.js will initialize the interactive
+                Rajasthan rainfall map here.
+            -->
 
             <div
                 id="rainMap"
@@ -442,21 +499,43 @@
 
             </div>
 
+
+            <!-- Map Information -->
+
+            <div
+                id="mapInfo"
+                class="map-info"
+            >
+
+                <strong>
+                    Rainfall Map
+                </strong>
+
+                <p>
+                    Select or search a location to view
+                    rainfall conditions on the map.
+                </p>
+
+            </div>
+
+
         </section>
 
 
 
-        <!-- ================= ACCURACY ================= -->
+        <!-- =================================================
+             ACCURACY
+        ================================================== -->
 
         <section class="accuracy-section">
 
-            <h2>🎯 Prediction Accuracy</h2>
+            <h2>
+                🎯 Prediction Accuracy
+            </h2>
 
             <p class="section-description">
-
                 Forecast performance will be measured against
                 actual rainfall observations.
-
             </p>
 
 
@@ -476,6 +555,7 @@
                 </div>
 
 
+
                 <div class="accuracy-card">
 
                     <span>
@@ -487,6 +567,7 @@
                     </strong>
 
                 </div>
+
 
 
                 <div class="accuracy-card">
@@ -517,26 +598,26 @@
 
 
 
-        <!-- ================= INFORMATION ================= -->
+        <!-- =================================================
+             INFORMATION
+        ================================================== -->
 
         <section class="info-section">
 
-            <h2>ℹ️ About This Project</h2>
+            <h2>
+                ℹ️ About This Project
+            </h2>
 
             <p>
-
                 Rajasthan Rain Predictor is a rainfall analysis
                 project designed to provide location-based weather
                 information across Rajasthan.
-
             </p>
 
             <p>
-
                 The system will gradually incorporate multiple
                 weather models, historical observations and
                 regional calibration to improve rainfall analysis.
-
             </p>
 
         </section>
@@ -546,7 +627,9 @@
 
 
 
-    <!-- ================= FOOTER ================= -->
+    <!-- =====================================================
+         FOOTER
+    ====================================================== -->
 
     <footer class="footer">
 
@@ -559,10 +642,8 @@
         </p>
 
         <p class="footer-warning">
-
             Forecast information is for informational purposes.
             For official weather warnings and alerts, refer to IMD.
-
         </p>
 
         <p class="copyright">
@@ -573,9 +654,24 @@
 
 
 
-    <!-- ================= JAVASCRIPT ================= -->
+    <!-- =====================================================
+         LEAFLET MAP JAVASCRIPT
+    ====================================================== -->
 
-    <script src="app.js?v=5"></script>
+    <script
+        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""
+    ></script>
+
+
+
+    <!-- =====================================================
+         MAIN JAVASCRIPT
+    ====================================================== -->
+
+    <script src="app.js?v=6"></script>
+
 
 </body>
 
