@@ -1,12 +1,38 @@
-/* =========================================================
-   RAJASTHAN RAIN PREDICTOR
-   COMPLETE APP.JS
-   ========================================================= */
+/*
+=========================================================
+RAJASTHAN RAIN PREDICTOR
+COMPLETE APP.JS
+=========================================================
+
+Features:
+- Rajasthan village / town / city search
+- Local villages.json database
+- Open-Meteo geocoding
+- OpenStreetMap fallback
+- Current weather
+- Rain probability
+- Rainfall
+- Temperature
+- Humidity
+- Wind
+- Thunderstorm indication
+- 24-hour forecast
+- 7-day forecast
+- Interactive Rajasthan rainfall map
+- ECMWF / GFS / ICON comparison
+- Model consensus
+- Smart rain summary
+- Next rain alert
+- Automatic refresh
+- Prediction Engine event integration
+- Observation / accuracy framework
+=========================================================
+*/
 
 
-/* =========================================================
-   API
-   ========================================================= */
+// =======================================================
+// API
+// =======================================================
 
 const WEATHER_API =
     "https://api.open-meteo.com/v1/forecast";
@@ -21,9 +47,9 @@ const VILLAGE_DATABASE_URL =
     "./villages.json";
 
 
-/* =========================================================
-   DEFAULT LOCATION
-   ========================================================= */
+// =======================================================
+// DEFAULT LOCATION
+// =======================================================
 
 const DEFAULT_LOCATION = {
     name: "Kuchera, Nagaur, Rajasthan",
@@ -32,35 +58,37 @@ const DEFAULT_LOCATION = {
 };
 
 
-/* =========================================================
-   GLOBAL STATE
-   ========================================================= */
+// =======================================================
+// GLOBAL STATE
+// =======================================================
 
 let VILLAGE_DATABASE = [];
+
 let villageDatabaseLoaded = false;
 
-let currentSelectedLocation = {
-    ...DEFAULT_LOCATION
-};
+let currentSelectedLocation =
+    DEFAULT_LOCATION;
 
 let latestWeatherData = null;
 
-let rainMap = null;
-let rainMapMarker = null;
-let rainMapCircle = null;
-
-let statewideRainMarkers = [];
-
-let accuracyRecords = [];
-let actualRainfallData = [];
+let latestModelResults = [];
 
 let weatherLoading = false;
-let statewideLoading = false;
+
+let rainMap = null;
+
+let rainMapMarker = null;
+
+let rainMapCircle = null;
+
+let statewideMapMarkers = [];
+
+let actualRainfallData = [];
 
 
-/* =========================================================
-   KNOWN LOCATIONS / ALIASES
-   ========================================================= */
+// =======================================================
+// KNOWN LOCATION ALIASES
+// =======================================================
 
 const KNOWN_LOCATIONS = {
 
@@ -86,83 +114,20 @@ const KNOWN_LOCATIONS = {
         name: "Jhunjhala, Jayal, Nagaur, Rajasthan",
         latitude: 27.03144,
         longitude: 73.93637
-    }
+    },
+
+    "kuchera": DEFAULT_LOCATION,
+
+    "कुचेरा": DEFAULT_LOCATION
 
 };
 
 
-/* =========================================================
-   DOM ELEMENTS
-   ========================================================= */
+// =======================================================
+// RAJASTHAN OVERVIEW LOCATIONS
+// =======================================================
 
-const locationInput =
-    document.getElementById("locationInput");
-
-const searchButton =
-    document.getElementById("searchButton");
-
-const locationName =
-    document.getElementById("locationName");
-
-const locationCoordinates =
-    document.getElementById("locationCoordinates");
-
-const statusText =
-    document.getElementById("statusText");
-
-const statusIndicator =
-    document.getElementById("statusIndicator");
-
-const rainProbability =
-    document.getElementById("rainProbability");
-
-const rainAmount =
-    document.getElementById("rainAmount");
-
-const temperature =
-    document.getElementById("temperature");
-
-const humidity =
-    document.getElementById("humidity");
-
-const wind =
-    document.getElementById("wind");
-
-const thunderstorm =
-    document.getElementById("thunderstorm");
-
-const hourlyForecast =
-    document.getElementById("hourlyForecast");
-
-const dailyForecast =
-    document.getElementById("dailyForecast");
-
-const ecmwfRain =
-    document.getElementById("ecmwfRain");
-
-const gfsRain =
-    document.getElementById("gfsRain");
-
-const iconRain =
-    document.getElementById("iconRain");
-
-
-/* =========================================================
-   RAJASTHAN MAP
-   ========================================================= */
-
-const RAJASTHAN_MAP_CENTER =
-    [27.0238, 74.2179];
-
-const RAJASTHAN_MAP_ZOOM =
-    6.2;
-
-
-/* =========================================================
-   RAJASTHAN OVERVIEW LOCATIONS
-   ========================================================= */
-
-const RAJASTHAN_OVERVIEW_LOCATIONS = [
+const RAJASTHAN_LOCATIONS = [
 
     {
         name: "Jaipur",
@@ -220,8 +185,8 @@ const RAJASTHAN_OVERVIEW_LOCATIONS = [
 
     {
         name: "Barmer",
-        latitude: 25.7530,
-        longitude: 71.3950
+        latitude: 25.7457,
+        longitude: 71.3921
     },
 
     {
@@ -239,30 +204,91 @@ const RAJASTHAN_OVERVIEW_LOCATIONS = [
 ];
 
 
-/* =========================================================
-   STATUS
-   ========================================================= */
+// =======================================================
+// DOM ELEMENTS
+// =======================================================
 
-function setStatus(message, online = true) {
+const locationInput =
+    document.getElementById("locationInput");
 
-    if (statusText) {
-        statusText.textContent = message;
-    }
+const searchButton =
+    document.getElementById("searchButton");
 
-    if (statusIndicator) {
+const locationName =
+    document.getElementById("locationName");
 
-        statusIndicator.style.background =
-            online
-                ? "#22c55e"
-                : "#ef4444";
-    }
+const locationCoordinates =
+    document.getElementById("locationCoordinates");
+
+const statusText =
+    document.getElementById("statusText");
+
+const statusIndicator =
+    document.getElementById("statusIndicator");
+
+const rainProbability =
+    document.getElementById("rainProbability");
+
+const rainAmount =
+    document.getElementById("rainAmount");
+
+const temperature =
+    document.getElementById("temperature");
+
+const humidity =
+    document.getElementById("humidity");
+
+const wind =
+    document.getElementById("wind");
+
+const thunderstorm =
+    document.getElementById("thunderstorm");
+
+const hourlyForecast =
+    document.getElementById("hourlyForecast");
+
+const dailyForecast =
+    document.getElementById("dailyForecast");
+
+const ecmwfRain =
+    document.getElementById("ecmwfRain");
+
+const gfsRain =
+    document.getElementById("gfsRain");
+
+const iconRain =
+    document.getElementById("iconRain");
+
+
+// =======================================================
+// MAP SETTINGS
+// =======================================================
+
+const RAJASTHAN_MAP_CENTER =
+    [27.0238, 74.2179];
+
+const RAJASTHAN_MAP_ZOOM =
+    6.2;
+
+
+// =======================================================
+// SAFE NUMBER
+// =======================================================
+
+function number(value, fallback = 0) {
+
+    const n = Number(value);
+
+    return Number.isFinite(n)
+        ? n
+        : fallback;
 
 }
 
 
-/* =========================================================
-   HTML ESCAPE
-   ========================================================= */
+// =======================================================
+// HTML ESCAPE
+// =======================================================
 
 function escapeHtml(value) {
 
@@ -276,9 +302,65 @@ function escapeHtml(value) {
 }
 
 
-/* =========================================================
-   SEARCH NORMALIZATION
-   ========================================================= */
+// =======================================================
+// STATUS
+// =======================================================
+
+function setStatus(
+    message,
+    online = true
+) {
+
+    if (statusText) {
+
+        statusText.textContent =
+            message;
+
+    }
+
+    if (statusIndicator) {
+
+        statusIndicator.style.background =
+            online
+                ? "#22c55e"
+                : "#ef4444";
+
+    }
+
+}
+
+
+// =======================================================
+// DISPLAY LOCATION
+// =======================================================
+
+function displayLocation(location) {
+
+    if (!location) {
+        return;
+    }
+
+    if (locationName) {
+
+        locationName.textContent =
+            location.name ||
+            "Rajasthan";
+
+    }
+
+    if (locationCoordinates) {
+
+        locationCoordinates.textContent =
+            `Latitude: ${number(location.latitude).toFixed(4)}° | Longitude: ${number(location.longitude).toFixed(4)}°`;
+
+    }
+
+}
+
+
+// =======================================================
+// NORMALIZE SEARCH
+// =======================================================
 
 function normalizeSearchText(text) {
 
@@ -290,14 +372,17 @@ function normalizeSearchText(text) {
 }
 
 
-/* =========================================================
-   LEVENSHTEIN
-   ========================================================= */
+// =======================================================
+// LEVENSHTEIN DISTANCE
+// =======================================================
 
 function levenshteinDistance(a, b) {
 
-    a = normalizeSearchText(a);
-    b = normalizeSearchText(b);
+    a =
+        normalizeSearchText(a);
+
+    b =
+        normalizeSearchText(b);
 
     if (a === b) {
         return 0;
@@ -313,17 +398,37 @@ function levenshteinDistance(a, b) {
 
     const matrix = [];
 
-    for (let i = 0; i <= b.length; i++) {
+    for (
+        let i = 0;
+        i <= b.length;
+        i++
+    ) {
+
         matrix[i] = [i];
+
     }
 
-    for (let j = 0; j <= a.length; j++) {
+    for (
+        let j = 0;
+        j <= a.length;
+        j++
+    ) {
+
         matrix[0][j] = j;
+
     }
 
-    for (let i = 1; i <= b.length; i++) {
+    for (
+        let i = 1;
+        i <= b.length;
+        i++
+    ) {
 
-        for (let j = 1; j <= a.length; j++) {
+        for (
+            let j = 1;
+            j <= a.length;
+            j++
+        ) {
 
             if (
                 b.charAt(i - 1) ===
@@ -345,8 +450,11 @@ function levenshteinDistance(a, b) {
                         matrix[i - 1][j] + 1
 
                     );
+
             }
+
         }
+
     }
 
     return matrix[b.length][a.length];
@@ -354,16 +462,18 @@ function levenshteinDistance(a, b) {
 }
 
 
-/* =========================================================
-   VILLAGE DATABASE FIELD
-   ========================================================= */
+// =======================================================
+// GET VILLAGE FIELD
+// =======================================================
 
 function getVillageField(
     village,
-    possibleNames
+    fields
 ) {
 
-    for (const field of possibleNames) {
+    for (
+        const field of fields
+    ) {
 
         if (
             village &&
@@ -374,6 +484,7 @@ function getVillageField(
             return village[field];
 
         }
+
     }
 
     return "";
@@ -381,9 +492,9 @@ function getVillageField(
 }
 
 
-/* =========================================================
-   LOAD VILLAGE DATABASE
-   ========================================================= */
+// =======================================================
+// LOAD VILLAGE DATABASE
+// =======================================================
 
 async function loadVillageDatabase() {
 
@@ -399,9 +510,11 @@ async function loadVillageDatabase() {
             );
 
         if (!response.ok) {
+
             throw new Error(
-                "Village database could not be loaded."
+                "Village database unavailable"
             );
+
         }
 
         const data =
@@ -409,7 +522,8 @@ async function loadVillageDatabase() {
 
         if (Array.isArray(data)) {
 
-            VILLAGE_DATABASE = data;
+            VILLAGE_DATABASE =
+                data;
 
         } else if (
             Array.isArray(data.villages)
@@ -421,36 +535,43 @@ async function loadVillageDatabase() {
         } else {
 
             throw new Error(
-                "Invalid village database format."
+                "Invalid village database format"
             );
+
         }
 
-        villageDatabaseLoaded = true;
+        villageDatabaseLoaded =
+            true;
 
         console.log(
-            `Village database loaded: ${VILLAGE_DATABASE.length} records`
+            `Rajasthan village database loaded: ${VILLAGE_DATABASE.length} records`
         );
 
     } catch (error) {
 
-        villageDatabaseLoaded = false;
-        VILLAGE_DATABASE = [];
-
         console.error(
-            "Village database loading failed:",
+            "Village database error:",
             error
         );
+
+        villageDatabaseLoaded =
+            false;
+
+        VILLAGE_DATABASE =
+            [];
 
     }
 
 }
 
 
-/* =========================================================
-   CREATE VILLAGE LOCATION
-   ========================================================= */
+// =======================================================
+// CREATE VILLAGE LOCATION
+// =======================================================
 
-function createVillageLocation(village) {
+function createVillageLocation(
+    village
+) {
 
     const name =
         getVillageField(
@@ -488,7 +609,7 @@ function createVillageLocation(village) {
         );
 
     const latitude =
-        Number(
+        number(
             getVillageField(
                 village,
                 [
@@ -497,11 +618,12 @@ function createVillageLocation(village) {
                     "Latitude",
                     "LAT"
                 ]
-            )
+            ),
+            NaN
         );
 
     const longitude =
-        Number(
+        number(
             getVillageField(
                 village,
                 [
@@ -511,14 +633,20 @@ function createVillageLocation(village) {
                     "Longitude",
                     "LON"
                 ]
-            )
+            ),
+            NaN
         );
 
-    const nameParts = [
+    const parts = [
+
         name,
+
         tehsil,
+
         district,
+
         "Rajasthan"
+
     ]
         .filter(Boolean)
         .filter(
@@ -529,9 +657,10 @@ function createVillageLocation(village) {
     return {
 
         name:
-            nameParts.join(", "),
+            parts.join(", "),
 
         latitude,
+
         longitude
 
     };
@@ -539,15 +668,16 @@ function createVillageLocation(village) {
 }
 
 
-/* =========================================================
-   SEARCH VILLAGE DATABASE
-   ========================================================= */
+// =======================================================
+// SEARCH LOCAL VILLAGE DATABASE
+// =======================================================
 
-function searchVillageDatabase(query) {
+function searchVillageDatabase(
+    query
+) {
 
     if (
         !villageDatabaseLoaded ||
-        !Array.isArray(VILLAGE_DATABASE) ||
         !VILLAGE_DATABASE.length
     ) {
 
@@ -555,16 +685,18 @@ function searchVillageDatabase(query) {
 
     }
 
-    const normalizedQuery =
+    const q =
         normalizeSearchText(query);
 
-    const exactMatches = [];
-    const containsMatches = [];
-    const fuzzyMatches = [];
+    const exact = [];
+
+    const contains = [];
+
+    const fuzzy = [];
 
     for (
-        const village
-        of VILLAGE_DATABASE
+        const village of
+        VILLAGE_DATABASE
     ) {
 
         const name =
@@ -615,38 +747,34 @@ function searchVillageDatabase(query) {
         const combined =
             `${name} ${tehsil} ${district}`;
 
-        if (
-            name === normalizedQuery
-        ) {
+        if (name === q) {
 
-            exactMatches.push(village);
+            exact.push(village);
+
             continue;
 
         }
 
         if (
-            combined.includes(
-                normalizedQuery
-            )
+            combined.includes(q)
         ) {
 
-            containsMatches.push(village);
+            contains.push(village);
+
             continue;
 
         }
 
-        if (
-            normalizedQuery.length >= 4
-        ) {
+        if (q.length >= 4) {
 
             const distance =
                 levenshteinDistance(
                     name,
-                    normalizedQuery
+                    q
                 );
 
             const threshold =
-                normalizedQuery.length <= 6
+                q.length <= 6
                     ? 2
                     : 3;
 
@@ -654,47 +782,62 @@ function searchVillageDatabase(query) {
                 distance <= threshold
             ) {
 
-                fuzzyMatches.push({
+                fuzzy.push({
+
                     village,
+
                     distance
+
                 });
 
             }
+
         }
+
     }
 
-    fuzzyMatches.sort(
+    fuzzy.sort(
         (a, b) =>
-            a.distance - b.distance
+            a.distance -
+            b.distance
     );
 
     return [
 
-        ...exactMatches,
+        ...exact,
 
-        ...containsMatches,
+        ...contains,
 
-        ...fuzzyMatches
+        ...fuzzy
             .slice(0, 10)
-            .map(item => item.village)
+            .map(
+                item =>
+                    item.village
+            )
 
     ];
 
 }
 
 
-/* =========================================================
-   OPEN METEO LOCATION
-   ========================================================= */
+// =======================================================
+// CREATE OPEN METEO LOCATION
+// =======================================================
 
-function createOpenMeteoLocation(place) {
+function createOpenMeteoLocation(
+    place
+) {
 
-    const nameParts = [
+    const parts = [
 
         place.name,
+
         place.admin4,
+
         place.admin3,
+
         place.admin2,
+
         place.admin1
 
     ]
@@ -707,24 +850,100 @@ function createOpenMeteoLocation(place) {
     return {
 
         name:
-            nameParts.join(", "),
+            parts.join(", "),
 
         latitude:
-            Number(place.latitude),
+            number(
+                place.latitude,
+                NaN
+            ),
 
         longitude:
-            Number(place.longitude)
+            number(
+                place.longitude,
+                NaN
+            )
 
     };
 
 }
 
 
-/* =========================================================
-   RAJASTHAN CHECK
-   ========================================================= */
+// =======================================================
+// CREATE OSM LOCATION
+// =======================================================
 
-function isRajasthan(place) {
+function createOSMLocation(
+    place
+) {
+
+    const address =
+        place.address || {};
+
+    const mainName =
+        place.name ||
+        address.village ||
+        address.town ||
+        address.city ||
+        address.hamlet ||
+        address.municipality ||
+        "Location";
+
+    const district =
+        address.county ||
+        address.state_district ||
+        address.district;
+
+    const state =
+        address.state ||
+        "Rajasthan";
+
+    const parts = [
+
+        mainName,
+
+        district,
+
+        state,
+
+        "India"
+
+    ]
+        .filter(Boolean)
+        .filter(
+            (value, index, array) =>
+                array.indexOf(value) === index
+        );
+
+    return {
+
+        name:
+            parts.join(", "),
+
+        latitude:
+            number(
+                place.lat,
+                NaN
+            ),
+
+        longitude:
+            number(
+                place.lon,
+                NaN
+            )
+
+    };
+
+}
+
+
+// =======================================================
+// RAJASTHAN CHECK
+// =======================================================
+
+function isRajasthan(
+    place
+) {
 
     const state =
         String(
@@ -741,175 +960,227 @@ function isRajasthan(place) {
         ).toLowerCase();
 
     return (
+
         country === "in" &&
+
         (
             state.includes("rajasthan") ||
             state.includes("राजस्थान")
         )
+
     );
 
 }
 
 
-/* =========================================================
-   OPEN METEO SEARCH
-   ========================================================= */
+// =======================================================
+// OPEN METEO SEARCH
+// =======================================================
 
-async function searchOpenMeteo(query) {
+async function searchOpenMeteo(
+    query
+) {
 
-    const params =
-        new URLSearchParams({
+    const searchTerms = [
 
-            name: query,
+        query,
 
-            count: "10",
+        `${query}, Rajasthan`,
 
-            language: "en",
+        `${query}, Rajasthan, India`
 
-            format: "json"
+    ];
 
-        });
+    let allResults = [];
 
-    const response =
-        await fetch(
-            `${GEOCODING_API}?${params}`
-        );
+    for (
+        const term of searchTerms
+    ) {
 
-    if (!response.ok) {
-        throw new Error(
-            "Geocoding failed."
-        );
-    }
+        try {
 
-    const data =
-        await response.json();
+            const url =
+                `${GEOCODING_API}?name=${encodeURIComponent(term)}&count=100&language=en&format=json&countryCode=IN`;
 
-    const results =
-        Array.isArray(data.results)
-            ? data.results
-            : [];
+            const response =
+                await fetch(url);
 
-    return results
-        .filter(isRajasthan)
-        .map(
-            createOpenMeteoLocation
-        );
-
-}
-
-
-/* =========================================================
-   OSM SEARCH
-   ========================================================= */
-
-async function searchOSM(query) {
-
-    const params =
-        new URLSearchParams({
-
-            q:
-                `${query}, Rajasthan, India`,
-
-            format: "json",
-
-            addressdetails: "1",
-
-            limit: "10",
-
-            countrycodes: "in"
-
-        });
-
-    const response =
-        await fetch(
-            `${OSM_GEOCODING_API}?${params}`,
-            {
-                headers: {
-                    "Accept":
-                        "application/json"
-                }
+            if (!response.ok) {
+                continue;
             }
-        );
 
-    if (!response.ok) {
-        throw new Error(
-            "OSM search failed."
-        );
-    }
+            const data =
+                await response.json();
 
-    const data =
-        await response.json();
-
-    return data
-        .filter(item => {
-
-            const address =
-                item.address || {};
-
-            const state =
-                String(
-                    address.state || ""
-                ).toLowerCase();
-
-            return (
-                state.includes(
-                    "rajasthan"
-                ) ||
-                state.includes(
-                    "राजस्थान"
+            if (
+                Array.isArray(
+                    data.results
                 )
+            ) {
+
+                allResults =
+                    allResults.concat(
+                        data.results
+                    );
+
+            }
+
+        } catch (error) {
+
+            console.warn(
+                "Open-Meteo search error:",
+                error
             );
 
-        })
-        .map(item => ({
+        }
 
-            name:
-                item.display_name,
+    }
 
-            latitude:
-                Number(item.lat),
+    const unique =
+        Array.from(
 
-            longitude:
-                Number(item.lon)
+            new Map(
 
-        }));
+                allResults.map(
+                    place => [
+
+                        `${place.latitude},${place.longitude}`,
+
+                        place
+
+                    ]
+                )
+
+            ).values()
+
+        );
+
+    const rajasthan =
+        unique.filter(
+            place =>
+
+                place.country_code === "IN" &&
+
+                (
+                    place.admin1 ===
+                        "Rajasthan" ||
+
+                    String(
+                        place.admin1 || ""
+                    )
+                        .toLowerCase()
+                        .includes("rajasthan")
+                )
+        );
+
+    return (
+        rajasthan.length
+            ? rajasthan
+            : unique
+    );
 
 }
 
 
-/* =========================================================
-   DISPLAY LOCATION
-   ========================================================= */
+// =======================================================
+// OPENSTREETMAP FALLBACK
+// =======================================================
 
-function displayLocation(location) {
+async function searchOpenStreetMap(
+    query
+) {
 
-    if (locationName) {
+    try {
 
-        locationName.textContent =
-            location.name;
+        const url =
+            `${OSM_GEOCODING_API}?q=${encodeURIComponent(
+                query + ", Rajasthan, India"
+            )}&format=json&addressdetails=1&limit=10&countrycodes=in&accept-language=en`;
 
-    }
+        const response =
+            await fetch(url);
 
-    if (locationCoordinates) {
+        if (!response.ok) {
 
-        locationCoordinates.textContent =
-            `Latitude: ${Number(location.latitude).toFixed(4)}° | Longitude: ${Number(location.longitude).toFixed(4)}°`;
+            throw new Error(
+                "OSM search failed"
+            );
 
-    }
+        }
 
-    if (locationInput) {
+        const data =
+            await response.json();
 
-        locationInput.value =
-            location.name;
+        if (!Array.isArray(data)) {
+            return [];
+        }
+
+        return data.filter(
+            place =>
+                isRajasthan(place)
+        );
+
+    } catch (error) {
+
+        console.error(
+            "OSM fallback error:",
+            error
+        );
+
+        return [];
 
     }
 
 }
 
 
-/* =========================================================
-   SELECT LOCATION
-   ========================================================= */
+// =======================================================
+// OSM ATTRIBUTION
+// =======================================================
+
+function addOSMAttribution() {
+
+    if (
+        document.getElementById(
+            "osmAttribution"
+        )
+    ) {
+
+        return;
+
+    }
+
+    if (!locationInput?.parentElement) {
+        return;
+    }
+
+    const div =
+        document.createElement("div");
+
+    div.id =
+        "osmAttribution";
+
+    div.style.fontSize =
+        "11px";
+
+    div.style.marginTop =
+        "6px";
+
+    div.style.opacity =
+        "0.65";
+
+    div.innerHTML =
+        'Location search may use <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap contributors</a>.';
+
+    locationInput.parentElement
+        .appendChild(div);
+
+}
+
+
+// =======================================================
+// SET SELECTED LOCATION
+// =======================================================
 
 function setCurrentSelectedLocation(
     location
@@ -925,111 +1196,40 @@ function setCurrentSelectedLocation(
             location.name,
 
         latitude:
-            Number(location.latitude),
+            number(
+                location.latitude
+            ),
 
         longitude:
-            Number(location.longitude)
+            number(
+                location.longitude
+            )
 
     };
 
 }
 
 
-/* =========================================================
-   FIND CURRENT HOUR
-   ========================================================= */
+// =======================================================
+// WEATHER DESCRIPTION
+// =======================================================
 
-function findCurrentHourIndex(
-    times
+function getWeatherDescription(
+    code
 ) {
 
-    if (
-        !Array.isArray(times) ||
-        !times.length
-    ) {
-
-        return 0;
-
-    }
-
-    const now =
-        new Date();
-
-    let bestIndex = 0;
-    let smallestDifference =
-        Infinity;
-
-    times.forEach(
-        (time, index) => {
-
-            const date =
-                new Date(time);
-
-            const difference =
-                Math.abs(
-                    date.getTime() -
-                    now.getTime()
-                );
-
-            if (
-                difference <
-                smallestDifference
-            ) {
-
-                smallestDifference =
-                    difference;
-
-                bestIndex =
-                    index;
-
-            }
-
-        }
-    );
-
-    return bestIndex;
-
-}
-
-
-/* =========================================================
-   THUNDERSTORM
-   ========================================================= */
-
-function isThunderstorm(code) {
-
-    const value =
+    code =
         Number(code);
 
-    return (
-        value === 95 ||
-        value === 96 ||
-        value === 99
-    );
-
-}
-
-
-/* =========================================================
-   WEATHER DESCRIPTION
-   ========================================================= */
-
-function getWeatherDescription(code) {
-
-    if (
-        code === undefined ||
-        code === null
-    ) {
-
+    if (!Number.isFinite(code)) {
         return "Unknown";
-
     }
 
     if (
         isThunderstorm(code)
     ) {
 
-        return "Thunderstorm possible";
+        return "Thunderstorm";
 
     }
 
@@ -1061,9 +1261,7 @@ function getWeatherDescription(code) {
     }
 
     if (code === 0) {
-
         return "Clear sky";
-
     }
 
     if (
@@ -1076,9 +1274,7 @@ function getWeatherDescription(code) {
     }
 
     if (code === 3) {
-
         return "Overcast";
-
     }
 
     return "Cloudy / variable";
@@ -1086,32 +1282,228 @@ function getWeatherDescription(code) {
 }
 
 
-/* =========================================================
-   RAIN MAP COLOR
-   ========================================================= */
+// =======================================================
+// WEATHER ICON
+// =======================================================
 
-function getRainMapColor(rain) {
+function getWeatherIcon(
+    code
+) {
 
-    const value =
-        Number(rain) || 0;
+    code =
+        Number(code);
 
-    if (value >= 20) {
+    if (
+        code === 95 ||
+        code === 96 ||
+        code === 99
+    ) {
+
+        return "⛈️";
+
+    }
+
+    if (
+        code >= 61 &&
+        code <= 67
+    ) {
+
+        return "🌧️";
+
+    }
+
+    if (
+        code >= 80 &&
+        code <= 82
+    ) {
+
+        return "🌦️";
+
+    }
+
+    if (
+        code >= 51 &&
+        code <= 57
+    ) {
+
+        return "🌦️";
+
+    }
+
+    if (
+        code === 1 ||
+        code === 2
+    ) {
+
+        return "⛅";
+
+    }
+
+    if (code === 3) {
+        return "☁️";
+    }
+
+    if (code === 0) {
+        return "☀️";
+    }
+
+    return "🌤️";
+
+}
+
+
+// =======================================================
+// THUNDERSTORM
+// =======================================================
+
+function isThunderstorm(
+    code
+) {
+
+    code =
+        Number(code);
+
+    return (
+
+        code === 95 ||
+        code === 96 ||
+        code === 99
+
+    );
+
+}
+
+
+// =======================================================
+// TIME FORMAT
+// =======================================================
+
+function formatTime(
+    date
+) {
+
+    return date.toLocaleTimeString(
+        "en-IN",
+        {
+            hour: "numeric",
+            minute: "2-digit"
+        }
+    );
+
+}
+
+
+// =======================================================
+// DAY FORMAT
+// =======================================================
+
+function formatDay(
+    date
+) {
+
+    return date.toLocaleDateString(
+        "en-IN",
+        {
+            weekday: "short",
+            day: "numeric",
+            month: "short"
+        }
+    );
+
+}
+
+
+// =======================================================
+// FIND CURRENT HOUR
+// =======================================================
+
+function findCurrentHourIndex(
+    times
+) {
+
+    if (
+        !Array.isArray(times) ||
+        !times.length
+    ) {
+
+        return 0;
+
+    }
+
+    const now =
+        Date.now();
+
+    let bestIndex =
+        0;
+
+    let bestDifference =
+        Infinity;
+
+    times.forEach(
+        (time, index) => {
+
+            const t =
+                new Date(time)
+                    .getTime();
+
+            if (!Number.isFinite(t)) {
+                return;
+            }
+
+            const difference =
+                Math.abs(
+                    t - now
+                );
+
+            if (
+                difference <
+                bestDifference
+            ) {
+
+                bestDifference =
+                    difference;
+
+                bestIndex =
+                    index;
+
+            }
+
+        }
+    );
+
+    return bestIndex;
+
+}
+
+
+// =======================================================
+// RAIN MAP COLOR
+// =======================================================
+
+function getRainMapColor(
+    rain
+) {
+
+    rain =
+        number(rain);
+
+    if (rain >= 20) {
         return "#7c3aed";
     }
 
-    if (value >= 10) {
+    if (rain >= 10) {
         return "#2563eb";
     }
 
-    if (value >= 5) {
+    if (rain >= 5) {
         return "#0891b2";
     }
 
-    if (value >= 1) {
+    if (rain >= 1) {
         return "#16a34a";
     }
 
-    if (value > 0) {
+    if (rain > 0) {
         return "#f59e0b";
     }
 
@@ -1120,9 +1512,9 @@ function getRainMapColor(rain) {
 }
 
 
-/* =========================================================
-   INITIALIZE MAP
-   ========================================================= */
+// =======================================================
+// INITIALIZE RAIN MAP
+// =======================================================
 
 function initializeRainMap() {
 
@@ -1136,12 +1528,13 @@ function initializeRainMap() {
     }
 
     if (
-        typeof L === "undefined"
+        typeof L ===
+        "undefined"
     ) {
 
         mapElement.innerHTML = `
             <div class="map-placeholder">
-                <div>🗺️</div>
+                🗺️
                 <p>Map library could not be loaded.</p>
             </div>
         `;
@@ -1154,7 +1547,8 @@ function initializeRainMap() {
         return;
     }
 
-    mapElement.innerHTML = "";
+    mapElement.innerHTML =
+        "";
 
     mapElement.style.width =
         "100%";
@@ -1181,24 +1575,30 @@ function initializeRainMap() {
                 zoom:
                     RAJASTHAN_MAP_ZOOM,
 
-                minZoom: 5,
+                minZoom:
+                    5,
 
-                maxZoom: 14,
+                maxZoom:
+                    14,
 
-                scrollWheelZoom: true
+                scrollWheelZoom:
+                    true
             }
         );
 
     L.tileLayer(
         "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
         {
+
             maxZoom: 19,
 
             attribution:
                 "&copy; OpenStreetMap contributors"
-        }
-    ).addTo(rainMap);
 
+        }
+    ).addTo(
+        rainMap
+    );
 
     const legend =
         L.control({
@@ -1229,9 +1629,6 @@ function initializeRainMap() {
 
             div.style.fontSize =
                 "11px";
-
-            div.style.lineHeight =
-                "1.6";
 
             div.innerHTML = `
 
@@ -1273,46 +1670,29 @@ function initializeRainMap() {
 
         };
 
-    legend.addTo(rainMap);
-
-
-    const info =
-        document.getElementById(
-            "mapInfo"
-        );
-
-    if (info) {
-
-        info.innerHTML = `
-
-            <strong>
-                🌧️ Live Rainfall Location Map
-            </strong>
-
-            <p>
-                Search a Rajasthan location above.
-                The selected location and statewide
-                rainfall overview are shown on the map.
-            </p>
-
-        `;
-
-    }
+    legend.addTo(
+        rainMap
+    );
 
 }
 
 
-/* =========================================================
-   UPDATE SELECTED LOCATION MAP
-   ========================================================= */
+// =======================================================
+// UPDATE RAIN MAP
+// =======================================================
 
 function updateRainMap(
     location,
     weatherData
 ) {
 
-    if (!location) {
+    if (
+        !location ||
+        !weatherData
+    ) {
+
         return;
+
     }
 
     if (!rainMap) {
@@ -1321,7 +1701,8 @@ function updateRainMap(
 
     if (
         !rainMap ||
-        typeof L === "undefined"
+        typeof L ===
+            "undefined"
     ) {
 
         return;
@@ -1329,50 +1710,39 @@ function updateRainMap(
     }
 
     const hourly =
-        weatherData?.hourly;
+        weatherData.hourly;
 
-    const currentIndex =
-        hourly?.time?.length
-            ? findCurrentHourIndex(
-                hourly.time
-            )
-            : 0;
+    const index =
+        findCurrentHourIndex(
+            hourly?.time || []
+        );
 
     const rain =
-        Number(
-            hourly?.precipitation?.[
-                currentIndex
-            ] ?? 0
-        ) || 0;
+        number(
+            hourly?.precipitation?.[index]
+        );
 
     const probability =
-        Number(
-            hourly
-                ?.precipitation_probability?.[
-                    currentIndex
-                ] ?? 0
-        ) || 0;
+        number(
+            hourly?.precipitation_probability?.[index]
+        );
 
     const temp =
-        hourly
-            ?.temperature_2m?.[
-                currentIndex
-            ];
+        hourly?.temperature_2m?.[index];
 
     const code =
-        hourly
-            ?.weather_code?.[
-                currentIndex
-            ];
+        hourly?.weather_code?.[index];
 
     const latitude =
-        Number(
-            location.latitude
+        number(
+            location.latitude,
+            NaN
         );
 
     const longitude =
-        Number(
-            location.longitude
+        number(
+            location.longitude,
+            NaN
         );
 
     if (
@@ -1385,8 +1755,9 @@ function updateRainMap(
     }
 
     const color =
-        getRainMapColor(rain);
-
+        getRainMapColor(
+            rain
+        );
 
     if (rainMapMarker) {
 
@@ -1404,40 +1775,37 @@ function updateRainMap(
 
     }
 
-
     rainMapMarker =
         L.marker(
             [
                 latitude,
                 longitude
             ]
-        ).addTo(rainMap);
-
+        )
+        .addTo(
+            rainMap
+        );
 
     rainMapMarker.bindPopup(`
 
-        <div style="min-width:190px;">
+        <div style="min-width:200px">
 
             <strong>
                 📍
                 ${escapeHtml(location.name)}
             </strong>
 
-            <hr style="
-                border:0;
-                border-top:1px solid #ddd;
-                margin:7px 0;
-            ">
+            <hr>
 
             <div>
-                🌧️ Current rain:
+                🌧️ Current Rain:
                 <strong>
                     ${rain.toFixed(1)} mm
                 </strong>
             </div>
 
             <div>
-                💧 Rain probability:
+                💧 Probability:
                 <strong>
                     ${Math.round(probability)}%
                 </strong>
@@ -1465,7 +1833,6 @@ function updateRainMap(
 
     `);
 
-
     rainMapCircle =
         L.circle(
             [
@@ -1492,16 +1859,18 @@ function updateRainMap(
                 fillOpacity:
                     0.22,
 
-                weight: 2
+                weight:
+                    2
 
             }
-        ).addTo(rainMap);
-
+        )
+        .addTo(
+            rainMap
+        );
 
     rainMapCircle.bindTooltip(
         `${rain.toFixed(1)} mm | ${Math.round(probability)}% rain`
     );
-
 
     rainMap.setView(
         [
@@ -1514,14 +1883,11 @@ function updateRainMap(
         )
     );
 
-
     setTimeout(
         () => {
 
             if (rainMap) {
-
                 rainMap.invalidateSize();
-
             }
 
         },
@@ -1531,383 +1897,9 @@ function updateRainMap(
 }
 
 
-/* =========================================================
-   CURRENT WEATHER
-   ========================================================= */
-
-function updateCurrentWeather(
-    data
-) {
-
-    const hourly =
-        data?.hourly;
-
-    if (!hourly) {
-        return;
-    }
-
-    const index =
-        findCurrentHourIndex(
-            hourly.time
-        );
-
-    const rain =
-        Number(
-            hourly.precipitation?.[
-                index
-            ] ?? 0
-        ) || 0;
-
-    const probability =
-        Number(
-            hourly
-                .precipitation_probability?.[
-                    index
-                ] ?? 0
-        ) || 0;
-
-    const temp =
-        hourly.temperature_2m?.[
-            index
-        ];
-
-    const hum =
-        hourly.relative_humidity_2m?.[
-            index
-        ];
-
-    const windValue =
-        hourly.wind_speed_10m?.[
-            index
-        ];
-
-    const code =
-        hourly.weather_code?.[
-            index
-        ];
-
-
-    if (rainProbability) {
-
-        rainProbability.textContent =
-            `${Math.round(probability)}%`;
-
-    }
-
-    if (rainAmount) {
-
-        rainAmount.textContent =
-            `${rain.toFixed(1)} mm`;
-
-    }
-
-    if (temperature) {
-
-        temperature.textContent =
-            temp !== undefined
-                ? `${Math.round(temp)}°C`
-                : "--";
-
-    }
-
-    if (humidity) {
-
-        humidity.textContent =
-            hum !== undefined
-                ? `${Math.round(hum)}%`
-                : "--";
-
-    }
-
-    if (wind) {
-
-        wind.textContent =
-            windValue !== undefined
-                ? `${Math.round(windValue)} km/h`
-                : "--";
-
-    }
-
-    if (thunderstorm) {
-
-        thunderstorm.textContent =
-            isThunderstorm(code)
-                ? "Possible"
-                : "Low / None";
-
-    }
-
-}
-
-
-/* =========================================================
-   HOURLY FORECAST
-   ========================================================= */
-
-function updateHourlyForecast(
-    data
-) {
-
-    if (!hourlyForecast) {
-        return;
-    }
-
-    const hourly =
-        data?.hourly;
-
-    if (
-        !hourly ||
-        !Array.isArray(
-            hourly.time
-        )
-    ) {
-
-        return;
-
-    }
-
-    const start =
-        findCurrentHourIndex(
-            hourly.time
-        );
-
-    const end =
-        Math.min(
-            start + 24,
-            hourly.time.length
-        );
-
-    let html = "";
-
-    for (
-        let i = start;
-        i < end;
-        i++
-    ) {
-
-        const date =
-            new Date(
-                hourly.time[i]
-            );
-
-        const time =
-            date.toLocaleTimeString(
-                "en-IN",
-                {
-                    hour:
-                        "numeric",
-
-                    minute:
-                        "2-digit"
-                }
-            );
-
-        const rain =
-            Number(
-                hourly
-                    .precipitation?.[
-                        i
-                    ] ?? 0
-            ) || 0;
-
-        const probability =
-            Number(
-                hourly
-                    .precipitation_probability?.[
-                        i
-                    ] ?? 0
-            ) || 0;
-
-        const temp =
-            hourly
-                .temperature_2m?.[
-                    i
-                ];
-
-        const code =
-            hourly
-                .weather_code?.[
-                    i
-                ];
-
-
-        html += `
-
-            <div class="hourly-item">
-
-                <div>
-                    <strong>
-                        ${time}
-                    </strong>
-                </div>
-
-                <div>
-                    🌧️
-                    ${rain.toFixed(1)} mm
-                </div>
-
-                <div>
-                    💧
-                    ${Math.round(probability)}%
-                </div>
-
-                <div>
-                    🌡️
-                    ${
-                        temp !== undefined
-                            ? `${Math.round(temp)}°C`
-                            : "--"
-                    }
-                </div>
-
-                <div>
-                    ${getWeatherDescription(code)}
-                </div>
-
-            </div>
-
-        `;
-
-    }
-
-    hourlyForecast.innerHTML =
-        html;
-
-}
-
-
-/* =========================================================
-   DAILY FORECAST
-   ========================================================= */
-
-function updateDailyForecast(
-    data
-) {
-
-    if (!dailyForecast) {
-        return;
-    }
-
-    const daily =
-        data?.daily;
-
-    if (
-        !daily ||
-        !Array.isArray(
-            daily.time
-        )
-    ) {
-
-        return;
-
-    }
-
-    let html = "";
-
-    const count =
-        Math.min(
-            7,
-            daily.time.length
-        );
-
-    for (
-        let i = 0;
-        i < count;
-        i++
-    ) {
-
-        const date =
-            new Date(
-                daily.time[i]
-            );
-
-        const day =
-            date.toLocaleDateString(
-                "en-IN",
-                {
-                    weekday:
-                        "short",
-
-                    day:
-                        "numeric",
-
-                    month:
-                        "short"
-                }
-            );
-
-        const rain =
-            Number(
-                daily
-                    .precipitation_sum?.[
-                        i
-                    ] ?? 0
-            ) || 0;
-
-        const probability =
-            Number(
-                daily
-                    .precipitation_probability_max?.[
-                        i
-                    ] ?? 0
-            ) || 0;
-
-        const max =
-            daily
-                .temperature_2m_max?.[
-                    i
-                ];
-
-        const min =
-            daily
-                .temperature_2m_min?.[
-                    i
-                ];
-
-
-        html += `
-
-            <div class="daily-item">
-
-                <strong>
-                    ${day}
-                </strong>
-
-                <div>
-                    🌧️
-                    ${rain.toFixed(1)} mm
-                </div>
-
-                <div>
-                    💧
-                    ${Math.round(probability)}%
-                </div>
-
-                <div>
-                    🌡️
-                    ${
-                        min !== undefined &&
-                        max !== undefined
-                            ? `${Math.round(min)}° / ${Math.round(max)}°`
-                            : "--"
-                    }
-                </div>
-
-            </div>
-
-        `;
-
-    }
-
-    dailyForecast.innerHTML =
-        html;
-
-}
-
-
-/* =========================================================
-   FETCH MAIN WEATHER
-   ========================================================= */
+// =======================================================
+// FETCH MAIN WEATHER
+// =======================================================
 
 async function fetchWeather(
     location
@@ -1924,21 +1916,24 @@ async function fetchWeather(
 
             hourly:
                 [
+                    "precipitation",
+                    "rain",
+                    "showers",
+                    "weather_code",
+                    "precipitation_probability",
                     "temperature_2m",
                     "relative_humidity_2m",
-                    "precipitation",
-                    "precipitation_probability",
-                    "weather_code",
+                    "cloud_cover",
                     "wind_speed_10m"
                 ].join(","),
 
             daily:
                 [
-                    "precipitation_sum",
-                    "precipitation_probability_max",
+                    "weather_code",
                     "temperature_2m_max",
                     "temperature_2m_min",
-                    "weather_code"
+                    "precipitation_sum",
+                    "precipitation_probability_max"
                 ].join(","),
 
             forecast_days:
@@ -1949,7 +1944,6 @@ async function fetchWeather(
 
         });
 
-
     const response =
         await fetch(
             `${WEATHER_API}?${params}`
@@ -1958,7 +1952,7 @@ async function fetchWeather(
     if (!response.ok) {
 
         throw new Error(
-            "Weather API request failed."
+            "Weather API request failed"
         );
 
     }
@@ -1968,11 +1962,403 @@ async function fetchWeather(
 }
 
 
-/* =========================================================
-   LOAD WEATHER
-   ========================================================= */
+// =======================================================
+// UPDATE CURRENT WEATHER
+// =======================================================
 
-async function loadWeather(
+function updateCurrentWeather(
+    data
+) {
+
+    const hourly =
+        data?.hourly;
+
+    if (
+        !hourly?.time?.length
+    ) {
+
+        return;
+
+    }
+
+    const index =
+        findCurrentHourIndex(
+            hourly.time
+        );
+
+    const probability =
+        number(
+            hourly.precipitation_probability?.[index]
+        );
+
+    const precipitation =
+        number(
+            hourly.precipitation?.[index]
+        );
+
+    const temp =
+        hourly.temperature_2m?.[index];
+
+    const humidityValue =
+        hourly.relative_humidity_2m?.[index];
+
+    const windValue =
+        hourly.wind_speed_10m?.[index];
+
+    const code =
+        hourly.weather_code?.[index];
+
+    if (rainProbability) {
+
+        rainProbability.textContent =
+            `${Math.round(probability)}%`;
+
+    }
+
+    if (rainAmount) {
+
+        rainAmount.textContent =
+            `${precipitation.toFixed(1)} mm`;
+
+    }
+
+    if (temperature) {
+
+        temperature.textContent =
+            temp !== undefined
+                ? `${Math.round(temp)} °C`
+                : "-- °C";
+
+    }
+
+    if (humidity) {
+
+        humidity.textContent =
+            humidityValue !== undefined
+                ? `${Math.round(humidityValue)}%`
+                : "--%";
+
+    }
+
+    if (wind) {
+
+        wind.textContent =
+            windValue !== undefined
+                ? `${Math.round(windValue)} km/h`
+                : "-- km/h";
+
+    }
+
+    if (thunderstorm) {
+
+        thunderstorm.textContent =
+            isThunderstorm(code)
+                ? "Possible"
+                : "No indication";
+
+    }
+
+}
+
+
+// =======================================================
+// UPDATE HOURLY FORECAST
+// =======================================================
+
+function updateHourlyForecast(
+    data
+) {
+
+    const hourly =
+        data?.hourly;
+
+    if (
+        !hourly ||
+        !hourlyForecast
+    ) {
+
+        return;
+
+    }
+
+    hourlyForecast.innerHTML =
+        "";
+
+    const start =
+        findCurrentHourIndex(
+            hourly.time
+        );
+
+    const end =
+        Math.min(
+            start + 24,
+            hourly.time.length
+        );
+
+    for (
+        let i = start;
+        i < end;
+        i++
+    ) {
+
+        const date =
+            new Date(
+                hourly.time[i]
+            );
+
+        const rain =
+            number(
+                hourly.precipitation?.[i]
+            );
+
+        const probability =
+            number(
+                hourly.precipitation_probability?.[i]
+            );
+
+        const code =
+            hourly.weather_code?.[i];
+
+        const temp =
+            hourly.temperature_2m?.[i];
+
+        const card =
+            document.createElement(
+                "div"
+            );
+
+        card.className =
+            "hour-card";
+
+        card.innerHTML = `
+
+            <div class="time">
+                ${formatTime(date)}
+            </div>
+
+            <div class="icon">
+                ${getWeatherIcon(code)}
+            </div>
+
+            <div>
+                ${temp !== undefined
+                    ? `${Math.round(temp)}°C`
+                    : "--"}
+            </div>
+
+            <div class="rain">
+                ${rain.toFixed(1)} mm
+            </div>
+
+            <div class="probability">
+                Rain ${Math.round(probability)}%
+            </div>
+
+        `;
+
+        hourlyForecast.appendChild(
+            card
+        );
+
+    }
+
+}
+
+
+// =======================================================
+// UPDATE DAILY FORECAST
+// =======================================================
+
+function updateDailyForecast(
+    data
+) {
+
+    const daily =
+        data?.daily;
+
+    if (
+        !daily ||
+        !dailyForecast
+    ) {
+
+        return;
+
+    }
+
+    dailyForecast.innerHTML =
+        "";
+
+    for (
+        let i = 0;
+        i < daily.time.length;
+        i++
+    ) {
+
+        const date =
+            new Date(
+                daily.time[i]
+            );
+
+        const rain =
+            number(
+                daily.precipitation_sum?.[i]
+            );
+
+        const probability =
+            number(
+                daily.precipitation_probability_max?.[i]
+            );
+
+        const max =
+            daily.temperature_2m_max?.[i];
+
+        const min =
+            daily.temperature_2m_min?.[i];
+
+        const code =
+            daily.weather_code?.[i];
+
+        const card =
+            document.createElement(
+                "div"
+            );
+
+        card.className =
+            "day-card";
+
+        card.innerHTML = `
+
+            <div class="day">
+                ${formatDay(date)}
+            </div>
+
+            <div class="day-icon">
+                ${getWeatherIcon(code)}
+            </div>
+
+            <div>
+                🌧️
+                ${rain.toFixed(1)} mm
+            </div>
+
+            <div>
+                💧
+                ${Math.round(probability)}%
+            </div>
+
+            <div class="day-temp">
+                ${
+                    max !== undefined &&
+                    min !== undefined
+                        ? `${Math.round(max)}° / ${Math.round(min)}°`
+                        : "--"
+                }
+            </div>
+
+        `;
+
+        dailyForecast.appendChild(
+            card
+        );
+
+    }
+
+}
+
+
+// =======================================================
+// MODEL CONFIGURATION
+// =======================================================
+
+const WEATHER_MODELS = [
+
+    {
+        name: "ECMWF",
+        id: "ecmwf_ifs025",
+        element: ecmwfRain
+    },
+
+    {
+        name: "GFS",
+        id: "gfs_seamless",
+        element: gfsRain
+    },
+
+    {
+        name: "ICON",
+        id: "icon_seamless",
+        element: iconRain
+    }
+
+];
+
+
+// =======================================================
+// FETCH ONE MODEL
+// =======================================================
+
+async function fetchModel(
+    location,
+    model
+) {
+
+    const params =
+        new URLSearchParams({
+
+            latitude:
+                location.latitude,
+
+            longitude:
+                location.longitude,
+
+            hourly:
+                [
+                    "precipitation",
+                    "precipitation_probability",
+                    "weather_code"
+                ].join(","),
+
+            daily:
+                [
+                    "precipitation_sum",
+                    "precipitation_probability_max",
+                    "weather_code"
+                ].join(","),
+
+            forecast_days:
+                "7",
+
+            timezone:
+                "auto",
+
+            models:
+                model.id
+
+        });
+
+    const response =
+        await fetch(
+            `${WEATHER_API}?${params}`
+        );
+
+    if (!response.ok) {
+
+        throw new Error(
+            `${model.name} API error`
+        );
+
+    }
+
+    return await response.json();
+
+}
+
+
+// =======================================================
+// UPDATE MODEL STATUS
+// =======================================================
+
+async function updateModelStatus(
     location
 ) {
 
@@ -1980,385 +2366,114 @@ async function loadWeather(
         return;
     }
 
-    if (weatherLoading) {
-        return;
-    }
+    const results = [];
 
-    weatherLoading = true;
-
-    try {
-
-        setCurrentSelectedLocation(
-            location
-        );
-
-        displayLocation(
-            location
-        );
-
-        setStatus(
-            "Updating weather data..."
-        );
-
-
-        const data =
-            await fetchWeather(
-                location
-            );
-
-
-        latestWeatherData =
-            data;
-
-
-        updateCurrentWeather(
-            data
-        );
-
-        updateHourlyForecast(
-            data
-        );
-
-        updateDailyForecast(
-            data
-        );
-
-        updateRainMap(
-            location,
-            data
-        );
-
-        renderSmartRainSummary(
-            data
-        );
-
-        renderNextRainAlert(
-            data
-        );
-
-        await updateModelStatus(
-            location
-        );
-
-        await loadHourlyModelComparison(
-            location
-        );
-
-        await loadStatewideRainfall();
-
-
-        setStatus(
-            "Weather data updated"
-        );
-
-    } catch (error) {
-
-        console.error(
-            "Weather loading failed:",
-            error
-        );
-
-        setStatus(
-            "Weather data unavailable",
-            false
-        );
-
-    } finally {
-
-        weatherLoading =
-            false;
-
-    }
-
-}
-
-
-/* =========================================================
-   SEARCH LOCATION
-   ========================================================= */
-
-async function searchLocation() {
-
-    const query =
-        normalizeSearchText(
-            locationInput?.value
-        );
-
-    if (!query) {
-
-        setStatus(
-            "Please enter a village, town or city."
-        );
-
-        return;
-
-    }
-
-    try {
-
-        setStatus(
-            "Searching location..."
-        );
-
-
-        /* ---------- KNOWN ALIAS ---------- */
-
-        if (
-            KNOWN_LOCATIONS[query]
-        ) {
-
-            await loadWeather(
-                KNOWN_LOCATIONS[query]
-            );
-
-            return;
-
-        }
-
-
-        /* ---------- VILLAGE DATABASE ---------- */
-
-        const localMatches =
-            searchVillageDatabase(
-                query
-            );
-
-
-        if (localMatches.length) {
-
-            const location =
-                createVillageLocation(
-                    localMatches[0]
-                );
-
-
-            if (
-                Number.isFinite(
-                    location.latitude
-                ) &&
-                Number.isFinite(
-                    location.longitude
-                )
-            ) {
-
-                await loadWeather(
-                    location
-                );
-
-                return;
-
-            }
-
-        }
-
-
-        /* ---------- OPEN METEO ---------- */
-
-        try {
-
-            const results =
-                await searchOpenMeteo(
-                    query
-                );
-
-            if (results.length) {
-
-                await loadWeather(
-                    results[0]
-                );
-
-                return;
-
-            }
-
-        } catch (error) {
-
-            console.warn(
-                "Open-Meteo search failed:",
-                error
-            );
-
-        }
-
-
-        /* ---------- OSM FALLBACK ---------- */
-
-        try {
-
-            const results =
-                await searchOSM(
-                    query
-                );
-
-            if (results.length) {
-
-                await loadWeather(
-                    results[0]
-                );
-
-                return;
-
-            }
-
-        } catch (error) {
-
-            console.warn(
-                "OSM search failed:",
-                error
-            );
-
-        }
-
-
-        setStatus(
-            "Location not found in Rajasthan.",
-            false
-        );
-
-    } catch (error) {
-
-        console.error(
-            "Location search failed:",
-            error
-        );
-
-        setStatus(
-            "Search failed. Please try again.",
-            false
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   MODEL STATUS
-   ========================================================= */
-
-async function updateModelStatus(
-    location
-) {
-
-    const models = [
-
-        {
-            name:
-                "ECMWF",
-
-            id:
-                "ecmwf_ifs025",
-
-            element:
-                ecmwfRain
-        },
-
-        {
-            name:
-                "GFS",
-
-            id:
-                "gfs_seamless",
-
-            element:
-                gfsRain
-        },
-
-        {
-            name:
-                "ICON",
-
-            id:
-                "icon_seamless",
-
-            element:
-                iconRain
-        }
-
-    ];
-
-
-    for (
-        const model
-        of models
-    ) {
-
-        if (model.element) {
-
-            model.element.textContent =
-                "Loading...";
-
-        }
-
-        try {
-
-            const params =
-                new URLSearchParams({
-
-                    latitude:
-                        location.latitude,
-
-                    longitude:
-                        location.longitude,
-
-                    daily:
-                        "precipitation_sum",
-
-                    forecast_days:
-                        "7",
-
-                    timezone:
-                        "auto",
-
-                    models:
-                        model.id
-
-                });
-
-
-            const response =
-                await fetch(
-                    `${WEATHER_API}?${params}`
-                );
-
-
-            if (!response.ok) {
-                throw new Error(
-                    `${model.name} request failed`
-                );
-            }
-
-
-            const data =
-                await response.json();
-
-
-            const values =
-                data
-                    ?.daily
-                    ?.precipitation_sum ||
-                [];
-
-
-            const total =
-                values.reduce(
-                    (
-                        sum,
-                        value
-                    ) =>
-                        sum +
-                        (
-                            Number(value) ||
-                            0
-                        ),
-                    0
-                );
-
+    WEATHER_MODELS.forEach(
+        model => {
 
             if (model.element) {
 
                 model.element.textContent =
-                    `${total.toFixed(1)} mm`;
+                    "Loading...";
+
+            }
+
+        }
+    );
+
+    for (
+        const model of WEATHER_MODELS
+    ) {
+
+        try {
+
+            const data =
+                await fetchModel(
+                    location,
+                    model
+                );
+
+            const daily =
+                data.daily;
+
+            if (
+                !daily ||
+                !Array.isArray(
+                    daily.precipitation_sum
+                )
+            ) {
+
+                throw new Error(
+                    "Rainfall unavailable"
+                );
+
+            }
+
+            const rainfall =
+                daily.precipitation_sum
+                    .map(
+                        value =>
+                            number(value)
+                    );
+
+            const totalRain =
+                rainfall.reduce(
+                    (sum, value) =>
+                        sum + value,
+                    0
+                );
+
+            const probabilities =
+                Array.isArray(
+                    daily.precipitation_probability_max
+                )
+                    ? daily
+                        .precipitation_probability_max
+                        .map(
+                            value =>
+                                number(value)
+                        )
+                    : [];
+
+            const averageProbability =
+                probabilities.length
+                    ? probabilities.reduce(
+                        (sum, value) =>
+                            sum + value,
+                        0
+                    ) /
+                    probabilities.length
+                    : 0;
+
+            const result = {
+
+                name:
+                    model.name,
+
+                id:
+                    model.id,
+
+                rainfall,
+
+                totalRain,
+
+                averageProbability,
+
+                data,
+
+                success:
+                    true
+
+            };
+
+            results.push(
+                result
+            );
+
+            if (model.element) {
+
+                model.element.textContent =
+                    `${totalRain.toFixed(1)} mm`;
 
             }
 
@@ -2369,10 +2484,32 @@ async function updateModelStatus(
                 error
             );
 
+            results.push({
+
+                name:
+                    model.name,
+
+                id:
+                    model.id,
+
+                rainfall:
+                    [],
+
+                totalRain:
+                    null,
+
+                averageProbability:
+                    null,
+
+                success:
+                    false
+
+            });
+
             if (model.element) {
 
                 model.element.textContent =
-                    "--";
+                    "Unavailable";
 
             }
 
@@ -2380,217 +2517,220 @@ async function updateModelStatus(
 
     }
 
+    latestModelResults =
+        results;
 
     renderModelConsensus(
-        location
+        results
     );
+
+    return results;
 
 }
 
 
-/* =========================================================
-   MODEL CONSENSUS
-   ========================================================= */
+// =======================================================
+// MODEL CONSENSUS
+// =======================================================
 
-async function renderModelConsensus(
-    location
+function renderModelConsensus(
+    results
 ) {
 
-    const container =
+    let container =
         document.getElementById(
             "modelConsensus"
         );
 
     if (!container) {
-        return;
-    }
 
+        container =
+            document.createElement(
+                "div"
+            );
 
-    const models = [
+        container.id =
+            "modelConsensus";
 
-        {
-            name:
-                "ECMWF",
+        container.style.marginTop =
+            "18px";
 
-            id:
-                "ecmwf_ifs025"
-        },
+        container.style.padding =
+            "16px";
 
-        {
-            name:
-                "GFS",
+        container.style.borderRadius =
+            "14px";
 
-            id:
-                "gfs_seamless"
-        },
+        container.style.background =
+            "rgba(15,23,42,0.06)";
 
-        {
-            name:
-                "ICON",
+        container.style.border =
+            "1px solid rgba(100,116,139,0.18)";
 
-            id:
-                "icon_seamless"
-        }
+        const parent =
+            document.querySelector(
+                ".model-section"
+            ) ||
+            ecmwfRain?.parentElement;
 
-    ];
+        if (parent) {
 
-
-    const values = [];
-
-
-    for (
-        const model
-        of models
-    ) {
-
-        try {
-
-            const params =
-                new URLSearchParams({
-
-                    latitude:
-                        location.latitude,
-
-                    longitude:
-                        location.longitude,
-
-                    daily:
-                        "precipitation_sum",
-
-                    forecast_days:
-                        "7",
-
-                    timezone:
-                        "auto",
-
-                    models:
-                        model.id
-
-                });
-
-
-            const response =
-                await fetch(
-                    `${WEATHER_API}?${params}`
-                );
-
-
-            if (!response.ok) {
-                continue;
-            }
-
-
-            const data =
-                await response.json();
-
-
-            const rain =
-                (
-                    data
-                        ?.daily
-                        ?.precipitation_sum ||
-                    []
-                )
-                    .reduce(
-                        (
-                            sum,
-                            value
-                        ) =>
-                            sum +
-                            (
-                                Number(value) ||
-                                0
-                            ),
-                        0
-                    );
-
-
-            values.push({
-                name:
-                    model.name,
-
-                rain
-
-            });
-
-        } catch (error) {
-
-            console.warn(
-                `${model.name} consensus failed`,
-                error
+            parent.appendChild(
+                container
             );
 
         }
 
     }
 
+    const successful =
+        results.filter(
+            item =>
+                item.success &&
+                Number.isFinite(
+                    item.totalRain
+                )
+        );
 
-    if (!values.length) {
+    if (!successful.length) {
 
-        container.innerHTML = `
-            <div>
-                Model consensus unavailable.
-            </div>
-        `;
+        if (container) {
+
+            container.innerHTML = `
+
+                <strong>
+                    🌧️ Model Consensus
+                </strong>
+
+                <p>
+                    ECMWF, GFS aur ICON data
+                    abhi available nahi hai.
+                </p>
+
+            `;
+
+        }
 
         return;
 
     }
 
-
-    const rains =
-        values.map(
+    const totals =
+        successful.map(
             item =>
-                item.rain
+                item.totalRain
         );
 
-
     const average =
-        rains.reduce(
-            (
-                sum,
-                value
-            ) =>
+        totals.reduce(
+            (sum, value) =>
                 sum + value,
             0
         ) /
-        rains.length;
-
+        totals.length;
 
     const minimum =
-        Math.min(
-            ...rains
-        );
+        Math.min(...totals);
 
     const maximum =
-        Math.max(
-            ...rains
-        );
-
+        Math.max(...totals);
 
     const spread =
-        maximum -
-        minimum;
-
+        maximum - minimum;
 
     let agreement =
-        "Low agreement";
+        "Low";
 
+    if (average < 1) {
 
-    if (spread <= 10) {
+        if (spread <= 2) {
 
-        agreement =
-            "High agreement";
+            agreement =
+                "High";
 
-    } else if (
-        spread <= 30
-    ) {
+        } else if (
+            spread <= 5
+        ) {
 
-        agreement =
-            "Moderate agreement";
+            agreement =
+                "Moderate";
+
+        }
+
+    } else {
+
+        if (
+            spread <=
+            Math.max(
+                5,
+                average * 0.30
+            )
+        ) {
+
+            agreement =
+                "High";
+
+        } else if (
+            spread <=
+            Math.max(
+                10,
+                average * 0.60
+            )
+        ) {
+
+            agreement =
+                "Moderate";
+
+        }
 
     }
 
+    const probabilities =
+        successful
+            .map(
+                item =>
+                    item.averageProbability
+            )
+            .filter(
+                value =>
+                    Number.isFinite(value)
+            );
+
+    const averageProbability =
+        probabilities.length
+            ? probabilities.reduce(
+                (sum, value) =>
+                    sum + value,
+                0
+            ) /
+            probabilities.length
+            : 0;
+
+    const rows =
+        successful
+            .map(
+                item => `
+
+                    <div style="
+                        display:flex;
+                        justify-content:space-between;
+                        padding:7px 0;
+                        border-bottom:1px solid rgba(100,116,139,.15);
+                    ">
+
+                        <span>
+                            ${item.name}
+                        </span>
+
+                        <strong>
+                            ${item.totalRain.toFixed(1)} mm
+                        </strong>
+
+                    </div>
+
+                `
+            )
+            .join("");
 
     container.innerHTML = `
 
@@ -2599,40 +2739,67 @@ async function renderModelConsensus(
             font-weight:700;
             margin-bottom:10px;
         ">
-            🤖 Model Consensus
+            🌧️ Model Consensus
         </div>
 
-        <div>
-            7-day average rainfall:
-            <strong>
+        ${rows}
+
+        <div style="
+            margin-top:12px;
+            line-height:1.7;
+        ">
+
+            <div>
+                <strong>
+                    7-Day Average:
+                </strong>
                 ${average.toFixed(1)} mm
-            </strong>
-        </div>
+            </div>
 
-        <div>
-            Model range:
-            <strong>
+            <div>
+                <strong>
+                    Model Range:
+                </strong>
                 ${minimum.toFixed(1)}
                 –
                 ${maximum.toFixed(1)} mm
-            </strong>
-        </div>
+            </div>
 
-        <div>
-            Agreement:
-            <strong>
+            <div>
+                <strong>
+                    Model Spread:
+                </strong>
+                ${spread.toFixed(1)} mm
+            </div>
+
+            <div>
+                <strong>
+                    Agreement:
+                </strong>
                 ${agreement}
-            </strong>
+            </div>
+
+            <div>
+                <strong>
+                    Average Rain Probability:
+                </strong>
+                ${Math.round(averageProbability)}%
+            </div>
+
         </div>
 
         <div style="
             margin-top:10px;
             font-size:12px;
-            opacity:0.7;
+            opacity:.7;
+            line-height:1.5;
         ">
-            Model consensus is a comparison
-            between forecasts. It is not a
-            guaranteed accuracy percentage.
+
+            Model consensus multiple weather
+            models ka comparison hai.
+            Ye guaranteed accuracy percentage
+            nahi hai.
+
         </div>
 
     `;
@@ -2640,16 +2807,16 @@ async function renderModelConsensus(
 }
 
 
-/* =========================================================
-   RAIN INTENSITY
-   ========================================================= */
+// =======================================================
+// RAIN INTENSITY
+// =======================================================
 
 function getRainIntensity(
     rain
 ) {
 
     rain =
-        Number(rain) || 0;
+        number(rain);
 
     if (rain <= 0) {
         return "No Rain";
@@ -2672,9 +2839,9 @@ function getRainIntensity(
 }
 
 
-/* =========================================================
-   RAIN RISK
-   ========================================================= */
+// =======================================================
+// RAIN RISK
+// =======================================================
 
 function getRainRisk(
     probability,
@@ -2682,11 +2849,10 @@ function getRainRisk(
 ) {
 
     probability =
-        Number(probability) || 0;
+        number(probability);
 
     rainfall =
-        Number(rainfall) || 0;
-
+        number(rainfall);
 
     if (
         rainfall >= 50 ||
@@ -2720,76 +2886,57 @@ function getRainRisk(
 }
 
 
-/* =========================================================
-   FIND NEXT RAIN
-   ========================================================= */
+// =======================================================
+// FIND NEXT RAIN
+// =======================================================
 
 function findNextRain(
-    hourlyData
+    hourly
 ) {
 
     if (
-        !hourlyData ||
-        !Array.isArray(
-            hourlyData.time
-        )
+        !hourly?.time?.length
     ) {
 
         return null;
 
     }
 
-
-    const rain =
-        hourlyData.precipitation ||
-        [];
-
-    const probability =
-        hourlyData
-            .precipitation_probability ||
-        [];
-
-
-    const startIndex =
+    const start =
         findCurrentHourIndex(
-            hourlyData.time
+            hourly.time
         );
 
-
     for (
-        let i = startIndex;
-        i < hourlyData.time.length;
+        let i = start;
+        i < hourly.time.length;
         i++
     ) {
 
-        const rainfall =
-            Number(
-                rain[i]
-            ) || 0;
+        const rain =
+            number(
+                hourly.precipitation?.[i]
+            );
 
-        const rainProbability =
-            Number(
-                probability[i]
-            ) || 0;
-
+        const probability =
+            number(
+                hourly.precipitation_probability?.[i]
+            );
 
         if (
-            rainfall >= 0.1 ||
-            rainProbability >= 50
+            rain >= 0.1 ||
+            probability >= 50
         ) {
 
             return {
 
                 time:
-                    hourlyData.time[i],
+                    hourly.time[i],
 
-                rainfall,
+                rainfall:
+                    rain,
 
-                probability:
-                    rainProbability,
-
-                index:
-                    i
+                probability
 
             };
 
@@ -2797,15 +2944,14 @@ function findNextRain(
 
     }
 
-
     return null;
 
 }
 
 
-/* =========================================================
-   SMART RAIN SUMMARY
-   ========================================================= */
+// =======================================================
+// SMART RAIN SUMMARY
+// =======================================================
 
 function renderSmartRainSummary(
     data
@@ -2818,12 +2964,10 @@ function renderSmartRainSummary(
         return;
     }
 
-
     let summary =
         document.getElementById(
             "smartRainSummary"
         );
-
 
     if (!summary) {
 
@@ -2845,11 +2989,10 @@ function renderSmartRainSummary(
             "16px";
 
         summary.style.background =
-            "rgba(14,165,233,0.08)";
+            "rgba(14,165,233,.08)";
 
         summary.style.border =
-            "1px solid rgba(14,165,233,0.18)";
-
+            "1px solid rgba(14,165,233,.18)";
 
         const target =
             document.querySelector(
@@ -2858,7 +3001,6 @@ function renderSmartRainSummary(
             document.querySelector(
                 "main"
             );
-
 
         if (target) {
 
@@ -2871,12 +3013,10 @@ function renderSmartRainSummary(
 
     }
 
-
     const nextRain =
         findNextRain(
             hourly
         );
-
 
     if (!nextRain) {
 
@@ -2887,7 +3027,7 @@ function renderSmartRainSummary(
                 font-weight:700;
                 margin-bottom:8px;
             ">
-                🌤️ Rain Forecast Summary
+                🌤️ Smart Rain Forecast
             </div>
 
             <div>
@@ -2901,12 +3041,10 @@ function renderSmartRainSummary(
 
     }
 
-
     const intensity =
         getRainIntensity(
             nextRain.rainfall
         );
-
 
     const risk =
         getRainRisk(
@@ -2914,34 +3052,27 @@ function renderSmartRainSummary(
             nextRain.rainfall
         );
 
-
     const date =
         new Date(
             nextRain.time
         );
 
-
-    const formattedTime =
+    const formatted =
         date.toLocaleString(
             "en-IN",
             {
                 weekday:
                     "short",
-
                 day:
                     "numeric",
-
                 month:
                     "short",
-
                 hour:
                     "numeric",
-
                 minute:
                     "2-digit"
             }
         );
-
 
     summary.innerHTML = `
 
@@ -2963,10 +3094,7 @@ function renderSmartRainSummary(
                 <strong>
                     Next Rain:
                 </strong>
-
-                ${escapeHtml(
-                    formattedTime
-                )}
+                ${escapeHtml(formatted)}
             </div>
 
             <div>
@@ -2974,10 +3102,7 @@ function renderSmartRainSummary(
                 <strong>
                     Probability:
                 </strong>
-
-                ${Math.round(
-                    nextRain.probability
-                )}%
+                ${Math.round(nextRain.probability)}%
             </div>
 
             <div>
@@ -2985,9 +3110,7 @@ function renderSmartRainSummary(
                 <strong>
                     Expected Rain:
                 </strong>
-
-                ${nextRain.rainfall.toFixed(1)}
-                mm
+                ${nextRain.rainfall.toFixed(1)} mm
             </div>
 
             <div>
@@ -2995,7 +3118,6 @@ function renderSmartRainSummary(
                 <strong>
                     Intensity:
                 </strong>
-
                 ${intensity}
             </div>
 
@@ -3004,7 +3126,6 @@ function renderSmartRainSummary(
                 <strong>
                     Risk:
                 </strong>
-
                 ${risk}
             </div>
 
@@ -3013,11 +3134,12 @@ function renderSmartRainSummary(
         <div style="
             margin-top:10px;
             font-size:12px;
-            opacity:0.7;
-            line-height:1.5;
+            opacity:.7;
         ">
-            Forecast signal only.
-            It is not a guaranteed prediction.
+
+            Forecast signal hai,
+            guaranteed prediction nahi.
+
         </div>
 
     `;
@@ -3025,9 +3147,9 @@ function renderSmartRainSummary(
 }
 
 
-/* =========================================================
-   NEXT RAIN ALERT
-   ========================================================= */
+// =======================================================
+// NEXT RAIN ALERT
+// =======================================================
 
 function renderNextRainAlert(
     data
@@ -3040,185 +3162,128 @@ function renderNextRainAlert(
         return;
     }
 
-
-    let alert =
+    let alertBox =
         document.getElementById(
             "nextRainAlert"
         );
 
+    if (!alertBox) {
 
-    if (!alert) {
-
-        alert =
+        alertBox =
             document.createElement(
                 "div"
             );
 
-        alert.id =
+        alertBox.id =
             "nextRainAlert";
 
-        alert.style.marginTop =
-            "15px";
-
-        alert.style.padding =
-            "15px";
-
-        alert.style.borderRadius =
+        alertBox.style.marginTop =
             "14px";
 
-        alert.style.background =
-            "rgba(59,130,246,0.08)";
+        alertBox.style.padding =
+            "15px";
 
-        alert.style.border =
-            "1px solid rgba(59,130,246,0.18)";
+        alertBox.style.borderRadius =
+            "14px";
 
+        alertBox.style.background =
+            "rgba(59,130,246,.08)";
 
-        const summary =
+        alertBox.style.border =
+            "1px solid rgba(59,130,246,.18)";
+
+        const target =
             document.getElementById(
                 "smartRainSummary"
+            ) ||
+            document.querySelector(
+                "main"
             );
 
+        if (target) {
 
-        if (summary) {
-
-            summary.appendChild(
-                alert
+            target.parentNode.insertBefore(
+                alertBox,
+                target.nextSibling
             );
-
-        } else {
-
-            const main =
-                document.querySelector(
-                    "main"
-                );
-
-            if (main) {
-                main.appendChild(
-                    alert
-                );
-            }
 
         }
 
     }
-
 
     const nextRain =
         findNextRain(
             hourly
         );
 
-
     if (!nextRain) {
 
-        alert.innerHTML = `
-            🌤️
-            No rain signal found
-            in the available hourly forecast.
+        alertBox.innerHTML = `
+
+            <strong>
+                ⏰ Next Rain Alert
+            </strong>
+
+            <div style="margin-top:6px">
+                No significant rain event detected
+                in available hourly forecast.
+            </div>
+
         `;
 
         return;
 
     }
 
-
-    const now =
-        new Date();
-
-
-    const rainTime =
+    const date =
         new Date(
             nextRain.time
         );
 
-
-    const difference =
-        Math.max(
-            0,
-            rainTime.getTime() -
-            now.getTime()
-        );
-
-
-    const totalMinutes =
-        Math.floor(
-            difference /
-            60000
-        );
-
-
-    const hours =
-        Math.floor(
-            totalMinutes /
-            60
-        );
-
-
-    const minutes =
-        totalMinutes %
-        60;
-
-
-    const countdown =
-        hours > 0
-            ? `${hours}h ${minutes}m`
-            : `${minutes}m`;
-
-
-    alert.innerHTML = `
+    alertBox.innerHTML = `
 
         <strong>
-            ⏱️ Next Rain Alert
+            ⏰ Next Rain Alert
         </strong>
 
         <div style="
-            margin-top:6px;
+            margin-top:7px;
+            line-height:1.7;
         ">
 
-            Expected around:
-            <strong>
-                ${rainTime.toLocaleTimeString(
-                    "en-IN",
-                    {
-                        hour:
-                            "numeric",
+            Rain signal around
 
-                        minute:
-                            "2-digit"
-                    }
+            <strong>
+                ${escapeHtml(
+                    date.toLocaleString(
+                        "en-IN",
+                        {
+                            weekday:
+                                "short",
+                            day:
+                                "numeric",
+                            month:
+                                "short",
+                            hour:
+                                "numeric",
+                            minute:
+                                "2-digit"
+                        }
+                    )
                 )}
             </strong>
 
-        </div>
+            <br>
 
-        <div style="
-            margin-top:4px;
-        ">
+            🌧️
+            ${nextRain.rainfall.toFixed(1)}
+            mm
 
-            Countdown:
-            <strong>
-                ${countdown}
-            </strong>
+            <br>
 
-        </div>
-
-        <div style="
-            margin-top:4px;
-        ">
-
-            Probability:
-            <strong>
-                ${Math.round(
-                    nextRain.probability
-                )}%
-            </strong>
-
-            |
-            Rain:
-            <strong>
-                ${nextRain.rainfall.toFixed(1)}
-                mm
-            </strong>
+            💧
+            ${Math.round(nextRain.probability)}
+            % probability
 
         </div>
 
@@ -3227,9 +3292,9 @@ function renderNextRainAlert(
 }
 
 
-/* =========================================================
-   HOURLY MODEL COMPARISON
-   ========================================================= */
+// =======================================================
+// HOURLY MODEL COMPARISON
+// =======================================================
 
 async function loadHourlyModelComparison(
     location
@@ -3239,170 +3304,10 @@ async function loadHourlyModelComparison(
         return;
     }
 
-
-    const models = [
-
-        {
-            name:
-                "ECMWF",
-
-            id:
-                "ecmwf_ifs025"
-        },
-
-        {
-            name:
-                "GFS",
-
-            id:
-                "gfs_seamless"
-        },
-
-        {
-            name:
-                "ICON",
-
-            id:
-                "icon_seamless"
-        }
-
-    ];
-
-
-    const results = [];
-
-
-    for (
-        const model
-        of models
-    ) {
-
-        try {
-
-            const params =
-                new URLSearchParams({
-
-                    latitude:
-                        location.latitude,
-
-                    longitude:
-                        location.longitude,
-
-                    hourly:
-                        "precipitation,precipitation_probability",
-
-                    forecast_days:
-                        "2",
-
-                    timezone:
-                        "auto",
-
-                    models:
-                        model.id
-
-                });
-
-
-            const response =
-                await fetch(
-                    `${WEATHER_API}?${params}`
-                );
-
-
-            if (!response.ok) {
-
-                throw new Error(
-                    `${model.name} API error`
-                );
-
-            }
-
-
-            const data =
-                await response.json();
-
-
-            results.push({
-
-                name:
-                    model.name,
-
-                time:
-                    data
-                        ?.hourly
-                        ?.time ||
-                    [],
-
-                rainfall:
-                    data
-                        ?.hourly
-                        ?.precipitation ||
-                    [],
-
-                probability:
-                    data
-                        ?.hourly
-                        ?.precipitation_probability ||
-                    [],
-
-                success:
-                    true
-
-            });
-
-
-        } catch (error) {
-
-            console.error(
-                `${model.name} hourly model failed:`,
-                error
-            );
-
-
-            results.push({
-
-                name:
-                    model.name,
-
-                time:
-                    [],
-
-                rainfall:
-                    [],
-
-                probability:
-                    [],
-
-                success:
-                    false
-
-            });
-
-        }
-
-    }
-
-
-    renderHourlyModelComparison(
-        results
-    );
-
-}
-
-
-/* =========================================================
-   RENDER HOURLY MODEL COMPARISON
-   ========================================================= */
-
-function renderHourlyModelComparison(
-    results
-) {
-
     let container =
         document.getElementById(
             "hourlyModelComparison"
         );
-
 
     if (!container) {
 
@@ -3423,18 +3328,16 @@ function renderHourlyModelComparison(
         container.style.borderRadius =
             "16px";
 
-        container.style.background =
-            "rgba(14,165,233,0.06)";
-
         container.style.border =
-            "1px solid rgba(14,165,233,0.15)";
-
+            "1px solid rgba(100,116,139,.18)";
 
         const target =
             document.getElementById(
                 "modelConsensus"
+            ) ||
+            document.querySelector(
+                ".model-section"
             );
-
 
         if (target) {
 
@@ -3443,502 +3346,251 @@ function renderHourlyModelComparison(
                 target.nextSibling
             );
 
-        } else {
-
-            const main =
-                document.querySelector(
-                    "main"
-                );
-
-            if (main) {
-
-                main.appendChild(
-                    container
-                );
-
-            }
-
         }
 
     }
-
-
-    const successful =
-        results.filter(
-            item =>
-                item.success
-        );
-
-
-    if (!successful.length) {
-
-        container.innerHTML = `
-
-            <strong>
-                📊 Hourly Model Comparison
-            </strong>
-
-            <p>
-                Model data currently unavailable.
-            </p>
-
-        `;
-
-        return;
-
-    }
-
-
-    const maxHours =
-        Math.min(
-            24,
-            ...successful.map(
-                item =>
-                    item.time.length
-            )
-        );
-
-
-    let rows = "";
-
-
-    for (
-        let i = 0;
-        i < maxHours;
-        i++
-    ) {
-
-        const date =
-            new Date(
-                successful[0].time[i]
-            );
-
-
-        const time =
-            date.toLocaleTimeString(
-                "en-IN",
-                {
-                    hour:
-                        "numeric",
-
-                    minute:
-                        "2-digit"
-                }
-            );
-
-
-        const values =
-            successful.map(
-                item => ({
-
-                    rain:
-                        Number(
-                            item.rainfall[i]
-                        ) || 0,
-
-                    probability:
-                        Number(
-                            item.probability[i]
-                        ) || 0
-
-                })
-            );
-
-
-        const rainValues =
-            values.map(
-                value =>
-                    value.rain
-            );
-
-
-        const average =
-            rainValues.reduce(
-                (
-                    sum,
-                    value
-                ) =>
-                    sum + value,
-                0
-            ) /
-            rainValues.length;
-
-
-        rows += `
-
-            <div style="
-                display:grid;
-                grid-template-columns:
-                    70px repeat(${successful.length},1fr) 90px;
-                gap:6px;
-                padding:7px 0;
-                border-bottom:
-                    1px solid rgba(100,116,139,0.12);
-                font-size:13px;
-                align-items:center;
-            ">
-
-                <strong>
-                    ${time}
-                </strong>
-
-                ${values.map(
-                    value => `
-
-                        <span>
-
-                            ${value.rain.toFixed(1)}
-                            mm
-
-                            <small>
-                                (
-                                ${Math.round(
-                                    value.probability
-                                )}%
-                                )
-                            </small>
-
-                        </span>
-
-                    `
-                ).join("")}
-
-                <strong>
-                    Avg:
-                    ${average.toFixed(1)}
-                    mm
-                </strong>
-
-            </div>
-
-        `;
-
-    }
-
 
     container.innerHTML = `
 
         <div style="
             font-size:18px;
             font-weight:700;
-            margin-bottom:12px;
+            margin-bottom:10px;
         ">
-
-            📊 Next 24 Hours —
-            Model Comparison
-
+            🕐 Hourly Model Comparison
         </div>
 
-
-        <div style="
-            overflow-x:auto;
-        ">
-
-            <div style="
-                min-width:620px;
-            ">
-
-                <div style="
-                    display:grid;
-                    grid-template-columns:
-                        70px repeat(${successful.length},1fr) 90px;
-                    gap:6px;
-                    padding:8px 0;
-                    font-size:12px;
-                    font-weight:700;
-                ">
-
-                    <span>
-                        Time
-                    </span>
-
-                    ${successful.map(
-                        item =>
-                            `<span>${item.name}</span>`
-                    ).join("")}
-
-                    <span>
-                        Average
-                    </span>
-
-                </div>
-
-
-                ${rows}
-
-            </div>
-
-        </div>
-
-
-        <div style="
-            margin-top:10px;
-            font-size:12px;
-            opacity:0.7;
-            line-height:1.5;
-        ">
-
-            Values are forecast rainfall in mm.
-            Percentage in brackets is precipitation
-            probability.
-
+        <div style="opacity:.7">
+            Loading ECMWF, GFS and ICON hourly rainfall...
         </div>
 
     `;
 
+    try {
+
+        const responses =
+            await Promise.all(
+                WEATHER_MODELS.map(
+                    model =>
+                        fetchModel(
+                            location,
+                            model
+                        )
+                            .then(
+                                data => ({
+                                    model,
+                                    data
+                                })
+                            )
+                            .catch(
+                                () => ({
+                                    model,
+                                    data: null
+                                })
+                            )
+                )
+            );
+
+        const startIndex =
+            responses[0]?.data?.hourly
+                ? findCurrentHourIndex(
+                    responses[0].data.hourly.time
+                )
+                : 0;
+
+        let html = `
+
+            <div style="
+                overflow-x:auto;
+            ">
+
+            <table style="
+                width:100%;
+                border-collapse:collapse;
+                font-size:13px;
+            ">
+
+                <thead>
+
+                    <tr>
+
+                        <th style="
+                            text-align:left;
+                            padding:7px;
+                        ">
+                            Time
+                        </th>
+
+        `;
+
+        responses.forEach(
+            item => {
+
+                html += `
+
+                    <th style="
+                        padding:7px;
+                    ">
+                        ${item.model.name}
+                    </th>
+
+                `;
+
+            }
+        );
+
+        html += `
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+        `;
+
+        for (
+            let offset = 0;
+            offset < 12;
+            offset++
+        ) {
+
+            const response =
+                responses.find(
+                    item =>
+                        item.data?.hourly
+                );
+
+            if (!response) {
+                break;
+            }
+
+            const index =
+                startIndex + offset;
+
+            const time =
+                response.data.hourly.time?.[
+                    index
+                ];
+
+            if (!time) {
+                break;
+            }
+
+            html += `
+
+                <tr>
+
+                    <td style="
+                        padding:7px;
+                        font-weight:600;
+                    ">
+                        ${formatTime(
+                            new Date(time)
+                        )}
+                    </td>
+
+            `;
+
+            responses.forEach(
+                item => {
+
+                    const rain =
+                        number(
+                            item.data
+                                ?.hourly
+                                ?.precipitation
+                                ?.[index]
+                        );
+
+                    html += `
+
+                        <td style="
+                            text-align:center;
+                            padding:7px;
+                        ">
+                            ${rain.toFixed(1)}
+                            mm
+                        </td>
+
+                    `;
+
+                }
+            );
+
+            html += `
+
+                </tr>
+
+            `;
+
+        }
+
+        html += `
+
+                </tbody>
+
+            </table>
+
+            </div>
+
+            <div style="
+                margin-top:10px;
+                font-size:12px;
+                opacity:.7;
+            ">
+                Values are model forecasts and
+                are not observed rainfall measurements.
+            </div>
+
+        `;
+
+        container.innerHTML =
+            html;
+
+    } catch (error) {
+
+        console.error(
+            "Hourly model comparison failed:",
+            error
+        );
+
+        container.innerHTML = `
+
+            <strong>
+                🕐 Hourly Model Comparison
+            </strong>
+
+            <p>
+                Model comparison temporarily unavailable.
+            </p>
+
+        `;
+
+    }
+
 }
 
 
-/* =========================================================
-   STATEWIDE RAINFALL
-   ========================================================= */
+// =======================================================
+// STATEWIDE RAINFALL
+// =======================================================
 
 async function loadStatewideRainfall() {
 
     if (
-        typeof L === "undefined" ||
-        !rainMap
+        typeof L === "undefined"
     ) {
 
         return;
 
     }
 
-    if (statewideLoading) {
-        return;
-    }
-
-    statewideLoading = true;
-
-
-    try {
-
-        clearStatewideRainfallMarkers();
-
-
-        const requests =
-            RAJASTHAN_OVERVIEW_LOCATIONS.map(
-                async location => {
-
-                    try {
-
-                        const params =
-                            new URLSearchParams({
-
-                                latitude:
-                                    location.latitude,
-
-                                longitude:
-                                    location.longitude,
-
-                                hourly:
-                                    "precipitation,precipitation_probability",
-
-                                forecast_days:
-                                    "1",
-
-                                timezone:
-                                    "auto"
-
-                            });
-
-
-                        const response =
-                            await fetch(
-                                `${WEATHER_API}?${params}`
-                            );
-
-
-                        if (!response.ok) {
-                            return null;
-                        }
-
-
-                        const data =
-                            await response.json();
-
-
-                        const hourly =
-                            data?.hourly;
-
-
-                        if (
-                            !hourly ||
-                            !hourly.time
-                        ) {
-
-                            return null;
-
-                        }
-
-
-                        const index =
-                            findCurrentHourIndex(
-                                hourly.time
-                            );
-
-
-                        const rainfall =
-                            Number(
-                                hourly
-                                    .precipitation?.[
-                                        index
-                                    ]
-                            ) || 0;
-
-
-                        const probability =
-                            Number(
-                                hourly
-                                    .precipitation_probability?.[
-                                        index
-                                    ]
-                            ) || 0;
-
-
-                        return {
-
-                            location,
-
-                            rainfall,
-
-                            probability
-
-                        };
-
-
-                    } catch (error) {
-
-                        console.error(
-                            `Statewide rainfall failed for ${location.name}:`,
-                            error
-                        );
-
-                        return null;
-
-                    }
-
-                }
-            );
-
-
-        const results =
-            await Promise.all(
-                requests
-            );
-
-
-        results
-            .filter(Boolean)
-            .forEach(
-                result => {
-
-                    const color =
-                        getRainMapColor(
-                            result.rainfall
-                        );
-
-
-                    const marker =
-                        L.circleMarker(
-                            [
-                                result.location.latitude,
-                                result.location.longitude
-                            ],
-                            {
-
-                                radius:
-                                    8,
-
-                                color,
-
-                                fillColor:
-                                    color,
-
-                                fillOpacity:
-                                    0.75,
-
-                                weight:
-                                    2
-
-                            }
-                        ).addTo(
-                            rainMap
-                        );
-
-
-                    marker.bindPopup(`
-
-                        <div style="
-                            min-width:170px;
-                        ">
-
-                            <strong>
-                                📍
-                                ${escapeHtml(
-                                    result.location.name
-                                )}
-                            </strong>
-
-                            <hr style="
-                                border:0;
-                                border-top:
-                                    1px solid #ddd;
-                                margin:7px 0;
-                            ">
-
-                            <div>
-                                🌧️ Rain:
-                                <strong>
-                                    ${result.rainfall.toFixed(1)}
-                                    mm
-                                </strong>
-                            </div>
-
-                            <div>
-                                💧 Probability:
-                                <strong>
-                                    ${Math.round(
-                                        result.probability
-                                    )}%
-                                </strong>
-                            </div>
-
-                        </div>
-
-                    `);
-
-
-                    statewideRainMarkers.push(
-                        marker
-                    );
-
-                }
-            );
-
-
-    } finally {
-
-        statewideLoading =
-            false;
-
-    }
-
-}
-
-
-/* =========================================================
-   CLEAR STATEWIDE MARKERS
-   ========================================================= */
-
-function clearStatewideRainfallMarkers() {
-
     if (!rainMap) {
         return;
     }
 
-
-    statewideRainMarkers.forEach(
+    statewideMapMarkers.forEach(
         marker => {
 
             try {
@@ -3947,243 +3599,160 @@ function clearStatewideRainfallMarkers() {
                     marker
                 );
 
-            } catch (error) {}
+            } catch (_) {}
 
         }
     );
 
+    statewideMapMarkers =
+        [];
 
-    statewideRainMarkers = [];
-
-}
-
-
-/* =========================================================
-   ACCURACY ENGINE
-   ========================================================= */
-
-function calculateRainfallAccuracy(
-    forecastRain,
-    actualRain
-) {
-
-    forecastRain =
-        Number(forecastRain) || 0;
-
-    actualRain =
-        Number(actualRain) || 0;
-
-
-    const difference =
-        Math.abs(
-            forecastRain -
-            actualRain
-        );
-
-
-    if (
-        actualRain === 0
+    for (
+        const location of
+        RAJASTHAN_LOCATIONS
     ) {
 
-        return (
-            forecastRain === 0
-                ? 100
-                : 0
-        );
+        try {
 
-    }
+            const params =
+                new URLSearchParams({
 
+                    latitude:
+                        location.latitude,
 
-    const errorPercent =
-        (
-            difference /
-            actualRain
-        ) * 100;
+                    longitude:
+                        location.longitude,
 
+                    hourly:
+                        [
+                            "precipitation",
+                            "precipitation_probability",
+                            "weather_code"
+                        ].join(","),
 
-    return Math.max(
-        0,
-        Math.min(
-            100,
-            100 -
-            errorPercent
-        )
-    );
+                    forecast_days:
+                        "1",
 
-}
+                    timezone:
+                        "auto"
 
+                });
 
-/* =========================================================
-   ADD ACCURACY RECORD
-   ========================================================= */
+            const response =
+                await fetch(
+                    `${WEATHER_API}?${params}`
+                );
 
-function addAccuracyRecord(
-    forecastRain,
-    actualRain,
-    locationNameValue,
-    date
-) {
+            if (!response.ok) {
+                continue;
+            }
 
-    const accuracy =
-        calculateRainfallAccuracy(
-            forecastRain,
-            actualRain
-        );
+            const data =
+                await response.json();
 
+            const index =
+                findCurrentHourIndex(
+                    data.hourly?.time || []
+                );
 
-    accuracyRecords.push({
+            const rain =
+                number(
+                    data.hourly
+                        ?.precipitation
+                        ?.[index]
+                );
 
-        location:
-            locationNameValue ||
-            "Unknown",
+            const probability =
+                number(
+                    data.hourly
+                        ?.precipitation_probability
+                        ?.[index]
+                );
 
-        date:
-            date ||
-            new Date().toISOString(),
+            const code =
+                data.hourly
+                    ?.weather_code
+                    ?.[index];
 
-        forecast:
-            Number(
-                forecastRain
-            ) || 0,
+            const marker =
+                L.circleMarker(
+                    [
+                        location.latitude,
+                        location.longitude
+                    ],
+                    {
 
-        actual:
-            Number(
-                actualRain
-            ) || 0,
+                        radius:
+                            7,
 
-        accuracy:
-            Number(
-                accuracy.toFixed(1)
-            )
+                        color:
+                            getRainMapColor(
+                                rain
+                            ),
 
-    });
+                        fillColor:
+                            getRainMapColor(
+                                rain
+                            ),
 
+                        fillOpacity:
+                            0.75,
 
-    saveAccuracyRecords();
-    updateAccuracyDisplay();
+                        weight:
+                            2
 
-}
+                    }
+                )
+                .addTo(
+                    rainMap
+                );
 
+            marker.bindPopup(`
 
-/* =========================================================
-   OVERALL ACCURACY
-   ========================================================= */
+                <strong>
+                    ${escapeHtml(
+                        location.name
+                    )}
+                </strong>
 
-function calculateOverallAccuracy() {
+                <br>
 
-    if (
-        !accuracyRecords.length
-    ) {
+                🌧️ Rain:
+                ${rain.toFixed(1)} mm
 
-        return null;
+                <br>
 
-    }
+                💧 Probability:
+                ${Math.round(probability)}%
 
+                <br>
 
-    const total =
-        accuracyRecords.reduce(
-            (
-                sum,
-                record
-            ) =>
-                sum +
-                record.accuracy,
-            0
-        );
+                🌦️
+                ${getWeatherDescription(code)}
 
+            `);
 
-    return (
-        total /
-        accuracyRecords.length
-    );
+            statewideMapMarkers.push(
+                marker
+            );
 
-}
+        } catch (error) {
 
+            console.warn(
+                `Statewide data failed for ${location.name}`,
+                error
+            );
 
-/* =========================================================
-   ACCURACY DISPLAY
-   ========================================================= */
-
-function updateAccuracyDisplay() {
-
-    const accuracyElement =
-        document.getElementById(
-            "accuracy"
-        );
-
-    const dataPointsElement =
-        document.getElementById(
-            "dataPoints"
-        );
-
-    const historicalElement =
-        document.getElementById(
-            "historicalRecords"
-        );
-
-
-    const overallAccuracy =
-        calculateOverallAccuracy();
-
-
-    if (accuracyElement) {
-
-        accuracyElement.textContent =
-            overallAccuracy === null
-                ? "--%"
-                : `${overallAccuracy.toFixed(1)}%`;
-
-    }
-
-
-    if (dataPointsElement) {
-
-        dataPointsElement.textContent =
-            accuracyRecords.length;
-
-    }
-
-
-    if (historicalElement) {
-
-        historicalElement.textContent =
-            accuracyRecords.length;
+        }
 
     }
 
 }
 
 
-/* =========================================================
-   SAVE ACCURACY
-   ========================================================= */
-
-function saveAccuracyRecords() {
-
-    try {
-
-        localStorage.setItem(
-            "rajasthanRainAccuracy",
-            JSON.stringify(
-                accuracyRecords
-            )
-        );
-
-    } catch (error) {
-
-        console.error(
-            "Accuracy save failed:",
-            error
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   LOAD ACCURACY
-   ========================================================= */
+// =======================================================
+// ACCURACY FRAMEWORK
+// =======================================================
 
 function loadAccuracyRecords() {
 
@@ -4191,38 +3760,70 @@ function loadAccuracyRecords() {
 
         const saved =
             localStorage.getItem(
-                "rajasthanRainAccuracy"
+                "rrp_accuracy_records"
             );
-
 
         if (!saved) {
+
+            actualRainfallData =
+                [];
+
             return;
-        }
-
-
-        const records =
-            JSON.parse(
-                saved
-            );
-
-
-        if (
-            Array.isArray(records)
-        ) {
-
-            accuracyRecords =
-                records;
 
         }
 
+        const parsed =
+            JSON.parse(saved);
 
-        updateAccuracyDisplay();
-
+        actualRainfallData =
+            Array.isArray(parsed)
+                ? parsed
+                : [];
 
     } catch (error) {
 
         console.error(
-            "Accuracy data load failed:",
+            "Accuracy records error:",
+            error
+        );
+
+        actualRainfallData =
+            [];
+
+    }
+
+}
+
+
+// =======================================================
+// SAVE ACCURACY RECORD
+// =======================================================
+
+function saveAccuracyRecord(
+    record
+) {
+
+    if (!record) {
+        return;
+    }
+
+    actualRainfallData.push(
+        record
+    );
+
+    try {
+
+        localStorage.setItem(
+            "rrp_accuracy_records",
+            JSON.stringify(
+                actualRainfallData
+            )
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Could not save accuracy record:",
             error
         );
 
@@ -4231,169 +3832,529 @@ function loadAccuracyRecords() {
 }
 
 
-/* =========================================================
-   ACTUAL OBSERVATION FOUNDATION
-   ========================================================= */
+// =======================================================
+// ACCURACY DISPLAY
+// =======================================================
 
-const OBSERVATION_SOURCE = {
+function updateAccuracyDisplay() {
 
-    name:
-        "IMD",
-
-    official:
-        true,
-
-    status:
-        "pending_connection"
-
-};
-
-
-/* =========================================================
-   ADD ACTUAL OBSERVATION
-   ========================================================= */
-
-function addActualRainfallObservation(
-    location,
-    rainfall,
-    observationTime,
-    stationName
-) {
-
-    if (!location) {
-        return;
-    }
-
-
-    const rain =
-        Number(
-            rainfall
-        );
-
-
-    if (
-        !Number.isFinite(rain)
-    ) {
-
-        return;
-
-    }
-
-
-    actualRainfallData.push({
-
-        location:
-            location.name ||
-            "Unknown",
-
-        latitude:
-            Number(
-                location.latitude
-            ),
-
-        longitude:
-            Number(
-                location.longitude
-            ),
-
-        station:
-            stationName ||
-            "IMD Observation",
-
-        rainfall:
-            rain,
-
-        time:
-            observationTime ||
-            new Date().toISOString(),
-
-        source:
-            OBSERVATION_SOURCE.name
-
-    });
-
-
-    updateObservationDisplay();
-
-}
-
-
-/* =========================================================
-   OBSERVATION DISPLAY
-   ========================================================= */
-
-function updateObservationDisplay() {
-
-    const dataPoints =
+    let box =
         document.getElementById(
-            "dataPoints"
+            "accuracyNote"
         );
 
+    if (!box) {
 
-    if (dataPoints) {
+        box =
+            document.createElement(
+                "div"
+            );
 
-        dataPoints.textContent =
-            actualRainfallData.length;
+        box.id =
+            "accuracyNote";
 
-    }
+        box.style.marginTop =
+            "16px";
 
+        box.style.padding =
+            "14px";
 
-    showObservationStatus();
+        box.style.borderRadius =
+            "14px";
 
-}
+        box.style.fontSize =
+            "13px";
 
+        box.style.background =
+            "rgba(100,116,139,.07)";
 
-/* =========================================================
-   OBSERVATION STATUS
-   ========================================================= */
+        const target =
+            document.querySelector(
+                "main"
+            );
 
-function showObservationStatus() {
+        if (target) {
 
-    const accuracyNote =
-        document.querySelector(
-            ".accuracy-note"
-        );
+            target.appendChild(
+                box
+            );
 
-
-    if (!accuracyNote) {
-        return;
-    }
-
-
-    if (
-        actualRainfallData.length === 0
-    ) {
-
-        accuracyNote.innerHTML = `
-
-            ℹ️ Actual rainfall observations
-            are not connected yet.
-            Accuracy will be calculated only
-            after verified observation data
-            becomes available.
-
-        `;
-
-        return;
+        }
 
     }
 
+    box.innerHTML = `
 
-    accuracyNote.innerHTML = `
+        <strong>
+            📊 Forecast Accuracy
+        </strong>
 
-        ✅
-        ${actualRainfallData.length}
-        verified observation record(s)
-        currently available for comparison.
+        <div style="margin-top:6px">
+
+            ${
+                actualRainfallData.length
+                    ? `${actualRainfallData.length} observation record(s) available.`
+                    : "Accuracy will be calculated only after verified observation data becomes available."
+            }
+
+        </div>
+
+        <div style="
+            margin-top:6px;
+            opacity:.7;
+        ">
+
+            Model consensus ko accuracy
+            nahi maana jaata. Actual accuracy ke
+            liye verified rainfall observations
+            aur historical forecast records
+            required hain.
+
+        </div>
 
     `;
 
 }
 
 
-/* =========================================================
-   AUTO REFRESH
-   ========================================================= */
+// =======================================================
+// LOAD WEATHER
+// =======================================================
+
+async function loadWeather(
+    location
+) {
+
+    if (!location) {
+        return;
+    }
+
+    if (weatherLoading) {
+        return;
+    }
+
+    const latitude =
+        number(
+            location.latitude,
+            NaN
+        );
+
+    const longitude =
+        number(
+            location.longitude,
+            NaN
+        );
+
+    if (
+        !Number.isFinite(latitude) ||
+        !Number.isFinite(longitude)
+    ) {
+
+        setStatus(
+            "Invalid location coordinates",
+            false
+        );
+
+        return;
+
+    }
+
+    weatherLoading =
+        true;
+
+    try {
+
+        setCurrentSelectedLocation(
+            location
+        );
+
+        displayLocation(
+            location
+        );
+
+        setStatus(
+            "Loading weather data..."
+        );
+
+        const data =
+            await fetchWeather(
+                location
+            );
+
+        latestWeatherData =
+            data;
+
+        updateCurrentWeather(
+            data
+        );
+
+        updateHourlyForecast(
+            data
+        );
+
+        updateDailyForecast(
+            data
+        );
+
+        updateRainMap(
+            location,
+            data
+        );
+
+        renderSmartRainSummary(
+            data
+        );
+
+        renderNextRainAlert(
+            data
+        );
+
+        /*
+        ==================================================
+        IMPORTANT PREDICTION ENGINE CONNECTION
+        ==================================================
+        prediction-engine.js listens to this event.
+        ==================================================
+        */
+
+        try {
+
+            window.dispatchEvent(
+                new CustomEvent(
+                    "rrp:weather-updated",
+                    {
+                        detail: {
+
+                            location,
+
+                            weatherData:
+                                data
+
+                        }
+                    }
+                )
+            );
+
+        } catch (error) {
+
+            console.warn(
+                "Prediction engine event failed:",
+                error
+            );
+
+        }
+
+        await updateModelStatus(
+            location
+        );
+
+        await loadHourlyModelComparison(
+            location
+        );
+
+        /*
+        Statewide rainfall markers are useful,
+        but should not block the selected
+        location weather from displaying.
+        */
+
+        loadStatewideRainfall()
+            .catch(
+                error =>
+                    console.warn(
+                        "Statewide rainfall failed:",
+                        error
+                    )
+            );
+
+        setStatus(
+            "Weather data updated"
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Weather loading failed:",
+            error
+        );
+
+        setStatus(
+            "Weather data unavailable",
+            false
+        );
+
+    } finally {
+
+        weatherLoading =
+            false;
+
+    }
+
+}
+
+
+// =======================================================
+// SEARCH LOCATION
+// =======================================================
+
+async function searchLocation() {
+
+    const query =
+        normalizeSearchText(
+            locationInput?.value
+        );
+
+    if (!query) {
+
+        setStatus(
+            "Please enter a village, town or city.",
+            false
+        );
+
+        return;
+
+    }
+
+    if (searchButton) {
+
+        searchButton.disabled =
+            true;
+
+        searchButton.textContent =
+            "Searching...";
+
+    }
+
+    try {
+
+        setStatus(
+            "Searching location..."
+        );
+
+        // ------------------------------------------------
+        // 1. KNOWN ALIAS
+        // ------------------------------------------------
+
+        if (
+            KNOWN_LOCATIONS[query]
+        ) {
+
+            const location =
+                KNOWN_LOCATIONS[query];
+
+            if (locationInput) {
+
+                locationInput.value =
+                    location.name;
+
+            }
+
+            await loadWeather(
+                location
+            );
+
+            return;
+
+        }
+
+
+        // ------------------------------------------------
+        // 2. LOCAL VILLAGE DATABASE
+        // ------------------------------------------------
+
+        const localMatches =
+            searchVillageDatabase(
+                query
+            );
+
+        if (
+            localMatches.length
+        ) {
+
+            const location =
+                createVillageLocation(
+                    localMatches[0]
+                );
+
+            if (
+                Number.isFinite(
+                    location.latitude
+                ) &&
+                Number.isFinite(
+                    location.longitude
+                )
+            ) {
+
+                if (locationInput) {
+
+                    locationInput.value =
+                        location.name;
+
+                }
+
+                await loadWeather(
+                    location
+                );
+
+                return;
+
+            }
+
+        }
+
+
+        // ------------------------------------------------
+        // 3. OPEN METEO
+        // ------------------------------------------------
+
+        let results =
+            await searchOpenMeteo(
+                query
+            );
+
+
+        // ------------------------------------------------
+        // 4. OSM FALLBACK
+        // ------------------------------------------------
+
+        if (!results.length) {
+
+            setStatus(
+                "Trying extended Rajasthan search..."
+            );
+
+            const osmResults =
+                await searchOpenStreetMap(
+                    query
+                );
+
+            if (
+                osmResults.length
+            ) {
+
+                results =
+                    osmResults;
+
+                addOSMAttribution();
+
+            }
+
+        }
+
+
+        // ------------------------------------------------
+        // NO RESULT
+        // ------------------------------------------------
+
+        if (!results.length) {
+
+            throw new Error(
+                `Location "${query}" not found in Rajasthan.`
+            );
+
+        }
+
+
+        // ------------------------------------------------
+        // SELECT FIRST RESULT
+        // ------------------------------------------------
+
+        const place =
+            results[0];
+
+        let location;
+
+        if (
+            place.lat !== undefined &&
+            place.lon !== undefined
+        ) {
+
+            location =
+                createOSMLocation(
+                    place
+                );
+
+        } else {
+
+            location =
+                createOpenMeteoLocation(
+                    place
+                );
+
+        }
+
+        if (
+            !Number.isFinite(
+                location.latitude
+            ) ||
+            !Number.isFinite(
+                location.longitude
+            )
+        ) {
+
+            throw new Error(
+                "Location coordinates unavailable."
+            );
+
+        }
+
+        if (locationInput) {
+
+            locationInput.value =
+                location.name;
+
+        }
+
+        await loadWeather(
+            location
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Location search failed:",
+            error
+        );
+
+        setStatus(
+            "Location search failed",
+            false
+        );
+
+        /*
+        Don't use alert() here because it is
+        annoying on mobile. Show the message
+        directly in status.
+        */
+
+        if (statusText) {
+
+            statusText.textContent =
+                error.message ||
+                "Location search failed.";
+
+        }
+
+    } finally {
+
+        if (searchButton) {
+
+            searchButton.disabled =
+                false;
+
+            searchButton.textContent =
+                "Search";
+
+        }
+
+    }
+
+}
+
+
+// =======================================================
+// AUTO REFRESH
+// =======================================================
 
 async function refreshCurrentWeather() {
 
@@ -4405,11 +4366,9 @@ async function refreshCurrentWeather() {
 
     }
 
-
     console.log(
-        "Refreshing weather data..."
+        "Refreshing weather..."
     );
-
 
     await loadWeather(
         currentSelectedLocation
@@ -4418,9 +4377,9 @@ async function refreshCurrentWeather() {
 }
 
 
-/* =========================================================
-   EVENT LISTENERS
-   ========================================================= */
+// =======================================================
+// SEARCH BUTTON
+// =======================================================
 
 if (searchButton) {
 
@@ -4432,6 +4391,10 @@ if (searchButton) {
 }
 
 
+// =======================================================
+// ENTER KEY
+// =======================================================
+
 if (locationInput) {
 
     locationInput.addEventListener(
@@ -4439,8 +4402,11 @@ if (locationInput) {
         event => {
 
             if (
-                event.key === "Enter"
+                event.key ===
+                "Enter"
             ) {
+
+                event.preventDefault();
 
                 searchLocation();
 
@@ -4452,9 +4418,9 @@ if (locationInput) {
 }
 
 
-/* =========================================================
-   AUTO REFRESH EVERY 30 MINUTES
-   ========================================================= */
+// =======================================================
+// AUTO REFRESH EVERY 30 MINUTES
+// =======================================================
 
 setInterval(
     refreshCurrentWeather,
@@ -4462,9 +4428,9 @@ setInterval(
 );
 
 
-/* =========================================================
-   COUNTDOWN REFRESH
-   ========================================================= */
+// =======================================================
+// UPDATE RAIN ALERT EVERY MINUTE
+// =======================================================
 
 setInterval(
     () => {
@@ -4484,9 +4450,9 @@ setInterval(
 );
 
 
-/* =========================================================
-   INITIALIZE
-   ========================================================= */
+// =======================================================
+// INITIALIZE
+// =======================================================
 
 async function initialize() {
 
@@ -4495,8 +4461,6 @@ async function initialize() {
         loadAccuracyRecords();
 
         updateAccuracyDisplay();
-
-        updateObservationDisplay();
 
         initializeRainMap();
 
@@ -4508,14 +4472,55 @@ async function initialize() {
             DEFAULT_LOCATION
         );
 
+        if (locationInput) {
+
+            locationInput.value =
+                DEFAULT_LOCATION.name;
+
+        }
 
         await loadVillageDatabase();
-
 
         await loadWeather(
             DEFAULT_LOCATION
         );
 
+        /*
+        Give prediction-engine.js a chance
+        to initialize if it was loaded after
+        this script.
+        */
+
+        setTimeout(
+            () => {
+
+                try {
+
+                    if (
+                        window.RRP_PREDICTION_ENGINE &&
+                        typeof
+                            window.RRP_PREDICTION_ENGINE.run ===
+                            "function"
+                    ) {
+
+                        window.RRP_PREDICTION_ENGINE.run(
+                            currentSelectedLocation
+                        );
+
+                    }
+
+                } catch (error) {
+
+                    console.warn(
+                        "Prediction engine initial run failed:",
+                        error
+                    );
+
+                }
+
+            },
+            800
+        );
 
     } catch (error) {
 
@@ -4534,8 +4539,44 @@ async function initialize() {
 }
 
 
-/* =========================================================
-   START WEBSITE — ONLY ONCE
-   ========================================================= */
+// =======================================================
+// START WEBSITE
+// =======================================================
 
 initialize();
+
+
+// =======================================================
+// GLOBAL API
+// =======================================================
+
+window.RRP_APP = {
+
+    getCurrentLocation:
+        () =>
+            currentSelectedLocation,
+
+    getLatestWeather:
+        () =>
+            latestWeatherData,
+
+    getLatestModels:
+        () =>
+            latestModelResults,
+
+    refresh:
+        refreshCurrentWeather,
+
+    search:
+        searchLocation,
+
+    loadWeather:
+
+        loadWeather
+
+};
+
+
+// =======================================================
+// END APP.JS
+// =======================================================
