@@ -22,15 +22,12 @@
         content="#0f172a"
     >
 
-    <!-- Main CSS -->
     <link
         rel="stylesheet"
-        href="style.css?v=8"
+        href="style.css?v=9"
     >
 
-    <!-- Leaflet Map CSS -->
-    <!-- Integrity removed so the stylesheet cannot be blocked
-         by an incorrect hash. -->
+    <!-- Leaflet CSS -->
     <link
         rel="stylesheet"
         href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -179,8 +176,6 @@
             <div class="weather-grid">
 
 
-                <!-- Rain Probability -->
-
                 <div class="weather-card">
 
                     <div class="weather-icon">
@@ -197,9 +192,6 @@
 
                 </div>
 
-
-
-                <!-- Expected Rain -->
 
                 <div class="weather-card">
 
@@ -218,9 +210,6 @@
                 </div>
 
 
-
-                <!-- Temperature -->
-
                 <div class="weather-card">
 
                     <div class="weather-icon">
@@ -237,9 +226,6 @@
 
                 </div>
 
-
-
-                <!-- Humidity -->
 
                 <div class="weather-card">
 
@@ -258,9 +244,6 @@
                 </div>
 
 
-
-                <!-- Wind -->
-
                 <div class="weather-card">
 
                     <div class="weather-icon">
@@ -277,9 +260,6 @@
 
                 </div>
 
-
-
-                <!-- Thunderstorm -->
 
                 <div class="weather-card">
 
@@ -310,21 +290,13 @@
 
         <section class="forecast-section">
 
-            <div class="section-title">
+            <h2>
+                ⏰ Hourly Rain Forecast
+            </h2>
 
-                <div>
-
-                    <h2>
-                        ⏰ Hourly Rain Forecast
-                    </h2>
-
-                    <p>
-                        Expected rainfall and probability by hour
-                    </p>
-
-                </div>
-
-            </div>
+            <p class="section-description">
+                Expected rainfall and probability by hour.
+            </p>
 
 
             <div
@@ -407,8 +379,6 @@
             <div class="model-grid">
 
 
-                <!-- ECMWF -->
-
                 <div class="model-card">
 
                     <h3>
@@ -426,9 +396,6 @@
                 </div>
 
 
-
-                <!-- GFS -->
-
                 <div class="model-card">
 
                     <h3>
@@ -445,9 +412,6 @@
 
                 </div>
 
-
-
-                <!-- ICON -->
 
                 <div class="model-card">
 
@@ -508,8 +472,6 @@
             </div>
 
 
-            <!-- Map Information -->
-
             <div
                 id="mapInfo"
                 class="map-info"
@@ -526,7 +488,6 @@
 
             </div>
 
-
         </section>
 
 
@@ -542,8 +503,10 @@
             </h2>
 
             <p class="section-description">
+
                 Forecast performance will be measured against
                 actual rainfall observations.
+
             </p>
 
 
@@ -563,7 +526,6 @@
                 </div>
 
 
-
                 <div class="accuracy-card">
 
                     <span>
@@ -575,7 +537,6 @@
                     </strong>
 
                 </div>
-
 
 
                 <div class="accuracy-card">
@@ -596,8 +557,8 @@
 
             <div class="accuracy-note">
 
-                ℹ️ Accuracy will be calculated using historical
-                forecast data and actual rainfall observations.
+                ℹ️ Accuracy is calculated only from
+                verified actual rainfall observations.
                 No fixed accuracy percentage is assumed.
 
             </div>
@@ -617,15 +578,20 @@
             </h2>
 
             <p>
+
                 Rajasthan Rain Predictor is a rainfall analysis
                 project designed to provide location-based weather
                 information across Rajasthan.
+
             </p>
 
+
             <p>
-                The system will gradually incorporate multiple
-                weather models, historical observations and
-                regional calibration to improve rainfall analysis.
+
+                The system combines multiple weather models,
+                historical observations and regional calibration
+                to improve rainfall analysis over time.
+
             </p>
 
         </section>
@@ -650,8 +616,10 @@
         </p>
 
         <p class="footer-warning">
+
             Forecast information is for informational purposes.
             For official weather warnings and alerts, refer to IMD.
+
         </p>
 
         <p class="copyright">
@@ -663,7 +631,7 @@
 
 
     <!-- =====================================================
-         LEAFLET MAP JAVASCRIPT
+         LEAFLET
     ====================================================== -->
 
     <script
@@ -673,17 +641,26 @@
 
 
     <!-- =====================================================
-         MAIN JAVASCRIPT
+         MAIN APP
     ====================================================== -->
 
     <script src="app.js?v=7"></script>
 
 
+
     <!-- =====================================================
-         PREDICTION ENGINE
+         MULTI MODEL PREDICTION ENGINE
     ====================================================== -->
 
     <script src="prediction-engine.js?v=2"></script>
+
+
+
+    <!-- =====================================================
+         ACCURACY ENGINE
+    ====================================================== -->
+
+    <script src="accuracy-engine.js?v=1"></script>
 
 
 </body>
