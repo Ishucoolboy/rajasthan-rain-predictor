@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
   <meta charset="UTF-8">
 
   <meta
@@ -10,25 +12,43 @@
 
   <meta
     name="description"
-    content="Rajasthan Rain Predictor - rainfall prediction, weather forecast, model comparison and historical backtesting for Rajasthan."
+    content="Rajasthan Rain Predictor - Rajasthan-wide rainfall prediction, weather forecast, ECMWF GFS ICON model comparison, rainfall map and forecast verification."
   >
 
-  <title>Rajasthan Rain Predictor</title>
+  <meta
+    name="theme-color"
+    content="#0f172a"
+  >
 
-  <!-- Leaflet -->
+  <title>
+    Rajasthan Rain Predictor
+  </title>
+
+
+  <!-- =====================================================
+       LEAFLET CSS
+       ===================================================== -->
+
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   >
 
-  <!-- Main CSS -->
+
+  <!-- =====================================================
+       MAIN CSS
+       ===================================================== -->
+
   <link
     rel="stylesheet"
     href="style.css?v=9"
   >
+
 </head>
 
+
 <body>
+
 
   <!-- =====================================================
        HEADER
@@ -45,12 +65,33 @@
         </div>
 
         <div>
-          <h1>Rajasthan Rain Predictor</h1>
+
+          <h1>
+            Rajasthan Rain Predictor
+          </h1>
 
           <p>
             Smart rainfall & weather prediction
           </p>
+
         </div>
+
+      </div>
+
+
+      <div
+        id="onlineStatus"
+        class="online-status"
+      >
+
+        <span
+          id="statusIndicator"
+          class="status-indicator"
+        ></span>
+
+        <span id="statusText">
+          Loading...
+        </span>
 
       </div>
 
@@ -59,26 +100,33 @@
   </header>
 
 
+
   <!-- =====================================================
        MAIN
        ===================================================== -->
 
   <main class="container">
 
+
     <!-- ===================================================
-         SEARCH SECTION
+         SEARCH
          =================================================== -->
 
     <section class="search-section">
 
       <div class="section-title">
-        <h2>📍 Search Location</h2>
+
+        <h2>
+          📍 Search Location
+        </h2>
 
         <p>
           Rajasthan ke kisi bhi village, town ya city ko
           search karein.
         </p>
+
       </div>
+
 
       <div class="search-box">
 
@@ -98,10 +146,12 @@
 
       </div>
 
+
       <div
         id="searchSuggestions"
         class="search-suggestions"
       ></div>
+
 
       <button
         id="useLocationButton"
@@ -111,6 +161,7 @@
         📍 Use My Location
       </button>
 
+
       <div
         id="searchStatus"
         class="status-message"
@@ -119,8 +170,9 @@
     </section>
 
 
+
     <!-- ===================================================
-         LOCATION CARD
+         LOCATION
          =================================================== -->
 
     <section
@@ -134,24 +186,29 @@
           Selected Location
         </div>
 
+
         <h2 id="locationName">
-          Search a location
+          Kuchera, Nagaur, Rajasthan
         </h2>
 
+
         <p id="locationCoordinates">
-          Latitude: -- | Longitude: --
+          Latitude: 27.0100° |
+          Longitude: 73.9700°
         </p>
 
       </div>
+
 
       <div
         id="weatherUpdated"
         class="updated-time"
       >
-        Weather data not loaded
+        Weather data loading...
       </div>
 
     </section>
+
 
 
     <!-- ===================================================
@@ -162,11 +219,63 @@
 
       <div class="section-title">
 
-        <h2>🌤️ Current Weather</h2>
+        <h2>
+          🌤️ Current Weather
+        </h2>
 
       </div>
 
+
       <div class="weather-grid">
+
+
+        <!-- Rain Probability -->
+
+        <div class="weather-card">
+
+          <div class="weather-card-icon">
+            🌧️
+          </div>
+
+          <div class="weather-card-label">
+            Rain Probability
+          </div>
+
+          <div
+            id="rainProbability"
+            class="weather-card-value"
+          >
+            --
+          </div>
+
+        </div>
+
+
+
+        <!-- Rain Amount -->
+
+        <div class="weather-card">
+
+          <div class="weather-card-icon">
+            💧
+          </div>
+
+          <div class="weather-card-label">
+            Rainfall
+          </div>
+
+          <div
+            id="rainAmount"
+            class="weather-card-value"
+          >
+            --
+          </div>
+
+        </div>
+
+
+
+        <!-- Temperature -->
 
         <div class="weather-card">
 
@@ -179,23 +288,22 @@
           </div>
 
           <div
-            id="currentTemperature"
+            id="temperature"
             class="weather-card-value"
           >
             --
           </div>
 
-          <div class="weather-card-unit">
-            °C
-          </div>
-
         </div>
 
+
+
+        <!-- Humidity -->
 
         <div class="weather-card">
 
           <div class="weather-card-icon">
-            💧
+            💦
           </div>
 
           <div class="weather-card-label">
@@ -203,18 +311,17 @@
           </div>
 
           <div
-            id="currentHumidity"
+            id="humidity"
             class="weather-card-value"
           >
             --
           </div>
 
-          <div class="weather-card-unit">
-            %
-          </div>
-
         </div>
 
+
+
+        <!-- Wind -->
 
         <div class="weather-card">
 
@@ -227,45 +334,42 @@
           </div>
 
           <div
-            id="currentWind"
+            id="wind"
             class="weather-card-value"
           >
             --
           </div>
 
-          <div class="weather-card-unit">
-            km/h
-          </div>
-
         </div>
 
+
+
+        <!-- Thunderstorm -->
 
         <div class="weather-card">
 
           <div class="weather-card-icon">
-            🌧️
+            ⛈️
           </div>
 
           <div class="weather-card-label">
-            Rain
+            Thunderstorm
           </div>
 
           <div
-            id="currentRain"
+            id="thunderstorm"
             class="weather-card-value"
           >
             --
           </div>
 
-          <div class="weather-card-unit">
-            mm
-          </div>
-
         </div>
+
 
       </div>
 
     </section>
+
 
 
     <!-- ===================================================
@@ -276,7 +380,9 @@
 
       <div class="section-title">
 
-        <h2>⏱️ Hourly Rain Forecast</h2>
+        <h2>
+          ⏱️ Hourly Rain Forecast
+        </h2>
 
         <p>
           Agle 24 hours ka detailed forecast.
@@ -284,12 +390,14 @@
 
       </div>
 
+
       <div
         id="hourlyForecast"
         class="hourly-forecast"
       ></div>
 
     </section>
+
 
 
     <!-- ===================================================
@@ -300,9 +408,12 @@
 
       <div class="section-title">
 
-        <h2>📅 7-Day Forecast</h2>
+        <h2>
+          📅 7-Day Forecast
+        </h2>
 
       </div>
+
 
       <div
         id="dailyForecast"
@@ -312,27 +423,92 @@
     </section>
 
 
+
     <!-- ===================================================
-         MODEL COMPARISON
+         WEATHER MODEL COMPARISON
          =================================================== -->
 
     <section class="model-section">
 
       <div class="section-title">
 
-        <h2>🛰️ Weather Model Comparison</h2>
+        <h2>
+          🛰️ Weather Model Comparison
+        </h2>
 
         <p>
-          ECMWF, GFS aur ICON forecast comparison.
+          ECMWF, GFS aur ICON rainfall forecast.
         </p>
 
       </div>
 
 
-      <div
-        id="modelComparison"
-        class="model-comparison"
-      ></div>
+      <div class="model-comparison">
+
+
+        <div class="model-card">
+
+          <h3>
+            ECMWF
+          </h3>
+
+          <div
+            id="ecmwfRain"
+            class="model-value"
+          >
+            --
+          </div>
+
+          <span>
+            Rainfall
+          </span>
+
+        </div>
+
+
+
+        <div class="model-card">
+
+          <h3>
+            GFS
+          </h3>
+
+          <div
+            id="gfsRain"
+            class="model-value"
+          >
+            --
+          </div>
+
+          <span>
+            Rainfall
+          </span>
+
+        </div>
+
+
+
+        <div class="model-card">
+
+          <h3>
+            ICON
+          </h3>
+
+          <div
+            id="iconRain"
+            class="model-value"
+          >
+            --
+          </div>
+
+          <span>
+            Rainfall
+          </span>
+
+        </div>
+
+
+      </div>
 
 
       <div
@@ -343,14 +519,16 @@
     </section>
 
 
+
     <!-- ===================================================
-         PREDICTION ENGINE
+         COMBINED PREDICTION ENGINE
          =================================================== -->
 
     <section
       id="predictionEngine"
       class="prediction-engine"
     ></section>
+
 
 
     <!-- ===================================================
@@ -361,14 +539,16 @@
 
       <div class="section-title">
 
-        <h2>🕐 Hourly Model Comparison</h2>
+        <h2>
+          🕐 Hourly Model Comparison
+        </h2>
 
         <p>
-          Different models ke hourly rain forecast ko
-          compare karein.
+          ECMWF, GFS aur ICON ke hourly signals.
         </p>
 
       </div>
+
 
       <div
         id="hourlyModelComparison"
@@ -376,6 +556,7 @@
       ></div>
 
     </section>
+
 
 
     <!-- ===================================================
@@ -386,9 +567,12 @@
 
       <div class="section-title">
 
-        <h2>🧠 Smart Rain Forecast</h2>
+        <h2>
+          🧠 Smart Rain Forecast
+        </h2>
 
       </div>
+
 
       <div
         id="smartRainForecast"
@@ -396,6 +580,7 @@
       ></div>
 
     </section>
+
 
 
     <!-- ===================================================
@@ -406,9 +591,12 @@
 
       <div class="section-title">
 
-        <h2>🔔 Next Rain Alert</h2>
+        <h2>
+          🔔 Next Rain Alert
+        </h2>
 
       </div>
+
 
       <div
         id="nextRainAlert"
@@ -416,6 +604,7 @@
       ></div>
 
     </section>
+
 
 
     <!-- ===================================================
@@ -426,13 +615,16 @@
 
       <div class="section-title">
 
-        <h2>🗺️ Rajasthan Rainfall Map</h2>
+        <h2>
+          🗺️ Rajasthan Rainfall Map
+        </h2>
 
         <p>
-          Selected location ka rainfall map.
+          Selected location ka live rainfall map.
         </p>
 
       </div>
+
 
       <div
         id="rainMap"
@@ -440,6 +632,7 @@
       ></div>
 
     </section>
+
 
 
     <!-- ===================================================
@@ -453,21 +646,25 @@
 
       <div class="section-title">
 
-        <h2>📊 Forecast Accuracy</h2>
+        <h2>
+          📊 Forecast Accuracy
+        </h2>
 
         <p>
-          Forecast ko actual observations ke saath
-          verify karne ka framework.
+          Forecast ko actual rainfall observations ke
+          saath verify kiya jayega.
         </p>
 
       </div>
 
 
+
       <!-- ===============================================
-           CURRENT VERIFIED ACCURACY
+           ACCURACY SUMMARY
            =============================================== -->
 
       <div class="accuracy-summary">
+
 
         <div class="accuracy-card">
 
@@ -483,6 +680,7 @@
           </div>
 
         </div>
+
 
 
         <div class="accuracy-card">
@@ -501,6 +699,7 @@
         </div>
 
 
+
         <div class="accuracy-card">
 
           <div class="accuracy-card-label">
@@ -516,11 +715,13 @@
 
         </div>
 
+
       </div>
 
 
+
       <!-- ===============================================
-           ACCURACY INFORMATION
+           ACCURACY INFO
            =============================================== -->
 
       <div class="accuracy-info">
@@ -530,19 +731,21 @@
         </h3>
 
         <p>
-          Website measured accuracy tabhi show karegi
-          jab forecast aur actual rainfall observation
-          available ho.
+          Accuracy tabhi calculate hogi jab forecast
+          aur actual rainfall observation dono available
+          honge.
         </p>
 
         <p>
-          Model consensus ko actual accuracy nahi maana
-          jayega.
+          Model consensus ko measured accuracy nahi
+          maana jayega.
         </p>
 
       </div>
 
+
     </section>
+
 
 
     <!-- ===================================================
@@ -556,8 +759,13 @@
       </p>
 
       <p>
-        Weather information is forecast-based and may
-        differ from local observations.
+        Multi-model weather forecast using ECMWF,
+        GFS and ICON.
+      </p>
+
+      <p>
+        Forecast information may differ from
+        local observations.
       </p>
 
       <p>
@@ -567,73 +775,175 @@
 
     </footer>
 
+
   </main>
+
 
 
   <!-- =====================================================
        JAVASCRIPT
        ===================================================== -->
 
+
   <!-- Leaflet -->
+
   <script
     src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
   ></script>
 
 
+
   <!-- Main Application -->
+
   <script
     src="app.js?v=7"
   ></script>
 
 
-  <!-- Prediction Engine -->
+
+  <!-- Multi Model Prediction -->
+
   <script
     src="prediction-engine.js?v=2"
   ></script>
 
 
-  <!-- Accuracy Engine -->
+
+  <!-- Basic Accuracy -->
+
   <script
     src="accuracy-engine.js?v=1"
   ></script>
 
 
-  <!-- Historical Backtest Engine -->
-   <script
-  src="backtest-engine.js?v=1"
-></script>
 
-<script
-  src="backtest-dashboard.js?v=1"
-></script>
+  <!-- Historical Backtest -->
+
+  <script
+    src="backtest-engine.js?v=1"
+  ></script>
+
+
+
+  <!-- Backtest Dashboard -->
+
+  <script
+    src="backtest-dashboard.js?v=1"
+  ></script>
+
+
+
+  <!-- Actual Rainfall Observation -->
+
+  <script
+    src="observation-engine.js?v=1"
+  ></script>
+
+
+
+  <!-- Forecast Verification -->
+
+  <script
+    src="accuracy-verification-engine.js?v=1"
+  ></script>
+
+
+
+  <!-- Forecast Snapshot -->
+
+  <script
+    src="forecast-snapshot-engine.js?v=1"
+  ></script>
+
+
+
+  <!-- =====================================================
+       STARTUP CHECK
+       ===================================================== -->
 
   <script>
-    /*
-      Small compatibility helper.
-
-      If the accuracy section already exists,
-      the backtest engine will automatically create
-      its Historical Backtest panel inside it.
-    */
 
     window.addEventListener(
       "load",
       function () {
 
+        console.log(
+          "===================================="
+        );
+
+        console.log(
+          "Rajasthan Rain Predictor loaded"
+        );
+
+        console.log(
+          "===================================="
+        );
+
+
+        console.log(
+          "Prediction Engine:",
+          typeof window.RRP_PREDICTION_ENGINE
+        );
+
+
+        console.log(
+          "Backtest Engine:",
+          typeof window.RRP_BACKTEST
+        );
+
+
+        console.log(
+          "Backtest Dashboard:",
+          typeof window.RRP_BACKTEST_DASHBOARD
+        );
+
+
+        console.log(
+          "Observation Engine:",
+          typeof window.RRP_OBSERVATION
+        );
+
+
+        console.log(
+          "Verification Engine:",
+          typeof window.RRP_VERIFICATION
+        );
+
+
+        console.log(
+          "Snapshot Engine:",
+          typeof window.RRP_SNAPSHOT
+        );
+
+
+        /*
+          Helpful diagnostic:
+          All engines should show "object".
+        */
+
         if (
-          window.RRP_BACKTEST &&
-          typeof window.RRP_BACKTEST.getResults === "function"
+          typeof window.RRP_SNAPSHOT ===
+          "object"
         ) {
 
           console.log(
-            "RRP Historical Backtest Engine loaded successfully."
+            "✅ Forecast Snapshot Engine ready."
+          );
+
+        } else {
+
+          console.warn(
+            "⚠️ Forecast Snapshot Engine not loaded."
           );
 
         }
 
       }
     );
+
   </script>
 
+
 </body>
+
 </html>
