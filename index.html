@@ -23,7 +23,7 @@
   <title>Rajasthan Rain Predictor</title>
 
 
-  <!-- LEAFLET CSS -->
+  <!-- LEAFLET -->
 
   <link
     rel="stylesheet"
@@ -565,7 +565,7 @@
 
 
 
-    <!-- RAIN MAP -->
+    <!-- MAP -->
 
     <section class="map-section">
 
@@ -605,8 +605,7 @@
         </h2>
 
         <p>
-          Forecast ko actual rainfall observations ke
-          saath verify kiya jayega.
+          Forecast verification statistics.
         </p>
 
       </div>
@@ -675,9 +674,8 @@
         </h3>
 
         <p>
-          Accuracy tabhi calculate hogi jab forecast
-          aur actual rainfall observation dono available
-          honge.
+          Forecast aur actual rainfall observations
+          available hone par verification calculate hogi.
         </p>
 
         <p>
@@ -705,9 +703,9 @@
         </h2>
 
         <p>
-          Completed forecast dates ko historical
-          rainfall reference ke saath automatically
-          verify kiya jayega.
+          Completed forecast dates ko automatically
+          historical rainfall reference ke saath verify
+          kiya jayega.
         </p>
 
       </div>
@@ -876,9 +874,6 @@
 
 
 
-  <!-- JAVASCRIPT -->
-
-
   <!-- LEAFLET -->
 
   <script
@@ -887,7 +882,7 @@
 
 
 
-  <!-- MAIN APPLICATION -->
+  <!-- MAIN APP -->
 
   <script
     src="app.js?v=7"
@@ -895,7 +890,7 @@
 
 
 
-  <!-- MULTI MODEL PREDICTION -->
+  <!-- PREDICTION -->
 
   <script
     src="prediction-engine.js?v=2"
@@ -911,15 +906,12 @@
 
 
 
-  <!-- HISTORICAL BACKTEST -->
+  <!-- BACKTEST -->
 
   <script
     src="backtest-engine.js?v=1"
   ></script>
 
-
-
-  <!-- BACKTEST DASHBOARD -->
 
   <script
     src="backtest-dashboard.js?v=1"
@@ -927,7 +919,7 @@
 
 
 
-  <!-- ACTUAL OBSERVATION -->
+  <!-- OBSERVATION -->
 
   <script
     src="observation-engine.js?v=1"
@@ -935,7 +927,7 @@
 
 
 
-  <!-- FORECAST VERIFICATION -->
+  <!-- VERIFICATION -->
 
   <script
     src="accuracy-verification-engine.js?v=2"
@@ -943,7 +935,7 @@
 
 
 
-  <!-- FORECAST SNAPSHOT -->
+  <!-- SNAPSHOT -->
 
   <script
     src="forecast-snapshot-engine.js?v=2"
@@ -951,15 +943,15 @@
 
 
 
-  <!-- HISTORICAL MODEL ACCURACY V5 -->
+  <!-- HISTORICAL ACCURACY -->
 
   <script
-    src="historical-model-accuracy-engine.js?v=5"
+    src="historical-model-accuracy-engine.js?v=6"
   ></script>
 
 
 
-  <!-- AUTOMATIC VERIFICATION V2 -->
+  <!-- AUTOMATIC VERIFICATION -->
 
   <script
     src="automatic-verification-engine.js?v=2"
@@ -967,15 +959,140 @@
 
 
 
-  <!-- REGIONAL ACCURACY V1 -->
+  <!-- REGIONAL ACCURACY -->
 
   <script
-    src="regional-accuracy-engine.js?v=1"
+    src="regional-accuracy-engine.js?v=2"
   ></script>
 
 
 
-  <!-- HISTORICAL ACCURACY UI -->
+  <!-- OLD SAVED HISTORICAL RESULT COMPATIBILITY -->
+
+  <script>
+
+    /*
+      Older versions of the historical engine
+      could save models as an object.
+
+      Current version expects models as an array.
+
+      Convert the old format before the
+      DOMContentLoaded handlers execute.
+    */
+
+    (function () {
+
+      try {
+
+        const key =
+          "rrp_historical_model_accuracy_v5";
+
+
+        const raw =
+          localStorage.getItem(
+            key
+          );
+
+
+        if (!raw) {
+          return;
+        }
+
+
+        const result =
+          JSON.parse(raw);
+
+
+        if (
+          result &&
+          result.models &&
+          !Array.isArray(
+            result.models
+          ) &&
+          typeof result.models ===
+            "object"
+        ) {
+
+          const converted = [];
+
+
+          Object.keys(
+            result.models
+          ).forEach(
+            function (modelName) {
+
+              const modelData =
+                result.models[
+                  modelName
+                ];
+
+
+              if (
+                modelData &&
+                typeof modelData ===
+                  "object"
+              ) {
+
+                converted.push({
+
+                  name:
+                    modelData.name ||
+                    modelName,
+
+                  modelId:
+                    modelData.modelId ||
+                    null,
+
+                  leads:
+                    Array.isArray(
+                      modelData.leads
+                    )
+                      ? modelData.leads
+                      : []
+
+                });
+
+              }
+
+            }
+          );
+
+
+          result.models =
+            converted;
+
+
+          localStorage.setItem(
+            key,
+            JSON.stringify(
+              result
+            )
+          );
+
+
+          console.log(
+            "✅ Old historical result format migrated."
+          );
+
+        }
+
+      } catch (error) {
+
+        console.warn(
+          "Historical result migration skipped:",
+          error
+        );
+
+      }
+
+    })();
+
+  </script>
+
+
+
+  <!-- HISTORICAL ACCURACY BUTTON -->
 
   <script>
 
@@ -1087,12 +1204,74 @@
         }
 
 
+        let modelList = [];
+
+
+        /*
+          Current format:
+          models = Array
+
+          Old format:
+          models = Object
+        */
+
+        if (
+          Array.isArray(
+            result.models
+          )
+        ) {
+
+          modelList =
+            result.models;
+
+        } else if (
+          result.models &&
+          typeof result.models ===
+            "object"
+        ) {
+
+          modelList =
+            Object.keys(
+              result.models
+            ).map(
+              function (key) {
+
+                const value =
+                  result.models[key];
+
+
+                return {
+
+                  name:
+                    value?.name ||
+                    key,
+
+                  modelId:
+                    value?.modelId ||
+                    null,
+
+                  leads:
+                    Array.isArray(
+                      value?.leads
+                    )
+                      ? value.leads
+                      : []
+
+                };
+
+              }
+            );
+
+        }
+
+
         let html = `
 
           <div style="
             display:grid;
             gap:16px;
           ">
+
 
             <div style="
               padding:16px;
@@ -1103,6 +1282,7 @@
               font-size:13px;
             ">
 
+
               <strong>
                 📍 Location:
               </strong>
@@ -1112,7 +1292,9 @@
                 "Selected Location"
               )}
 
+
               <br>
+
 
               <strong>
                 📅 Period:
@@ -1130,7 +1312,9 @@
                 ""
               )}
 
+
               <br>
+
 
               <strong>
                 📊 Reference:
@@ -1138,7 +1322,9 @@
 
               ERA5 / reanalysis
 
+
               <br>
+
 
               <strong>
                 📦 Test Days:
@@ -1149,15 +1335,13 @@
                 90
               }
 
+
             </div>
 
         `;
 
 
-        (
-          result.models ||
-          []
-        ).forEach(
+        modelList.forEach(
           function (model) {
 
             html += `
@@ -1168,6 +1352,7 @@
                 background:rgba(255,255,255,.06);
                 border:1px solid rgba(255,255,255,.12);
               ">
+
 
                 <h3 style="
                   margin:0 0 14px;
@@ -1186,11 +1371,13 @@
                   overflow-x:auto;
                 ">
 
+
                   <table style="
                     width:100%;
                     border-collapse:collapse;
                     font-size:12px;
                   ">
+
 
                     <thead>
 
@@ -1203,12 +1390,14 @@
                           Lead
                         </th>
 
+
                         <th style="
                           padding:9px;
                           text-align:left;
                         ">
                           Samples
                         </th>
+
 
                         <th style="
                           padding:9px;
@@ -1217,6 +1406,7 @@
                           MAE
                         </th>
 
+
                         <th style="
                           padding:9px;
                           text-align:left;
@@ -1224,12 +1414,14 @@
                           RMSE
                         </th>
 
+
                         <th style="
                           padding:9px;
                           text-align:left;
                         ">
                           Bias
                         </th>
+
 
                         <th style="
                           padding:9px;
@@ -1369,6 +1561,31 @@
         );
 
 
+        if (!modelList.length) {
+
+          html += `
+
+            <div style="
+              padding:16px;
+              border-radius:12px;
+              background:rgba(255,255,255,.06);
+            ">
+
+              ⚠️ Historical result mein model
+              data available nahi hai.
+
+              <br><br>
+
+              Test dobara run karne par
+              fresh result generate ho jayega.
+
+            </div>
+
+          `;
+
+        }
+
+
         html += `
 
             <div style="
@@ -1381,22 +1598,19 @@
             ">
 
               ⚠️ Ye historical test
-
               <strong>
                 ERA5/reanalysis
               </strong>
-
               ke against hai.
 
               Ye independent
-
               <strong>
                 IMD/rain-gauge accuracy
               </strong>
-
               nahi hai.
 
             </div>
+
 
           </div>
 
@@ -1512,7 +1726,7 @@
 
 
       /*
-        Load saved V5 result
+        Load saved result safely.
       */
 
       setTimeout(
