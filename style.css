@@ -830,3 +830,64 @@ input {
     }
 
 }
+/* =========================================================
+   LEAFLET MAP TILE FIX
+   Prevent responsive image CSS from breaking map tiles
+   ========================================================= */
+
+#rainMap {
+    position: relative !important;
+    overflow: hidden !important;
+    width: 100% !important;
+    height: 480px !important;
+    min-height: 360px !important;
+}
+
+/* Leaflet itself */
+#rainMap.leaflet-container {
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+/* IMPORTANT:
+   Do not allow global img CSS to resize Leaflet tiles
+*/
+#rainMap .leaflet-tile {
+    max-width: none !important;
+    max-height: none !important;
+}
+
+/* Leaflet tile images */
+#rainMap img.leaflet-tile {
+    width: 256px !important;
+    height: 256px !important;
+    max-width: none !important;
+    max-height: none !important;
+}
+
+/* Leaflet tile containers */
+#rainMap .leaflet-tile-container {
+    position: absolute !important;
+}
+
+/* Keep map panes positioned correctly */
+#rainMap .leaflet-map-pane,
+#rainMap .leaflet-tile-pane,
+#rainMap .leaflet-overlay-pane,
+#rainMap .leaflet-shadow-pane,
+#rainMap .leaflet-marker-pane,
+#rainMap .leaflet-tooltip-pane,
+#rainMap .leaflet-popup-pane {
+    position: absolute !important;
+}
+
+/* Prevent other website CSS from affecting Leaflet */
+#rainMap .leaflet-control {
+    z-index: 1000 !important;
+}
+
+#rainMap .leaflet-marker-icon,
+#rainMap .leaflet-marker-shadow {
+    max-width: none !important;
+    max-height: none !important;
+}
