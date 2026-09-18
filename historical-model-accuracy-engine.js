@@ -1,9 +1,33 @@
 /* =========================================================
    Rajasthan Rain Predictor
-   Historical Model Accuracy Engine V4
+   Historical Model Accuracy Engine V5
    ---------------------------------------------------------
-   ECMWF / GFS / ICON
-   Fixed lead times: Day 1 to Day 7
+   90-Day Historical Verification
+
+   Models:
+   - ECMWF
+   - GFS
+   - ICON
+
+   Lead times:
+   - Day 1
+   - Day 2
+   - Day 3
+   - Day 4
+   - Day 5
+   - Day 6
+   - Day 7
+
+   Metrics:
+   - Samples
+   - MAE
+   - RMSE
+   - Bias
+   - Rain Accuracy
+   - Hits
+   - Misses
+   - False Alarms
+   - Correct No Rain
 
    Reference:
    Open-Meteo Historical Weather / ERA5 reanalysis
@@ -22,7 +46,7 @@
        ===================================================== */
 
     const RESULT_KEY =
-        "rrp_historical_model_accuracy_v4";
+        "rrp_historical_model_accuracy_v5";
 
 
     const MODELS = [
@@ -56,19 +80,31 @@
     ];
 
 
-    const RAIN_THRESHOLD = 0.1;
+    /*
+       90 days of historical samples.
+
+       Each Day 1-7 result will ideally have
+       approximately 90 daily samples.
+    */
+
+    const TEST_DAYS = 90;
 
 
     /*
-       Historical data needs a delay.
-
-       We test a period ending 8 days before today.
-       This prevents future-date requests.
+       Historical Weather / ERA5 data has
+       a delay, so stay safely in the past.
     */
 
     const HISTORICAL_DELAY_DAYS = 8;
 
-    const TEST_DAYS = 7;
+
+    /*
+       Rain/no-rain threshold.
+
+       >= 0.1 mm = rain event
+    */
+
+    const RAIN_THRESHOLD = 0.1;
 
 
     /* =====================================================
@@ -201,13 +237,7 @@
     function getLocation() {
 
         /*
-           IMPORTANT FIX:
-
-           app.js exposes the selected location through:
-
-           window.RRP_APP.getCurrentLocation()
-
-           We use that first.
+           app.js exposes the selected location here.
         */
 
         try {
@@ -246,14 +276,6 @@
                         longitude !== null
                     ) {
 
-                        console.log(
-                            "Historical accuracy location:",
-                            location.name,
-                            latitude,
-                            longitude
-                        );
-
-
                         return {
 
                             name:
@@ -282,74 +304,6 @@
         }
 
 
-        /*
-           Fallback:
-           latestWeatherData may contain coordinates
-           in some future version of app.js.
-        */
-
-        try {
-
-            const data =
-                window.latestWeatherData;
-
-
-            if (
-                data
-            ) {
-
-                const latitude =
-                    number(
-                        data.latitude ??
-                        data.lat ??
-                        data.location?.latitude ??
-                        data.location?.lat
-                    );
-
-
-                const longitude =
-                    number(
-                        data.longitude ??
-                        data.lon ??
-                        data.lng ??
-                        data.location?.longitude ??
-                        data.location?.lon ??
-                        data.location?.lng
-                    );
-
-
-                if (
-                    latitude !== null &&
-                    longitude !== null
-                ) {
-
-                    return {
-
-                        name:
-                            data.locationName ||
-                            data.name ||
-                            "Selected Location",
-
-                        latitude,
-
-                        longitude
-
-                    };
-
-                }
-
-            }
-
-        } catch (error) {
-
-            console.warn(
-                "Weather data location lookup failed:",
-                error
-            );
-
-        }
-
-
         return null;
 
     }
@@ -364,11 +318,6 @@
         const end =
             new Date();
 
-
-        /*
-           Move sufficiently into the past
-           so ERA5 data is available.
-        */
 
         end.setUTCDate(
             end.getUTCDate() -
@@ -407,7 +356,7 @@
 
 
     /* =====================================================
-       HISTORICAL WEATHER API
+       HISTORICAL REFERENCE
        ===================================================== */
 
     async function fetchHistoricalActual(
@@ -468,20 +417,13 @@
         );
 
 
-        /*
-           Do NOT send models=era5 here.
-
-           The archive endpoint accepts the historical
-           weather request directly.
-        */
-
         const url =
             "https://archive-api.open-meteo.com/v1/archive?" +
             params.toString();
 
 
         console.log(
-            "Historical Weather API request:",
+            "Historical reference request:",
             url
         );
 
@@ -518,7 +460,7 @@
 
             } catch (error) {
 
-                /* Ignore JSON parse error */
+                /* Ignore */
 
             }
 
@@ -537,7 +479,7 @@
 
 
     /* =====================================================
-       ACTUAL DAILY RAIN MAP
+       CREATE ACTUAL DAILY RAIN MAP
        ===================================================== */
 
     function createActualMap(
@@ -597,14 +539,12 @@
 
 
     /* =====================================================
-       PREVIOUS RUNS API
+       FETCH ALL 7 PREVIOUS-RUN LEADS IN ONE REQUEST
        ===================================================== */
 
-    async function fetchPreviousRun(
+    async function fetchPreviousRuns(
 
         modelId,
-
-        leadDays,
 
         latitude,
 
@@ -616,9 +556,19 @@
 
     ) {
 
-        const leadVariable =
-            "precipitation_previous_day" +
-            leadDays;
+        const variables =
+            LEAD_DAYS.map(
+                function (
+                    lead
+                ) {
+
+                    return (
+                        "precipitation_previous_day" +
+                        lead
+                    );
+
+                }
+            );
 
 
         const params =
@@ -651,7 +601,7 @@
 
         params.set(
             "hourly",
-            leadVariable
+            variables.join(",")
         );
 
 
@@ -681,7 +631,7 @@
         console.log(
             "Previous Runs request:",
             modelId,
-            leadVariable
+            "90 days / Day 1-7"
         );
 
 
@@ -736,7 +686,7 @@
 
 
     /* =====================================================
-       HOURLY → DAILY FORECAST
+       HOURLY → DAILY FORECAST MAP
        ===================================================== */
 
     function createDailyForecastMap(
@@ -763,7 +713,7 @@
         }
 
 
-        const leadVariable =
+        const variable =
             "precipitation_previous_day" +
             leadDays;
 
@@ -775,7 +725,7 @@
 
         const values =
             api.hourly[
-                leadVariable
+                variable
             ] ||
             [];
 
@@ -1098,7 +1048,7 @@
 
 
     /* =====================================================
-       MAIN HISTORICAL TEST
+       MAIN TEST
        ===================================================== */
 
     async function run(
@@ -1111,13 +1061,13 @@
 
 
         console.log(
-            "RRP Historical Model Accuracy V4"
+            "RRP Historical Model Accuracy V5"
         );
 
 
-        /*
-           GET LOCATION FROM APP.JS
-        */
+        /* =================================================
+           LOCATION
+           ================================================= */
 
         const location =
             getLocation();
@@ -1150,9 +1100,9 @@
         }
 
 
-        /*
-           HISTORICAL PERIOD
-        */
+        /* =================================================
+           DATE RANGE
+           ================================================= */
 
         const period =
             getHistoricalPeriod();
@@ -1173,22 +1123,23 @@
 
 
         console.log(
-            "Latitude:",
-            location.latitude
-        );
-
-
-        console.log(
-            "Longitude:",
+            "Coordinates:",
+            location.latitude,
             location.longitude
         );
 
 
         console.log(
-            "Period:",
+            "Historical period:",
             startDate,
             "to",
             endDate
+        );
+
+
+        console.log(
+            "Test days:",
+            TEST_DAYS
         );
 
 
@@ -1199,8 +1150,13 @@
 
         /* =================================================
            STEP 1
-           HISTORICAL REFERENCE
+           ACTUAL / REFERENCE DATA
            ================================================= */
+
+        console.log(
+            "Loading historical reference..."
+        );
+
 
         const actualAPI =
             await fetchHistoricalActual(
@@ -1223,19 +1179,21 @@
 
 
         console.log(
-            "Historical rainfall reference:",
-            actualMap
+            "Historical reference days:",
+            Object.keys(
+                actualMap
+            ).length
         );
 
 
         /* =================================================
-           RESULT OBJECT
+           RESULT
            ================================================= */
 
         const result = {
 
             version:
-                "historical-accuracy-v4",
+                "historical-accuracy-v5",
 
             generatedAt:
                 new Date()
@@ -1276,10 +1234,107 @@
             const model of MODELS
         ) {
 
+            console.log(
+                "======================================"
+            );
+
+
+            console.log(
+                "MODEL:",
+                model.name
+            );
+
+
+            console.log(
+                "======================================"
+            );
+
+
             result.models[
                 model.name
             ] = {};
 
+
+            let api;
+
+
+            try {
+
+                api =
+                    await fetchPreviousRuns(
+
+                        model.id,
+
+                        location.latitude,
+
+                        location.longitude,
+
+                        startDate,
+
+                        endDate
+
+                    );
+
+            }
+
+            catch (
+                error
+            ) {
+
+                console.error(
+                    model.name,
+                    "failed:",
+                    error
+                );
+
+
+                LEAD_DAYS.forEach(
+                    function (
+                        leadDays
+                    ) {
+
+                        result.models[
+                            model.name
+                        ][
+                            "day" +
+                            leadDays
+                        ] = {
+
+                            samples: 0,
+
+                            mae: null,
+
+                            rmse: null,
+
+                            bias: null,
+
+                            rainAccuracy: null,
+
+                            hits: 0,
+
+                            misses: 0,
+
+                            falseAlarms: 0,
+
+                            correctNoRain: 0,
+
+                            error:
+                                error.message
+
+                        };
+
+                    }
+                );
+
+
+                continue;
+
+            }
+
+
+            /* =================================================
+               DAY 1 → DAY 7
+               ================================================= */
 
             for (
                 const leadDays of
@@ -1292,79 +1347,6 @@
                     "Day",
                     leadDays
                 );
-
-
-                let api;
-
-
-                try {
-
-                    api =
-                        await fetchPreviousRun(
-
-                            model.id,
-
-                            leadDays,
-
-                            location.latitude,
-
-                            location.longitude,
-
-                            startDate,
-
-                            endDate
-
-                        );
-
-                }
-
-                catch (
-                    error
-                ) {
-
-                    console.warn(
-                        model.name,
-                        "Day",
-                        leadDays,
-                        "failed:",
-                        error.message
-                    );
-
-
-                    result.models[
-                        model.name
-                    ][
-                        "day" +
-                        leadDays
-                    ] = {
-
-                        samples: 0,
-
-                        mae: null,
-
-                        rmse: null,
-
-                        bias: null,
-
-                        rainAccuracy: null,
-
-                        hits: 0,
-
-                        misses: 0,
-
-                        falseAlarms: 0,
-
-                        correctNoRain: 0,
-
-                        error:
-                            error.message
-
-                    };
-
-
-                    continue;
-
-                }
 
 
                 const dailyForecasts =
@@ -1486,7 +1468,7 @@
 
 
         /* =================================================
-           SAVE RESULT
+           SAVE
            ================================================= */
 
         saveJSON(
@@ -1501,7 +1483,13 @@
 
 
         console.log(
-            "HISTORICAL ACCURACY COMPLETE"
+            "90-DAY HISTORICAL ACCURACY COMPLETE"
+        );
+
+
+        console.log(
+            "Total records:",
+            result.allRecords.length
         );
 
 
@@ -1550,7 +1538,7 @@
 
 
     console.log(
-        "RRP Historical Model Accuracy Engine V4 loaded."
+        "RRP Historical Model Accuracy Engine V5 loaded."
     );
 
 
