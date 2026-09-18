@@ -3,25 +3,28 @@
 
   /*
     Rajasthan Rain Predictor
-    Regional Accuracy Engine V1
+    Regional Accuracy Engine V3
 
-    Purpose:
-    - Build location-wise verification statistics
-    - Works with automatic-verification-engine.js
-    - Tracks every location separately
-    - ECMWF / GFS / ICON separately
-    - Uses verified forecast records only
+    Reads:
+    regional-accuracy-database.json
+
+    Shows:
+    - Rajasthan monitoring locations
+    - ECMWF / GFS / ICON
+    - Day 1-7 historical metrics
+    - Selected location metrics
+    - Number of monitored locations
 
     Reference:
     ERA5 / Open-Meteo reanalysis
 
     IMPORTANT:
-    This does NOT claim independent IMD/rain-gauge accuracy.
+    This is not independent IMD/rain-gauge accuracy.
   */
 
 
-  const VERIFICATION_KEY =
-    "rrp_automatic_verification_v2";
+  const DATABASE_URL =
+    "regional-accuracy-database.json";
 
 
   const MODEL_NAMES = [
@@ -31,62 +34,42 @@
   ];
 
 
-  const RAIN_THRESHOLD_MM = 0.1;
+  let database = null;
 
+  let loading = false;
+
+
+  // ==========================================================
+  // LOGGING
+  // ==========================================================
 
   function log(...args) {
 
     console.log(
-      "[RRP Regional Accuracy]",
+      "[RRP Regional Accuracy V3]",
       ...args
     );
 
   }
 
 
-  function getRecords() {
+  function warn(...args) {
 
-    try {
-
-      const raw =
-        localStorage.getItem(
-          VERIFICATION_KEY
-        );
-
-
-      if (!raw) {
-        return [];
-      }
-
-
-      const data =
-        JSON.parse(raw);
-
-
-      return Array.isArray(data)
-        ? data
-        : [];
-
-    } catch (error) {
-
-      console.error(
-        "Regional accuracy records error:",
-        error
-      );
-
-
-      return [];
-
-    }
+    console.warn(
+      "[RRP Regional Accuracy V3]",
+      ...args
+    );
 
   }
 
 
+  // ==========================================================
+  // HELPERS
+  // ==========================================================
+
   function number(value) {
 
-    const n =
-      Number(value);
-
+    const n = Number(value);
 
     return Number.isFinite(n)
       ? n
@@ -95,362 +78,175 @@
   }
 
 
-  function getLocationKey(record) {
-
-    const lat =
-      number(
-        record.latitude
-      );
-
-
-    const lon =
-      number(
-        record.longitude
-      );
-
-
-    const name =
-      String(
-        record.locationName ||
-        "Unknown Location"
-      ).trim();
-
-
-    if (
-      lat !== null &&
-      lon !== null
-    ) {
-
-      return (
-        name +
-        "|" +
-        lat.toFixed(2) +
-        "|" +
-        lon.toFixed(2)
-      );
-
-    }
-
-
-    return name;
-
-  }
-
-
-  function getLocationName(record) {
+  function escapeHTML(value) {
 
     return String(
-      record.locationName ||
-      "Unknown Location"
-    ).trim();
+      value ?? ""
+    )
+      .replace(
+        /&/g,
+        "&amp;"
+      )
+      .replace(
+        /</g,
+        "&lt;"
+      )
+      .replace(
+        />/g,
+        "&gt;"
+      )
+      .replace(
+        /"/g,
+        "&quot;"
+      )
+      .replace(
+        /'/g,
+        "&#039;"
+      );
 
   }
 
 
-  function calculateMetrics(
-    records
+  function formatMetric(
+    value,
+    decimals = 2,
+    suffix = ""
   ) {
 
-    if (!records.length) {
+    if (
+      value === null ||
+      value === undefined ||
+      !Number.isFinite(
+        Number(value)
+      )
+    ) {
 
-      return {
-
-        samples: 0,
-
-        mae: null,
-
-        rmse: null,
-
-        bias: null,
-
-        rainAccuracy: null,
-
-        brierScore: null
-
-      };
+      return "—";
 
     }
 
 
-    let absoluteError = 0;
-
-    let squaredError = 0;
-
-    let biasTotal = 0;
-
-    let correctRain = 0;
-
-    let brierTotal = 0;
-
-    let brierSamples = 0;
-
-
-    records.forEach(
-      function (record) {
-
-        const forecast =
-          number(
-            record.forecastRainMm
-          );
-
-
-        const actual =
-          number(
-            record.actualRainMm
-          );
-
-
-        if (
-          forecast === null ||
-          actual === null
-        ) {
-
-          return;
-
-        }
-
-
-        const error =
-          forecast - actual;
-
-
-        absoluteError +=
-          Math.abs(error);
-
-
-        squaredError +=
-          error * error;
-
-
-        biasTotal +=
-          error;
-
-
-        const forecastRain =
-          forecast >=
-          RAIN_THRESHOLD_MM;
-
-
-        const actualRain =
-          actual >=
-          RAIN_THRESHOLD_MM;
-
-
-        if (
-          forecastRain ===
-          actualRain
-        ) {
-
-          correctRain++;
-
-        }
-
-
-        const probability =
-          number(
-            record.forecastProbability
-          );
-
-
-        if (
-          probability !== null
-        ) {
-
-          const p =
-            probability / 100;
-
-
-          const outcome =
-            actualRain
-              ? 1
-              : 0;
-
-
-          brierTotal +=
-            Math.pow(
-              p - outcome,
-              2
-            );
-
-
-          brierSamples++;
-
-        }
-
-      }
+    return (
+      Number(value).toFixed(
+        decimals
+      ) +
+      suffix
     );
 
+  }
 
-    /*
-      Count only records that contain
-      valid rainfall numbers.
-    */
 
-    const validRecords =
-      records.filter(
-        function (record) {
+  // ==========================================================
+  // LOAD DATABASE
+  // ==========================================================
 
-          return (
-            number(
-              record.forecastRainMm
-            ) !== null &&
-            number(
-              record.actualRainMm
-            ) !== null
-          );
+  async function loadDatabase() {
 
-        }
+    if (loading) {
+
+      return database;
+
+    }
+
+
+    loading = true;
+
+
+    try {
+
+      const separator =
+        DATABASE_URL.includes("?")
+          ? "&"
+          : "?";
+
+
+      const url =
+        DATABASE_URL +
+        separator +
+        "v=" +
+        Date.now();
+
+
+      log(
+        "Loading regional database:",
+        url
       );
 
 
-    if (!validRecords.length) {
+      const response =
+        await fetch(
+          url,
+          {
+            cache: "no-store"
+          }
+        );
 
-      return {
 
-        samples: 0,
+      if (!response.ok) {
 
-        mae: null,
+        throw new Error(
+          "Regional database HTTP " +
+          response.status
+        );
 
-        rmse: null,
+      }
 
-        bias: null,
 
-        rainAccuracy: null,
+      const data =
+        await response.json();
 
-        brierScore: null
 
-      };
+      if (
+        !data ||
+        !Array.isArray(
+          data.locations
+        )
+      ) {
+
+        throw new Error(
+          "Invalid regional database format."
+        );
+
+      }
+
+
+      database = data;
+
+
+      log(
+        "Regional database loaded:",
+        data.locations.length,
+        "locations"
+      );
+
+
+      return database;
+
+    } catch (error) {
+
+      warn(
+        "Regional database unavailable:",
+        error
+      );
+
+
+      database = null;
+
+
+      return null;
+
+    } finally {
+
+      loading = false;
 
     }
 
-
-    return {
-
-      samples:
-        validRecords.length,
-
-
-      mae:
-        absoluteError /
-        validRecords.length,
-
-
-      rmse:
-        Math.sqrt(
-          squaredError /
-          validRecords.length
-        ),
-
-
-      bias:
-        biasTotal /
-        validRecords.length,
-
-
-      rainAccuracy:
-        (
-          correctRain /
-          validRecords.length
-        ) * 100,
-
-
-      brierScore:
-        brierSamples
-          ? brierTotal /
-            brierSamples
-          : null
-
-    };
-
   }
 
 
-  function buildDatabase(
-    records
-  ) {
-
-    const locations = {};
-
-
-    records.forEach(
-      function (record) {
-
-        const model =
-          String(
-            record.model ||
-            ""
-          ).toUpperCase();
-
-
-        if (
-          !MODEL_NAMES.includes(
-            model
-          )
-        ) {
-
-          return;
-
-        }
-
-
-        const key =
-          getLocationKey(
-            record
-          );
-
-
-        if (
-          !locations[key]
-        ) {
-
-          locations[key] = {
-
-            key,
-
-            name:
-              getLocationName(
-                record
-              ),
-
-            latitude:
-              number(
-                record.latitude
-              ),
-
-            longitude:
-              number(
-                record.longitude
-              ),
-
-            models: {
-
-              ECMWF: [],
-
-              GFS: [],
-
-              ICON: []
-
-            }
-
-          };
-
-        }
-
-
-        locations[key]
-          .models[model]
-          .push(record);
-
-      }
-    );
-
-
-    return Object.values(
-      locations
-    );
-
-  }
-
+  // ==========================================================
+  // SELECTED LOCATION
+  // ==========================================================
 
   function getSelectedLocation() {
 
@@ -503,8 +299,8 @@
 
     } catch (error) {
 
-      console.error(
-        "Selected location error:",
+      warn(
+        "Could not get selected location:",
         error
       );
 
@@ -516,13 +312,24 @@
   }
 
 
+  // ==========================================================
+  // FIND SELECTED LOCATION
+  // ==========================================================
+
   function findSelectedLocation(
     locations,
     selected
   ) {
 
-    if (!selected) {
+    if (
+      !selected ||
+      !Array.isArray(
+        locations
+      )
+    ) {
+
       return null;
+
     }
 
 
@@ -548,31 +355,61 @@
     }
 
 
-    let exact =
+    /*
+      First try coordinate matching.
+    */
+
+    let match =
       locations.find(
         function (location) {
 
+          const lat =
+            number(
+              location.location?.latitude
+            );
+
+
+          const lon =
+            number(
+              location.location?.longitude
+            );
+
+
+          if (
+            lat === null ||
+            lon === null
+          ) {
+
+            return false;
+
+          }
+
+
           return (
-            location.latitude !== null &&
-            location.longitude !== null &&
             Math.abs(
-              location.latitude -
+              lat -
               selectedLat
-            ) < 0.01 &&
+            ) < 0.05 &&
             Math.abs(
-              location.longitude -
+              lon -
               selectedLon
-            ) < 0.01
+            ) < 0.05
           );
 
         }
       );
 
 
-    if (exact) {
-      return exact;
+    if (match) {
+
+      return match;
+
     }
 
+
+    /*
+      Then try name matching.
+    */
 
     const selectedName =
       String(
@@ -584,17 +421,27 @@
 
 
     if (!selectedName) {
+
       return null;
+
     }
 
 
-    exact =
+    match =
       locations.find(
         function (location) {
 
+          const name =
+            String(
+              location.location?.name ||
+              ""
+            )
+              .trim()
+              .toLowerCase();
+
+
           return (
-            location.name
-              .toLowerCase() ===
+            name ===
             selectedName
           );
 
@@ -602,80 +449,299 @@
       );
 
 
-    return exact || null;
+    return match || null;
 
   }
 
 
-  function formatMetric(
-    value,
-    decimals,
-    suffix
+  // ==========================================================
+  // MODEL HELPERS
+  // ==========================================================
+
+  function getModel(
+    location,
+    modelName
   ) {
 
     if (
-      value === null ||
-      value === undefined ||
-      !Number.isFinite(
-        Number(value)
+      !location ||
+      !Array.isArray(
+        location.models
       )
     ) {
 
-      return "—";
+      return null;
 
     }
 
 
     return (
-      Number(value)
-        .toFixed(decimals) +
-      (suffix || "")
+      location.models.find(
+        function (model) {
+
+          return (
+            String(
+              model.name ||
+              ""
+            ).toUpperCase() ===
+            modelName
+          );
+
+        }
+      ) ||
+      null
     );
 
   }
 
 
-  function renderModelCard(
-    model,
-    records
+  function getLeads(
+    model
   ) {
 
-    const metrics =
-      calculateMetrics(
-        records
+    if (
+      !model ||
+      !Array.isArray(
+        model.leads
+      )
+    ) {
+
+      return [];
+
+    }
+
+
+    return model.leads;
+
+  }
+
+
+  // ==========================================================
+  // MODEL SUMMARY
+  // ==========================================================
+
+  function calculateModelSummary(
+    model
+  ) {
+
+    const leads =
+      getLeads(
+        model
+      );
+
+
+    const valid =
+      leads.filter(
+        function (lead) {
+
+          return (
+            lead &&
+            lead.metrics &&
+            number(
+              lead.metrics.mae_mm
+            ) !== null
+          );
+
+        }
+      );
+
+
+    if (!valid.length) {
+
+      return {
+
+        samples: 0,
+
+        mae: null,
+
+        rmse: null,
+
+        bias: null,
+
+        rainAccuracy: null
+
+      };
+
+    }
+
+
+    let totalSamples = 0;
+
+    let maeWeighted = 0;
+
+    let rmseWeighted = 0;
+
+    let biasWeighted = 0;
+
+    let accuracyWeighted = 0;
+
+
+    valid.forEach(
+      function (lead) {
+
+        const metrics =
+          lead.metrics;
+
+
+        const samples =
+          number(
+            metrics.samples
+          ) || 0;
+
+
+        totalSamples +=
+          samples;
+
+
+        if (
+          number(
+            metrics.mae_mm
+          ) !== null
+        ) {
+
+          maeWeighted +=
+            metrics.mae_mm *
+            samples;
+
+        }
+
+
+        if (
+          number(
+            metrics.rmse_mm
+          ) !== null
+        ) {
+
+          rmseWeighted +=
+            metrics.rmse_mm *
+            samples;
+
+        }
+
+
+        if (
+          number(
+            metrics.bias_mm
+          ) !== null
+        ) {
+
+          biasWeighted +=
+            metrics.bias_mm *
+            samples;
+
+        }
+
+
+        if (
+          number(
+            metrics.rain_accuracy_percent
+          ) !== null
+        ) {
+
+          accuracyWeighted +=
+            metrics.rain_accuracy_percent *
+            samples;
+
+        }
+
+      }
+    );
+
+
+    if (
+      totalSamples <= 0
+    ) {
+
+      return {
+
+        samples: 0,
+
+        mae: null,
+
+        rmse: null,
+
+        bias: null,
+
+        rainAccuracy: null
+
+      };
+
+    }
+
+
+    return {
+
+      samples:
+        totalSamples,
+
+      mae:
+        maeWeighted /
+        totalSamples,
+
+      rmse:
+        rmseWeighted /
+        totalSamples,
+
+      bias:
+        biasWeighted /
+        totalSamples,
+
+      rainAccuracy:
+        accuracyWeighted /
+        totalSamples
+
+    };
+
+  }
+
+
+  // ==========================================================
+  // MODEL CARD
+  // ==========================================================
+
+  function renderModelCard(
+    modelName,
+    model
+  ) {
+
+    const summary =
+      calculateModelSummary(
+        model
       );
 
 
     return `
 
       <div style="
-        padding:14px;
+        padding:16px;
         background:white;
-        border-radius:12px;
+        border-radius:14px;
         border:1px solid #e5e7eb;
       ">
 
-        <h4 style="
-          margin:0 0 12px;
+        <h3 style="
+          margin:0 0 14px;
         ">
-          🛰️ ${model}
-        </h4>
+          🛰️ ${modelName}
+        </h3>
 
 
         <div style="
           display:grid;
           grid-template-columns:
           repeat(2,minmax(0,1fr));
-          gap:10px;
+          gap:12px;
           font-size:13px;
         ">
 
 
           <div>
             <strong>
-              ${metrics.samples}
+              ${summary.samples}
             </strong>
+
             <br>
+
             <small>
               Samples
             </small>
@@ -684,15 +750,15 @@
 
           <div>
             <strong>
-              ${
-                formatMetric(
-                  metrics.rainAccuracy,
-                  1,
-                  "%"
-                )
-              }
+              ${formatMetric(
+                summary.rainAccuracy,
+                1,
+                "%"
+              )}
             </strong>
+
             <br>
+
             <small>
               Rain Accuracy
             </small>
@@ -701,15 +767,15 @@
 
           <div>
             <strong>
-              ${
-                formatMetric(
-                  metrics.mae,
-                  3,
-                  " mm"
-                )
-              }
+              ${formatMetric(
+                summary.mae,
+                3,
+                " mm"
+              )}
             </strong>
+
             <br>
+
             <small>
               MAE
             </small>
@@ -718,15 +784,15 @@
 
           <div>
             <strong>
-              ${
-                formatMetric(
-                  metrics.rmse,
-                  3,
-                  " mm"
-                )
-              }
+              ${formatMetric(
+                summary.rmse,
+                3,
+                " mm"
+              )}
             </strong>
+
             <br>
+
             <small>
               RMSE
             </small>
@@ -735,34 +801,17 @@
 
           <div>
             <strong>
-              ${
-                formatMetric(
-                  metrics.bias,
-                  3,
-                  " mm"
-                )
-              }
+              ${formatMetric(
+                summary.bias,
+                3,
+                " mm"
+              )}
             </strong>
+
             <br>
+
             <small>
               Bias
-            </small>
-          </div>
-
-
-          <div>
-            <strong>
-              ${
-                formatMetric(
-                  metrics.brierScore,
-                  4,
-                  ""
-                )
-              }
-            </strong>
-            <br>
-            <small>
-              Brier
             </small>
           </div>
 
@@ -776,30 +825,498 @@
   }
 
 
-  function render() {
+  // ==========================================================
+  // LEAD-TIME TABLE
+  // ==========================================================
 
-    const records =
-      getRecords();
+  function renderLeadTable(
+    model
+  ) {
 
-
-    const locations =
-      buildDatabase(
-        records
+    const leads =
+      getLeads(
+        model
       );
 
+
+    if (!leads.length) {
+
+      return `
+        <p style="
+          font-size:13px;
+          color:#666;
+        ">
+          Historical lead-time data
+          available nahi hai.
+        </p>
+      `;
+
+    }
+
+
+    let rows = "";
+
+
+    leads.forEach(
+      function (lead) {
+
+        const metrics =
+          lead.metrics ||
+          {};
+
+
+        rows += `
+
+          <tr>
+
+            <td style="padding:9px;">
+              Day ${lead.lead_day}
+            </td>
+
+            <td style="padding:9px;">
+              ${metrics.samples ?? "—"}
+            </td>
+
+            <td style="padding:9px;">
+              ${formatMetric(
+                metrics.mae_mm,
+                3,
+                " mm"
+              )}
+            </td>
+
+            <td style="padding:9px;">
+              ${formatMetric(
+                metrics.rmse_mm,
+                3,
+                " mm"
+              )}
+            </td>
+
+            <td style="padding:9px;">
+              ${formatMetric(
+                metrics.bias_mm,
+                3,
+                " mm"
+              )}
+            </td>
+
+            <td style="padding:9px;">
+              ${formatMetric(
+                metrics.rain_accuracy_percent,
+                1,
+                "%"
+              )}
+            </td>
+
+          </tr>
+
+        `;
+
+      }
+    );
+
+
+    return `
+
+      <div style="
+        overflow-x:auto;
+        margin-top:12px;
+      ">
+
+        <table style="
+          width:100%;
+          border-collapse:collapse;
+          font-size:12px;
+        ">
+
+          <thead>
+
+            <tr>
+
+              <th style="padding:9px;">
+                Lead
+              </th>
+
+              <th style="padding:9px;">
+                Samples
+              </th>
+
+              <th style="padding:9px;">
+                MAE
+              </th>
+
+              <th style="padding:9px;">
+                RMSE
+              </th>
+
+              <th style="padding:9px;">
+                Bias
+              </th>
+
+              <th style="padding:9px;">
+                Rain Accuracy
+              </th>
+
+            </tr>
+
+          </thead>
+
+          <tbody>
+
+            ${rows}
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    `;
+
+  }
+
+
+  // ==========================================================
+  // SELECTED LOCATION
+  // ==========================================================
+
+  function renderSelectedLocation(
+    locations
+  ) {
 
     const selected =
       getSelectedLocation();
 
 
-    const selectedLocation =
+    const location =
       findSelectedLocation(
         locations,
         selected
       );
 
 
-    let container =
+    if (!location) {
+
+      return `
+
+        <div style="
+          margin-top:18px;
+          padding:16px;
+          background:white;
+          border-radius:14px;
+          border:1px solid #e5e7eb;
+        ">
+
+          📍 Selected location ke liye
+          regional historical data abhi
+          available nahi hai.
+
+        </div>
+
+      `;
+
+    }
+
+
+    let cards = "";
+
+
+    MODEL_NAMES.forEach(
+      function (modelName) {
+
+        const model =
+          getModel(
+            location,
+            modelName
+          );
+
+
+        cards +=
+          renderModelCard(
+            modelName,
+            model
+          );
+
+      }
+    );
+
+
+    let tables = "";
+
+
+    MODEL_NAMES.forEach(
+      function (modelName) {
+
+        const model =
+          getModel(
+            location,
+            modelName
+          );
+
+
+        if (!model) {
+          return;
+        }
+
+
+        tables += `
+
+          <div style="
+            margin-top:16px;
+            padding:14px;
+            background:white;
+            border-radius:14px;
+            border:1px solid #e5e7eb;
+          ">
+
+            <h4 style="
+              margin:0 0 10px;
+            ">
+              🛰️ ${modelName} — Day 1–7
+            </h4>
+
+            ${renderLeadTable(
+              model
+            )}
+
+          </div>
+
+        `;
+
+      }
+    );
+
+
+    return `
+
+      <div style="
+        margin-top:18px;
+      ">
+
+        <div style="
+          padding:16px;
+          background:white;
+          border-radius:14px;
+          border:1px solid #e5e7eb;
+        ">
+
+          <h3 style="
+            margin:0 0 8px;
+          ">
+            📍 ${escapeHTML(
+              location.location?.name ||
+              "Selected Location"
+            )}
+          </h3>
+
+
+          <p style="
+            margin:0 0 16px;
+            font-size:12px;
+            color:#666;
+          ">
+
+            Historical regional
+            verification data
+
+          </p>
+
+
+          <div style="
+            display:grid;
+            grid-template-columns:
+            repeat(auto-fit,minmax(160px,1fr));
+            gap:12px;
+          ">
+
+            ${cards}
+
+          </div>
+
+        </div>
+
+
+        ${tables}
+
+      </div>
+
+    `;
+
+  }
+
+
+  // ==========================================================
+  // ALL LOCATIONS
+  // ==========================================================
+
+  function renderLocationList(
+    locations
+  ) {
+
+    if (!locations.length) {
+
+      return `
+        <p>
+          Monitoring locations ka data
+          abhi available nahi hai.
+        </p>
+      `;
+
+    }
+
+
+    const sorted =
+      [...locations].sort(
+        function (a, b) {
+
+          return String(
+            a.location?.name ||
+            ""
+          ).localeCompare(
+            String(
+              b.location?.name ||
+              ""
+            )
+          );
+
+        }
+      );
+
+
+    return sorted
+      .map(
+        function (location) {
+
+          const name =
+            location.location?.name ||
+            "Unknown";
+
+
+          const models =
+            Array.isArray(
+              location.models
+            )
+              ? location.models
+              : [];
+
+
+          const totalSamples =
+            models.reduce(
+              function (
+                total,
+                model
+              ) {
+
+                return (
+                  total +
+                  getLeads(
+                    model
+                  ).reduce(
+                    function (
+                      sum,
+                      lead
+                    ) {
+
+                      return (
+                        sum +
+                        (
+                          number(
+                            lead.metrics?.samples
+                          ) ||
+                          0
+                        )
+                      );
+
+                    },
+                    0
+                  )
+                );
+
+              },
+              0
+            );
+
+
+          return `
+
+            <div style="
+              padding:14px;
+              background:white;
+              border-radius:12px;
+              border:1px solid #e5e7eb;
+            ">
+
+              <strong>
+                📍 ${escapeHTML(name)}
+              </strong>
+
+
+              <div style="
+                margin-top:7px;
+                font-size:12px;
+                color:#666;
+              ">
+
+                ${totalSamples}
+                lead-time samples
+
+              </div>
+
+
+              <div style="
+                margin-top:7px;
+                font-size:12px;
+              ">
+
+                ECMWF:
+                ${getLeads(
+                  getModel(
+                    location,
+                    "ECMWF"
+                  )
+                ).length}
+
+                &nbsp; | &nbsp;
+
+                GFS:
+                ${getLeads(
+                  getModel(
+                    location,
+                    "GFS"
+                  )
+                ).length}
+
+                &nbsp; | &nbsp;
+
+                ICON:
+                ${getLeads(
+                  getModel(
+                    location,
+                    "ICON"
+                  )
+                ).length}
+
+              </div>
+
+            </div>
+
+          `;
+
+        }
+      )
+      .join("");
+
+  }
+
+
+  // ==========================================================
+  // RENDER
+  // ==========================================================
+
+  function render() {
+
+    const container =
       document.getElementById(
         "regionalAccuracy"
       );
@@ -807,49 +1324,12 @@
 
     if (!container) {
 
-      container =
-        document.createElement(
-          "section"
-        );
-
-
-      container.id =
-        "regionalAccuracy";
-
-
-      container.style.margin =
-        "24px 0";
-
-
-      const historical =
-        document.getElementById(
-          "historicalAccuracy"
-        );
-
-
-      if (historical) {
-
-        historical.parentNode.insertBefore(
-          container,
-          historical
-        );
-
-      } else {
-
-        document.body.appendChild(
-          container
-        );
-
-      }
+      return;
 
     }
 
 
-    /*
-      No data yet
-    */
-
-    if (!records.length) {
+    if (!database) {
 
       container.innerHTML = `
 
@@ -859,22 +1339,28 @@
           border-radius:14px;
         ">
 
-          <h3>
+          <h2 style="
+            margin-top:0;
+          ">
             📍 Rajasthan Regional Accuracy
-          </h3>
+          </h2>
+
 
           <p>
-            Abhi automatic verification
-            records available nahi hain.
+            Regional accuracy database
+            abhi load nahi hui.
           </p>
+
 
           <p style="
             font-size:13px;
             color:#666;
           ">
-            Future forecast dates complete hone
-            ke baad location-wise statistics
-            automatically appear honge.
+
+            GitHub Actions ka first
+            regional collection complete
+            hone ke baad yahan data appear hoga.
+
           </p>
 
         </div>
@@ -886,183 +1372,17 @@
     }
 
 
-    /*
-      Selected location panel
-    */
-
-    let selectedHTML = "";
-
-
-    if (selectedLocation) {
-
-      selectedHTML = `
-
-        <div style="
-          margin-top:18px;
-          padding:16px;
-          background:white;
-          border-radius:14px;
-          border:1px solid #e5e7eb;
-        ">
-
-          <h3 style="
-            margin:0 0 14px;
-          ">
-            📍 Selected Location
-          </h3>
+    const locations =
+      Array.isArray(
+        database.locations
+      )
+        ? database.locations
+        : [];
 
 
-          <p>
-            <strong>
-              ${selectedLocation.name}
-            </strong>
-          </p>
-
-
-          <div style="
-            display:grid;
-            gap:12px;
-          ">
-
-
-            ${renderModelCard(
-              "ECMWF",
-              selectedLocation.models.ECMWF
-            )}
-
-
-            ${renderModelCard(
-              "GFS",
-              selectedLocation.models.GFS
-            )}
-
-
-            ${renderModelCard(
-              "ICON",
-              selectedLocation.models.ICON
-            )}
-
-          </div>
-
-        </div>
-
-      `;
-
-    } else {
-
-      selectedHTML = `
-
-        <div style="
-          margin-top:18px;
-          padding:16px;
-          background:white;
-          border-radius:14px;
-          border:1px solid #e5e7eb;
-        ">
-
-          📍 Selected location ke liye
-          verified records abhi available nahi hain.
-
-        </div>
-
-      `;
-
-    }
-
-
-    /*
-      Location list
-    */
-
-    const locationCards =
-      locations
-        .sort(
-          function (a, b) {
-
-            return a.name
-              .localeCompare(
-                b.name
-              );
-
-          }
-        )
-        .map(
-          function (location) {
-
-            const total =
-              MODEL_NAMES.reduce(
-                function (
-                  sum,
-                  model
-                ) {
-
-                  return (
-                    sum +
-                    location
-                      .models[model]
-                      .length
-                  );
-
-                },
-                0
-              );
-
-
-            return `
-
-              <div style="
-                padding:14px;
-                background:white;
-                border-radius:12px;
-                border:1px solid #e5e7eb;
-              ">
-
-                <strong>
-                  📍 ${location.name}
-                </strong>
-
-
-                <div style="
-                  margin-top:8px;
-                  font-size:12px;
-                  color:#666;
-                ">
-
-                  Verified records:
-                  <strong>
-                    ${total}
-                  </strong>
-
-                </div>
-
-
-                <div style="
-                  margin-top:8px;
-                  font-size:12px;
-                ">
-
-                  ECMWF:
-                  ${location.models.ECMWF.length}
-
-                  &nbsp; | &nbsp;
-
-                  GFS:
-                  ${location.models.GFS.length}
-
-                  &nbsp; | &nbsp;
-
-                  ICON:
-                  ${location.models.ICON.length}
-
-                </div>
-
-              </div>
-
-            `;
-
-          }
-        )
-        .join("");
+    const generatedAt =
+      database.generated_at ||
+      "Not available";
 
 
     container.innerHTML = `
@@ -1082,8 +1402,11 @@
 
 
         <p>
-          Verified forecast records ko
-          location-wise track kiya ja raha hai.
+
+          Rajasthan ke monitoring
+          locations ka historical
+          forecast verification database.
+
         </p>
 
 
@@ -1109,7 +1432,7 @@
             <br>
 
             <small>
-              Locations
+              Monitored Locations
             </small>
 
           </div>
@@ -1122,13 +1445,32 @@
           ">
 
             <strong>
-              ${records.length}
+              3
             </strong>
 
             <br>
 
             <small>
-              Verified Records
+              Weather Models
+            </small>
+
+          </div>
+
+
+          <div style="
+            padding:14px;
+            background:white;
+            border-radius:10px;
+          ">
+
+            <strong>
+              1–7
+            </strong>
+
+            <br>
+
+            <small>
+              Lead Days
             </small>
 
           </div>
@@ -1137,15 +1479,17 @@
         </div>
 
 
-        ${selectedHTML}
+        ${renderSelectedLocation(
+          locations
+        )}
 
 
         <div style="
-          margin-top:18px;
+          margin-top:20px;
         ">
 
           <h3>
-            🗺️ Verified Locations
+            🗺️ Monitored Locations
           </h3>
 
 
@@ -1154,7 +1498,9 @@
             gap:10px;
           ">
 
-            ${locationCards}
+            ${renderLocationList(
+              locations
+            )}
 
           </div>
 
@@ -1166,6 +1512,7 @@
           padding:14px;
           border-radius:12px;
           background:rgba(255,193,7,.10);
+          border:1px solid rgba(255,193,7,.20);
           font-size:12px;
           line-height:1.7;
         ">
@@ -1181,9 +1528,14 @@
           </strong>
           nahi hai.
 
-          Model statistics descriptive hain;
-          kisi model ko automatic winner nahi
-          maana ja raha hai.
+          <br><br>
+
+          Last database update:
+          <strong>
+            ${escapeHTML(
+              generatedAt
+            )}
+          </strong>
 
         </div>
 
@@ -1195,40 +1547,48 @@
   }
 
 
+  // ==========================================================
+  // PUBLIC API
+  // ==========================================================
+
+  async function run() {
+
+    await loadDatabase();
+
+    render();
+
+    return database;
+
+  }
+
+
   function getDatabase() {
 
-    return buildDatabase(
-      getRecords()
-    );
+    return database;
 
   }
 
 
   function getSelectedMetrics() {
 
-    const records =
-      getRecords();
+    if (!database) {
 
+      return null;
 
-    const locations =
-      buildDatabase(
-        records
-      );
-
-
-    const selected =
-      getSelectedLocation();
+    }
 
 
     const location =
       findSelectedLocation(
-        locations,
-        selected
+        database.locations || [],
+        getSelectedLocation()
       );
 
 
     if (!location) {
+
       return null;
+
     }
 
 
@@ -1236,11 +1596,14 @@
 
 
     MODEL_NAMES.forEach(
-      function (model) {
+      function (modelName) {
 
-        result[model] =
-          calculateMetrics(
-            location.models[model]
+        result[modelName] =
+          calculateModelSummary(
+            getModel(
+              location,
+              modelName
+            )
           );
 
       }
@@ -1249,16 +1612,8 @@
 
     return {
 
-      location: {
-        name:
-          location.name,
-
-        latitude:
-          location.latitude,
-
-        longitude:
-          location.longitude
-      },
+      location:
+        location.location,
 
       models:
         result
@@ -1268,12 +1623,22 @@
   }
 
 
-  function init() {
+  // ==========================================================
+  // INITIALISE
+  // ==========================================================
 
-    render();
+  async function init() {
 
     log(
-      "Regional Accuracy Engine V1 loaded."
+      "Regional Accuracy Engine V3 loading..."
+    );
+
+
+    await run();
+
+
+    log(
+      "Regional Accuracy Engine V3 ready."
     );
 
   }
@@ -1281,8 +1646,7 @@
 
   window.RRP_REGIONAL_ACCURACY = {
 
-    run:
-      render,
+    run,
 
     getDatabase,
 
@@ -1297,7 +1661,7 @@
 
       setTimeout(
         init,
-        4500
+        2500
       );
 
     }
@@ -1309,8 +1673,8 @@
     function () {
 
       setTimeout(
-        render,
-        3000
+        run,
+        2500
       );
 
     }
