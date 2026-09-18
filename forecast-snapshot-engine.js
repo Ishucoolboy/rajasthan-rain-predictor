@@ -1,39 +1,74 @@
 /* =========================================================
    Rajasthan Rain Predictor
-   Forecast Snapshot Engine
+   Forecast Snapshot Engine v2
    ---------------------------------------------------------
-   Purpose:
-   - Save standardized forecast snapshots
-   - Preserve location + forecast date
-   - Store predicted rainfall
-   - Keep model information
-   - Used later by verification engine
+   Saves daily forecast snapshots for:
+   ECMWF / GFS / ICON
+
+   These snapshots are later matched against
+   actual rainfall observations.
    ========================================================= */
 
 (function () {
+
   "use strict";
+
 
   const STORAGE_KEY =
     "rrp_forecast_snapshots_v1";
 
-  const MAX_RECORDS = 1000;
+
+  const MAX_RECORDS =
+    1500;
+
+
+  const API =
+    "https://api.open-meteo.com/v1/forecast";
+
+
+  const MODELS = [
+
+    {
+      name: "ECMWF",
+      id: "ecmwf_ifs025"
+    },
+
+    {
+      name: "GFS",
+      id: "gfs_seamless"
+    },
+
+    {
+      name: "ICON",
+      id: "icon_seamless"
+    }
+
+  ];
 
 
   /* =======================================================
      HELPERS
      ======================================================= */
 
-  function number(value, fallback = null) {
+  function number(
+    value,
+    fallback = null
+  ) {
 
-    const n = Number(value);
+    const n =
+      Number(value);
 
     return Number.isFinite(n)
       ? n
       : fallback;
+
   }
 
 
-  function round(value, digits = 2) {
+  function round(
+    value,
+    digits = 2
+  ) {
 
     const n =
       number(value);
@@ -53,6 +88,7 @@
         n * multiplier
       ) / multiplier
     );
+
   }
 
 
@@ -65,12 +101,15 @@
           STORAGE_KEY
         );
 
+
       if (!raw) {
         return [];
       }
 
+
       const data =
         JSON.parse(raw);
+
 
       return Array.isArray(data)
         ? data
@@ -79,48 +118,39 @@
     } catch (error) {
 
       console.warn(
-        "Forecast snapshot read error:",
+        "Snapshot read error:",
         error
       );
 
       return [];
+
     }
+
   }
 
 
-  function save(data) {
+  function save(
+    records
+  ) {
 
     try {
 
       localStorage.setItem(
         STORAGE_KEY,
-        JSON.stringify(data)
+        JSON.stringify(
+          records
+        )
       );
 
     } catch (error) {
 
       console.warn(
-        "Forecast snapshot save error:",
+        "Snapshot save error:",
         error
       );
-    }
-  }
 
-
-  function dateOnly(value) {
-
-    if (!value) {
-      return null;
     }
 
-    const match =
-      String(value).match(
-        /^(\d{4}-\d{2}-\d{2})/
-      );
-
-    return match
-      ? match[1]
-      : null;
   }
 
 
@@ -130,14 +160,18 @@
 
   function getLocation() {
 
-    let latitude = null;
-    let longitude = null;
+    let latitude =
+      null;
+
+    let longitude =
+      null;
+
     let name =
       "Selected Location";
 
 
     /*
-      Main application data
+      Main application.
     */
 
     if (
@@ -147,11 +181,13 @@
       const data =
         window.latestWeatherData;
 
+
       latitude =
         data.latitude ??
         data.lat ??
         data.location?.latitude ??
         data.location?.lat;
+
 
       longitude =
         data.longitude ??
@@ -161,16 +197,18 @@
         data.location?.lon ??
         data.location?.lng;
 
+
       name =
         data.locationName ??
         data.name ??
         data.location?.name ??
         name;
+
     }
 
 
     /*
-      RRP_APP fallback
+      RRP_APP fallback.
     */
 
     if (
@@ -203,7 +241,9 @@
           typeof item !==
           "object"
         ) {
+
           continue;
+
         }
 
 
@@ -238,13 +278,16 @@
           longitude =
             Number(lon);
 
+
           name =
             item.locationName ??
             item.name ??
             item.location?.name ??
             name;
 
+
           break;
+
         }
 
       }
@@ -253,7 +296,7 @@
 
 
     /*
-      Backtest engine fallback
+      Backtest fallback.
     */
 
     if (
@@ -282,6 +325,7 @@
           name =
             location.name ||
             name;
+
         }
 
       } catch (error) {
@@ -304,24 +348,337 @@
       name
 
     };
+
   }
 
 
   /* =======================================================
-     SNAPSHOT CREATION
+     FETCH MODEL FORECAST
      ======================================================= */
 
-  function createSnapshot(data) {
+  async function fetchModel(
+    location,
+    model
+  ) {
 
-    if (
-      !data ||
-      typeof data !==
-      "object"
-    ) {
+    const params =
+      new URLSearchParams({
 
-      return null;
+        latitude:
+          location.latitude,
+
+        longitude:
+          location.longitude,
+
+        daily:
+          [
+            "precipitation_sum",
+            "rain_sum",
+            "precipitation_probability_max",
+            "weather_code"
+          ].join(","),
+
+        forecast_days:
+          "4",
+
+        timezone:
+          "auto",
+
+        models:
+          model.id,
+
+        precipitation_unit:
+          "mm"
+
+      });
+
+
+    const response =
+      await fetch(
+        API +
+        "?" +
+        params.toString(),
+        {
+          cache:
+            "no-store"
+        }
+      );
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        `${model.name} API error: ${response.status}`
+      );
+
     }
 
+
+    const data =
+      await response.json();
+
+
+    if (
+      !data.daily ||
+      !Array.isArray(
+        data.daily.time
+      )
+    ) {
+
+      throw new Error(
+        `${model.name} daily forecast unavailable`
+      );
+
+    }
+
+
+    return data;
+
+  }
+
+
+  /* =======================================================
+     SAVE MODEL DAILY FORECASTS
+     ======================================================= */
+
+  async function saveModelForecast(
+    location,
+    model
+  ) {
+
+    const data =
+      await fetchModel(
+        location,
+        model
+      );
+
+
+    const dates =
+      data.daily.time || [];
+
+
+    const rainfall =
+      data.daily.precipitation_sum || [];
+
+
+    const rainSum =
+      data.daily.rain_sum || [];
+
+
+    const probability =
+      data.daily
+        .precipitation_probability_max || [];
+
+
+    const weatherCode =
+      data.daily.weather_code || [];
+
+
+    const records =
+      load();
+
+
+    const newRecords = [];
+
+
+    for (
+      let i = 0;
+      i < dates.length;
+      i++
+    ) {
+
+      const validDate =
+        dates[i];
+
+
+      if (!validDate) {
+        continue;
+      }
+
+
+      const precipitation =
+        Math.max(
+          0,
+          number(
+            rainfall[i],
+            0
+          )
+        );
+
+
+      const rain =
+        Math.max(
+          0,
+          number(
+            rainSum[i],
+            precipitation
+          )
+        );
+
+
+      const rainProbability =
+        number(
+          probability[i],
+          0
+        );
+
+
+      const record = {
+
+        id:
+          `${Date.now()}_${model.id}_${i}_${Math.random()
+            .toString(36)
+            .slice(2, 8)}`,
+
+        forecastCreatedAt:
+          new Date()
+            .toISOString(),
+
+        validDate,
+
+        locationName:
+          location.name,
+
+        latitude:
+          round(
+            location.latitude,
+            5
+          ),
+
+        longitude:
+          round(
+            location.longitude,
+            5
+          ),
+
+        model:
+          model.name,
+
+        modelId:
+          model.id,
+
+        forecastRainMm:
+          round(
+            precipitation,
+            2
+          ),
+
+        forecastRainOnlyMm:
+          round(
+            rain,
+            2
+          ),
+
+        rainProbability:
+          round(
+            rainProbability,
+            1
+          ),
+
+        weatherCode:
+          number(
+            weatherCode[i]
+          ),
+
+        source:
+          "Open-Meteo forecast",
+
+        version:
+          "snapshot-v2"
+
+      };
+
+
+      newRecords.push(
+        record
+      );
+
+    }
+
+
+    /*
+      Remove duplicate records for the same:
+      location + valid date + model
+
+      The newest forecast replaces
+      the older forecast for that same
+      location/date/model.
+    */
+
+    let combined =
+      [
+        ...newRecords,
+        ...records
+      ];
+
+
+    const seen =
+      new Set();
+
+
+    combined =
+      combined.filter(
+        function (item) {
+
+          const key =
+
+            [
+              round(
+                item.latitude,
+                2
+              ),
+
+              round(
+                item.longitude,
+                2
+              ),
+
+              item.validDate,
+
+              item.modelId
+
+            ].join("|");
+
+
+          if (
+            seen.has(key)
+          ) {
+
+            return false;
+
+          }
+
+
+          seen.add(key);
+
+          return true;
+
+        }
+      );
+
+
+    combined =
+      combined.slice(
+        0,
+        MAX_RECORDS
+      );
+
+
+    save(
+      combined
+    );
+
+
+    return newRecords;
+
+  }
+
+
+  /* =======================================================
+     SAVE ALL MODELS
+     ======================================================= */
+
+  async function saveCurrentForecast() {
 
     const location =
       getLocation();
@@ -334,381 +691,72 @@
         null
     ) {
 
-      return null;
-    }
-
-
-    /*
-      Forecast date
-    */
-
-    const forecastDate =
-      dateOnly(
-        data.validDate ??
-        data.date ??
-        data.forecastDate ??
-        data.time
-      );
-
-
-    if (!forecastDate) {
-      return null;
-    }
-
-
-    /*
-      Rainfall value
-    */
-
-    const predictedRain =
-      number(
-        data.forecastRainMm ??
-        data.predictedRainMm ??
-        data.rainfall ??
-        data.precipitation ??
-        data.rain_mm ??
-        data.rain
-      );
-
-
-    if (
-      predictedRain ===
-      null
-    ) {
-
-      return null;
-    }
-
-
-    return {
-
-      id:
-        `${Date.now()}_${Math.random()
-          .toString(36)
-          .slice(2, 9)}`,
-
-      forecastCreatedAt:
-        new Date()
-          .toISOString(),
-
-      validDate:
-        forecastDate,
-
-      locationName:
-        location.name,
-
-      latitude:
-        round(
-          location.latitude,
-          5
-        ),
-
-      longitude:
-        round(
-          location.longitude,
-          5
-        ),
-
-      model:
-        data.model ??
-        "Combined",
-
-      modelId:
-        data.modelId ??
-        null,
-
-      forecastRainMm:
-        round(
-          Math.max(
-            0,
-            predictedRain
-          ),
-          2
-        ),
-
-      rainProbability:
-        number(
-          data.rainProbability ??
-          data.precipitationProbability
-        ),
-
-      thunderstorm:
-        Boolean(
-          data.thunderstorm
-        ),
-
-      source:
-        data.source ??
-        "Rajasthan Rain Predictor",
-
-      version:
-        "snapshot-v1"
-
-    };
-  }
-
-
-  /* =======================================================
-     SAVE SNAPSHOT
-     ======================================================= */
-
-  function saveSnapshot(data) {
-
-    const snapshot =
-      createSnapshot(
-        data
-      );
-
-
-    if (!snapshot) {
-
       console.warn(
-        "Could not create forecast snapshot.",
-        data
+        "Snapshot engine: location unavailable."
       );
 
-      return null;
+      return [];
+
     }
 
 
-    const records =
-      load();
+    const allRecords = [];
 
 
-    /*
-      Avoid duplicate snapshot.
-
-      Same:
-      location + date + model
-    */
-
-    const filtered =
-      records.filter(
-        function (item) {
-
-          const sameLocation =
-            Math.abs(
-              number(
-                item.latitude,
-                999
-              ) -
-              snapshot.latitude
-            ) < 0.01
-            &&
-            Math.abs(
-              number(
-                item.longitude,
-                999
-              ) -
-              snapshot.longitude
-            ) < 0.01;
-
-
-          const sameDate =
-            item.validDate ===
-            snapshot.validDate;
-
-
-          const sameModel =
-            (
-              item.modelId ||
-              item.model
-            ) ===
-            (
-              snapshot.modelId ||
-              snapshot.model
-            );
-
-
-          return !(
-            sameLocation &&
-            sameDate &&
-            sameModel
-          );
-
-        }
-      );
-
-
-    filtered.unshift(
-      snapshot
-    );
-
-
-    /*
-      Keep storage under control.
-    */
-
-    const finalRecords =
-      filtered.slice(
-        0,
-        MAX_RECORDS
-      );
-
-
-    save(
-      finalRecords
-    );
-
-
-    /*
-      Notify verification engine.
-    */
-
-    window.dispatchEvent(
-      new CustomEvent(
-        "rrp:forecast-snapshot-saved",
-        {
-          detail:
-            snapshot
-        }
-      )
-    );
-
-
-    return snapshot;
-  }
-
-
-  /* =======================================================
-     SAVE CURRENT FORECAST
-     ======================================================= */
-
-  function saveCurrentForecast() {
-
-    /*
-      Try prediction engine first.
-    */
-
-    if (
-      window.RRP_PREDICTION_ENGINE
+    for (
+      const model of MODELS
     ) {
 
       try {
 
-        const prediction =
-          window.RRP_PREDICTION_ENGINE
-            .getLatest();
+        const records =
+          await saveModelForecast(
+            location,
+            model
+          );
 
 
-        if (prediction) {
-
-          /*
-            If engine returns an array,
-            save each model.
-          */
-
-          if (
-            Array.isArray(
-              prediction.models
-            )
-          ) {
-
-            prediction.models.forEach(
-              function (model) {
-
-                saveSnapshot({
-
-                  validDate:
-                    prediction.validDate ??
-                    prediction.date,
-
-                  locationName:
-                    prediction.locationName,
-
-                  latitude:
-                    prediction.latitude,
-
-                  longitude:
-                    prediction.longitude,
-
-                  model:
-                    model.name ??
-                    model.model ??
-                    "Unknown",
-
-                  modelId:
-                    model.id ??
-                    model.modelId ??
-                    null,
-
-                  forecastRainMm:
-                    model.rainfall ??
-                    model.rainMm ??
-                    model.precipitation ??
-                    model.forecastRainMm,
-
-                  rainProbability:
-                    model.rainProbability ??
-                    model.precipitationProbability,
-
-                  thunderstorm:
-                    model.thunderstorm,
-
-                  source:
-                    "Prediction Engine"
-
-                });
-
-              }
-            );
-
-            return;
-          }
+        allRecords.push(
+          ...records
+        );
 
 
-          /*
-            Save combined prediction
-          */
+        console.log(
+          `✅ ${model.name}: ${records.length} daily snapshots saved.`
+        );
 
-          saveSnapshot({
-
-            validDate:
-              prediction.validDate ??
-              prediction.date,
-
-            latitude:
-              prediction.latitude,
-
-            longitude:
-              prediction.longitude,
-
-            model:
-              "Combined",
-
-            modelId:
-              "combined",
-
-            forecastRainMm:
-              prediction.rainfall ??
-              prediction.rainMm ??
-              prediction.precipitation ??
-              prediction.forecastRainMm,
-
-            rainProbability:
-              prediction.rainProbability ??
-              prediction.precipitationProbability,
-
-            thunderstorm:
-              prediction.thunderstorm,
-
-            source:
-              "Prediction Engine"
-
-          });
-
-        }
 
       } catch (error) {
 
         console.warn(
-          "Prediction engine snapshot failed:",
+          `❌ ${model.name} snapshot failed:`,
           error
         );
 
       }
 
     }
+
+
+    /*
+      Notify other engines.
+    */
+
+    window.dispatchEvent(
+      new CustomEvent(
+        "rrp:forecast-snapshots-updated",
+        {
+          detail: {
+            location,
+            records:
+              allRecords
+          }
+        }
+      )
+    );
+
+
+    return allRecords;
 
   }
 
@@ -720,13 +768,20 @@
   window.RRP_SNAPSHOT = {
 
     save:
-      saveSnapshot,
+      saveCurrentForecast,
 
     saveCurrent:
       saveCurrentForecast,
 
     getAll:
       load,
+
+    count:
+      function () {
+
+        return load().length;
+
+      },
 
     clear:
       function () {
@@ -735,20 +790,13 @@
           STORAGE_KEY
         );
 
-      },
-
-    count:
-      function () {
-
-        return load().length;
-
       }
 
   };
 
 
   /* =======================================================
-     EVENTS
+     WEATHER UPDATE EVENT
      ======================================================= */
 
   window.addEventListener(
@@ -756,12 +804,16 @@
     function () {
 
       /*
-        Wait for prediction engine
-        to finish rendering.
+        Wait for location/weather
+        processing to finish.
       */
 
       setTimeout(
-        saveCurrentForecast,
+        function () {
+
+          saveCurrentForecast();
+
+        },
         1500
       );
 
@@ -770,22 +822,23 @@
 
 
   /* =======================================================
-     INIT
+     INITIALIZATION
      ======================================================= */
 
   function initialize() {
 
     /*
-      Do not automatically create
-      fake or incomplete records.
-
-      Only save when valid forecast data
-      becomes available.
+      Save model-wise daily forecasts
+      after page load.
     */
 
     setTimeout(
-      saveCurrentForecast,
-      2000
+      function () {
+
+        saveCurrentForecast();
+
+      },
+      2500
     );
 
   }
