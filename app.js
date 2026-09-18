@@ -29,6 +29,39 @@ const DEFAULT_LOCATION = {
 
 
 // =======================================================
+// KNOWN VILLAGE / LOCATION ALIASES
+// =======================================================
+
+const KNOWN_LOCATIONS = {
+
+    "junjhala": {
+        name: "Jhunjhala, Jayal, Nagaur, Rajasthan",
+        latitude: 27.03144,
+        longitude: 73.93637
+    },
+
+    "junjala": {
+        name: "Jhunjhala, Jayal, Nagaur, Rajasthan",
+        latitude: 27.03144,
+        longitude: 73.93637
+    },
+
+    "jhunjhala": {
+        name: "Jhunjhala, Jayal, Nagaur, Rajasthan",
+        latitude: 27.03144,
+        longitude: 73.93637
+    },
+
+    "झुंझाला": {
+        name: "Jhunjhala, Jayal, Nagaur, Rajasthan",
+        latitude: 27.03144,
+        longitude: 73.93637
+    }
+
+};
+
+
+// =======================================================
 // HTML ELEMENTS
 // =======================================================
 
@@ -99,6 +132,22 @@ function setStatus(message, online = true) {
         statusIndicator.style.background =
             "#ef4444";
     }
+
+}
+
+
+// =======================================================
+// DISPLAY LOCATION
+// =======================================================
+
+function displayLocation(location) {
+
+    locationName.textContent =
+        location.name;
+
+    locationCoordinates.textContent =
+        `Latitude: ${Number(location.latitude).toFixed(4)}° | Longitude: ${Number(location.longitude).toFixed(4)}°`;
+
 }
 
 
@@ -111,6 +160,7 @@ async function searchLocation() {
     const query =
         locationInput.value.trim();
 
+
     if (!query) {
 
         alert(
@@ -118,6 +168,7 @@ async function searchLocation() {
         );
 
         return;
+
     }
 
 
@@ -132,61 +183,177 @@ async function searchLocation() {
         "Searching...";
 
 
+    const normalizedQuery =
+        query
+            .toLowerCase()
+            .trim();
+
+
+    // ---------------------------------------------------
+    // CHECK KNOWN LOCATIONS FIRST
+    // ---------------------------------------------------
+
+    if (
+        KNOWN_LOCATIONS[
+            normalizedQuery
+        ]
+    ) {
+
+        const selectedLocation =
+            KNOWN_LOCATIONS[
+                normalizedQuery
+            ];
+
+
+        displayLocation(
+            selectedLocation
+        );
+
+
+        locationInput.value =
+            selectedLocation.name;
+
+
+        await loadWeather(
+            selectedLocation
+        );
+
+
+        searchButton.disabled = false;
+
+        searchButton.textContent =
+            "Search";
+
+        return;
+
+    }
+
+
+    // ---------------------------------------------------
+    // NORMAL GEOCODING SEARCH
+    // ---------------------------------------------------
+
     try {
 
-        const url =
-            `${GEOCODING_API}?name=${encodeURIComponent(query)}&count=10&language=en&format=json`;
+        const searches = [
+
+            query,
+
+            `${query}, Rajasthan`,
+
+            `${query}, Rajasthan, India`
+
+        ];
 
 
-        const response =
-            await fetch(url);
+        let allResults = [];
 
 
-        if (!response.ok) {
-
-            throw new Error(
-                "Location search failed."
-            );
-
-        }
-
-
-        const data =
-            await response.json();
-
-
-        if (
-            !data.results ||
-            data.results.length === 0
+        for (
+            const searchTerm of searches
         ) {
 
-            throw new Error(
-                "Location not found."
-            );
+            try {
+
+                const url =
+                    `${GEOCODING_API}?name=${encodeURIComponent(searchTerm)}&count=20&language=en&format=json&countryCode=IN`;
+
+
+                const response =
+                    await fetch(url);
+
+
+                if (!response.ok) {
+                    continue;
+                }
+
+
+                const data =
+                    await response.json();
+
+
+                if (data.results) {
+
+                    allResults =
+                        allResults.concat(
+                            data.results
+                        );
+
+                }
+
+            } catch (error) {
+
+                console.log(
+                    "Geocoding attempt failed:",
+                    error
+                );
+
+            }
 
         }
 
 
-        // Prefer Rajasthan result
+        // ------------------------------------------------
+        // REMOVE DUPLICATES
+        // ------------------------------------------------
 
-        const rajasthanResult =
-            data.results.find(
+        const uniqueResults =
+            Array.from(
+
+                new Map(
+
+                    allResults.map(
+                        place => [
+                            `${place.latitude},${place.longitude}`,
+                            place
+                        ]
+                    )
+
+                ).values()
+
+            );
+
+
+        // ------------------------------------------------
+        // PREFER RAJASTHAN
+        // ------------------------------------------------
+
+        const rajasthanResults =
+            uniqueResults.filter(
                 place =>
                     place.country_code === "IN" &&
                     (
                         place.admin1 === "Rajasthan" ||
-                        place.admin2?.includes("Rajasthan")
+                        place.admin1
+                            ?.toLowerCase()
+                            .includes("rajasthan")
                     )
             );
 
 
+        const resultsToUse =
+            rajasthanResults.length > 0
+                ? rajasthanResults
+                : uniqueResults;
+
+
+        if (
+            resultsToUse.length === 0
+        ) {
+
+            throw new Error(
+                `Location "${query}" not found. Try adding the district name, for example "${query}, Nagaur".`
+            );
+
+        }
+
+
+        // ------------------------------------------------
+        // SELECT BEST RESULT
+        // ------------------------------------------------
+
         const place =
-            rajasthanResult ||
-            data.results.find(
-                place =>
-                    place.country_code === "IN"
-            ) ||
-            data.results[0];
+            resultsToUse[0];
 
 
         const selectedLocation = {
@@ -194,17 +361,32 @@ async function searchLocation() {
             name:
                 [
                     place.name,
+                    place.admin3,
                     place.admin2,
                     place.admin1
                 ]
                     .filter(Boolean)
+                    .filter(
+                        (
+                            value,
+                            index,
+                            array
+                        ) =>
+                            array.indexOf(
+                                value
+                            ) === index
+                    )
                     .join(", "),
 
             latitude:
-                place.latitude,
+                Number(
+                    place.latitude
+                ),
 
             longitude:
-                place.longitude
+                Number(
+                    place.longitude
+                )
 
         };
 
@@ -223,14 +405,17 @@ async function searchLocation() {
 
         console.error(error);
 
+
         setStatus(
             "Location search failed",
             false
         );
 
+
         alert(
             error.message
         );
+
 
     } finally {
 
@@ -238,21 +423,9 @@ async function searchLocation() {
 
         searchButton.textContent =
             "Search";
+
     }
-}
 
-
-// =======================================================
-// DISPLAY LOCATION
-// =======================================================
-
-function displayLocation(location) {
-
-    locationName.textContent =
-        location.name;
-
-    locationCoordinates.textContent =
-        `Latitude: ${location.latitude.toFixed(4)}° | Longitude: ${location.longitude.toFixed(4)}°`;
 }
 
 
@@ -269,43 +442,44 @@ async function loadWeather(location) {
 
     try {
 
-        const params = new URLSearchParams({
+        const params =
+            new URLSearchParams({
 
-            latitude:
-                location.latitude,
+                latitude:
+                    location.latitude,
 
-            longitude:
-                location.longitude,
+                longitude:
+                    location.longitude,
 
-            hourly:
-                [
-                    "precipitation",
-                    "rain",
-                    "showers",
-                    "weather_code",
-                    "precipitation_probability",
-                    "temperature_2m",
-                    "relative_humidity_2m",
-                    "cloud_cover",
-                    "wind_speed_10m"
-                ].join(","),
+                hourly:
+                    [
+                        "precipitation",
+                        "rain",
+                        "showers",
+                        "weather_code",
+                        "precipitation_probability",
+                        "temperature_2m",
+                        "relative_humidity_2m",
+                        "cloud_cover",
+                        "wind_speed_10m"
+                    ].join(","),
 
-            daily:
-                [
-                    "weather_code",
-                    "temperature_2m_max",
-                    "temperature_2m_min",
-                    "precipitation_sum",
-                    "precipitation_probability_max"
-                ].join(","),
+                daily:
+                    [
+                        "weather_code",
+                        "temperature_2m_max",
+                        "temperature_2m_min",
+                        "precipitation_sum",
+                        "precipitation_probability_max"
+                    ].join(","),
 
-            forecast_days:
-                "7",
+                forecast_days:
+                    "7",
 
-            timezone:
-                "auto"
+                timezone:
+                    "auto"
 
-        });
+            });
 
 
         const response =
@@ -354,16 +528,19 @@ async function loadWeather(location) {
 
         console.error(error);
 
+
         setStatus(
             "Weather data unavailable",
             false
         );
+
 
         alert(
             "Weather data load nahi ho paya. Please try again."
         );
 
     }
+
 }
 
 
@@ -376,6 +553,7 @@ function updateCurrentWeather(data) {
     const hourly =
         data.hourly;
 
+
     if (
         !hourly ||
         !hourly.time ||
@@ -383,6 +561,7 @@ function updateCurrentWeather(data) {
     ) {
 
         return;
+
     }
 
 
@@ -458,6 +637,7 @@ function updateCurrentWeather(data) {
         isThunderstorm(weatherCode)
             ? "Possible"
             : "No indication";
+
 }
 
 
@@ -470,6 +650,7 @@ function findCurrentHourIndex(times) {
     const now =
         new Date();
 
+
     let closestIndex = 0;
 
     let smallestDifference =
@@ -481,6 +662,7 @@ function findCurrentHourIndex(times) {
 
             const forecastTime =
                 new Date(time);
+
 
             const difference =
                 Math.abs(
@@ -499,6 +681,7 @@ function findCurrentHourIndex(times) {
 
                 closestIndex =
                     index;
+
             }
 
         }
@@ -506,6 +689,7 @@ function findCurrentHourIndex(times) {
 
 
     return closestIndex;
+
 }
 
 
@@ -566,7 +750,9 @@ function updateHourlyForecast(data) {
 
 
         const card =
-            document.createElement("div");
+            document.createElement(
+                "div"
+            );
 
 
         card.className =
@@ -597,7 +783,9 @@ function updateHourlyForecast(data) {
         hourlyForecast.appendChild(
             card
         );
+
     }
+
 }
 
 
@@ -653,7 +841,9 @@ function updateDailyForecast(data) {
 
 
         const card =
-            document.createElement("div");
+            document.createElement(
+                "div"
+            );
 
 
         card.className =
@@ -689,7 +879,9 @@ function updateDailyForecast(data) {
         dailyForecast.appendChild(
             card
         );
+
     }
+
 }
 
 
@@ -711,6 +903,7 @@ function getWeatherIcon(code) {
     ) {
 
         return "⛈️";
+
     }
 
 
@@ -720,6 +913,7 @@ function getWeatherIcon(code) {
     ) {
 
         return "🌧️";
+
     }
 
 
@@ -729,6 +923,7 @@ function getWeatherIcon(code) {
     ) {
 
         return "🌦️";
+
     }
 
 
@@ -738,6 +933,7 @@ function getWeatherIcon(code) {
     ) {
 
         return "🌦️";
+
     }
 
 
@@ -747,22 +943,26 @@ function getWeatherIcon(code) {
     ) {
 
         return "⛅";
+
     }
 
 
     if (code === 3) {
 
         return "☁️";
+
     }
 
 
     if (code === 0) {
 
         return "☀️";
+
     }
 
 
     return "🌤️";
+
 }
 
 
@@ -777,6 +977,7 @@ function isThunderstorm(code) {
         code === 96 ||
         code === 99
     );
+
 }
 
 
@@ -793,6 +994,7 @@ function formatTime(date) {
             minute: "2-digit"
         }
     );
+
 }
 
 
@@ -809,6 +1011,7 @@ function formatDay(date) {
             day: "numeric"
         }
     );
+
 }
 
 
@@ -819,11 +1022,8 @@ function formatDay(date) {
 function updateModelStatus() {
 
     /*
-     * Actual multi-model rainfall comparison
-     * will be added in the next development stage.
-     *
-     * These fields intentionally remain "--"
-     * until separate model forecasts are fetched.
+     * ECMWF, GFS and ICON comparison
+     * will be connected separately.
      */
 
     ecmwfRain.textContent =
@@ -834,6 +1034,7 @@ function updateModelStatus() {
 
     iconRain.textContent =
         "-- mm";
+
 }
 
 
@@ -848,7 +1049,7 @@ searchButton.addEventListener(
 
 
 // =======================================================
-// ENTER KEY SEARCH
+// ENTER KEY
 // =======================================================
 
 locationInput.addEventListener(
@@ -876,6 +1077,10 @@ async function initialize() {
     displayLocation(
         DEFAULT_LOCATION
     );
+
+
+    locationInput.value =
+        DEFAULT_LOCATION.name;
 
 
     await loadWeather(
