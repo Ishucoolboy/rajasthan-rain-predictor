@@ -2,7 +2,6 @@
 <html lang="en">
 
 <head>
-
   <meta charset="UTF-8">
 
   <meta
@@ -20,40 +19,25 @@
     content="#0f172a"
   >
 
-  <title>
-    Rajasthan Rain Predictor
-  </title>
+  <title>Rajasthan Rain Predictor</title>
 
-
-  <!-- =====================================================
-       LEAFLET CSS
-       ===================================================== -->
-
+  <!-- Leaflet -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   >
 
-
-  <!-- =====================================================
-       MAIN CSS
-       ===================================================== -->
-
+  <!-- Main CSS -->
   <link
     rel="stylesheet"
-    href="style.css?v=10"
+    href="style.css?v=11"
   >
-
 </head>
 
 
 <body>
 
-
-  <!-- =====================================================
-       HEADER
-       ===================================================== -->
-
+  <!-- HEADER -->
   <header class="site-header">
 
     <div class="header-inner">
@@ -65,15 +49,11 @@
         </div>
 
         <div>
-
-          <h1>
-            Rajasthan Rain Predictor
-          </h1>
+          <h1>Rajasthan Rain Predictor</h1>
 
           <p>
             Smart rainfall & weather prediction
           </p>
-
         </div>
 
       </div>
@@ -100,25 +80,16 @@
   </header>
 
 
-
-  <!-- =====================================================
-       MAIN
-       ===================================================== -->
-
+  <!-- MAIN -->
   <main class="container">
 
 
-    <!-- ===================================================
-         SEARCH
-         =================================================== -->
-
+    <!-- SEARCH -->
     <section class="search-section">
 
       <div class="section-title">
 
-        <h2>
-          📍 Search Location
-        </h2>
+        <h2>📍 Search Location</h2>
 
         <p>
           Rajasthan ke kisi bhi village, town ya city ko
@@ -170,11 +141,7 @@
     </section>
 
 
-
-    <!-- ===================================================
-         LOCATION
-         =================================================== -->
-
+    <!-- LOCATION -->
     <section
       id="locationCard"
       class="location-card"
@@ -186,11 +153,9 @@
           Selected Location
         </div>
 
-
         <h2 id="locationName">
           Kuchera, Nagaur, Rajasthan
         </h2>
-
 
         <p id="locationCoordinates">
           Latitude: 27.0100° |
@@ -210,19 +175,11 @@
     </section>
 
 
-
-    <!-- ===================================================
-         CURRENT WEATHER
-         =================================================== -->
-
+    <!-- CURRENT WEATHER -->
     <section class="weather-section">
 
       <div class="section-title">
-
-        <h2>
-          🌤️ Current Weather
-        </h2>
-
+        <h2>🌤️ Current Weather</h2>
       </div>
 
 
@@ -249,7 +206,6 @@
         </div>
 
 
-
         <div class="weather-card">
 
           <div class="weather-card-icon">
@@ -268,7 +224,6 @@
           </div>
 
         </div>
-
 
 
         <div class="weather-card">
@@ -291,7 +246,6 @@
         </div>
 
 
-
         <div class="weather-card">
 
           <div class="weather-card-icon">
@@ -312,7 +266,6 @@
         </div>
 
 
-
         <div class="weather-card">
 
           <div class="weather-card-icon">
@@ -331,7 +284,6 @@
           </div>
 
         </div>
-
 
 
         <div class="weather-card">
@@ -359,18 +311,12 @@
     </section>
 
 
-
-    <!-- ===================================================
-         HOURLY FORECAST
-         =================================================== -->
-
+    <!-- HOURLY FORECAST -->
     <section class="forecast-section">
 
       <div class="section-title">
 
-        <h2>
-          ⏱️ Hourly Rain Forecast
-        </h2>
+        <h2>⏱️ Hourly Rain Forecast</h2>
 
         <p>
           Agle 24 hours ka detailed forecast.
@@ -387,18 +333,12 @@
     </section>
 
 
-
-    <!-- ===================================================
-         DAILY FORECAST
-         =================================================== -->
-
+    <!-- DAILY FORECAST -->
     <section class="forecast-section">
 
       <div class="section-title">
 
-        <h2>
-          📅 7-Day Forecast
-        </h2>
+        <h2>📅 7-Day Forecast</h2>
 
       </div>
 
@@ -411,18 +351,12 @@
     </section>
 
 
-
-    <!-- ===================================================
-         WEATHER MODEL COMPARISON
-         =================================================== -->
-
+    <!-- MODEL COMPARISON -->
     <section class="model-section">
 
       <div class="section-title">
 
-        <h2>
-          🛰️ Weather Model Comparison
-        </h2>
+        <h2>🛰️ Weather Model Comparison</h2>
 
         <p>
           ECMWF, GFS aur ICON rainfall forecast.
@@ -436,9 +370,7 @@
 
         <div class="model-card">
 
-          <h3>
-            ECMWF
-          </h3>
+          <h3>ECMWF</h3>
 
           <div
             id="ecmwfRain"
@@ -447,19 +379,14 @@
             --
           </div>
 
-          <span>
-            Rainfall
-          </span>
+          <span>Rainfall</span>
 
         </div>
 
 
-
         <div class="model-card">
 
-          <h3>
-            GFS
-          </h3>
+          <h3>GFS</h3>
 
           <div
             id="gfsRain"
@@ -468,19 +395,14 @@
             --
           </div>
 
-          <span>
-            Rainfall
-          </span>
+          <span>Rainfall</span>
 
         </div>
 
 
-
         <div class="model-card">
 
-          <h3>
-            ICON
-          </h3>
+          <h3>ICON</h3>
 
           <div
             id="iconRain"
@@ -489,9 +411,7 @@
             --
           </div>
 
-          <span>
-            Rainfall
-          </span>
+          <span>Rainfall</span>
 
         </div>
 
@@ -507,29 +427,19 @@
     </section>
 
 
-
-    <!-- ===================================================
-         COMBINED PREDICTION ENGINE
-         =================================================== -->
-
+    <!-- PREDICTION ENGINE -->
     <section
       id="predictionEngine"
       class="prediction-engine"
     ></section>
 
 
-
-    <!-- ===================================================
-         HOURLY MODEL COMPARISON
-         =================================================== -->
-
+    <!-- HOURLY MODEL COMPARISON -->
     <section class="model-section">
 
       <div class="section-title">
 
-        <h2>
-          🕐 Hourly Model Comparison
-        </h2>
+        <h2>🕐 Hourly Model Comparison</h2>
 
         <p>
           ECMWF, GFS aur ICON ke hourly signals.
@@ -546,18 +456,12 @@
     </section>
 
 
-
-    <!-- ===================================================
-         SMART RAIN FORECAST
-         =================================================== -->
-
+    <!-- SMART FORECAST -->
     <section class="smart-section">
 
       <div class="section-title">
 
-        <h2>
-          🧠 Smart Rain Forecast
-        </h2>
+        <h2>🧠 Smart Rain Forecast</h2>
 
       </div>
 
@@ -570,18 +474,12 @@
     </section>
 
 
-
-    <!-- ===================================================
-         NEXT RAIN ALERT
-         =================================================== -->
-
+    <!-- NEXT RAIN ALERT -->
     <section class="alert-section">
 
       <div class="section-title">
 
-        <h2>
-          🔔 Next Rain Alert
-        </h2>
+        <h2>🔔 Next Rain Alert</h2>
 
       </div>
 
@@ -594,18 +492,12 @@
     </section>
 
 
-
-    <!-- ===================================================
-         RAIN MAP
-         =================================================== -->
-
+    <!-- MAP -->
     <section class="map-section">
 
       <div class="section-title">
 
-        <h2>
-          🗺️ Rajasthan Rainfall Map
-        </h2>
+        <h2>🗺️ Rajasthan Rainfall Map</h2>
 
         <p>
           Selected location ka live rainfall map.
@@ -622,11 +514,7 @@
     </section>
 
 
-
-    <!-- ===================================================
-         ACCURACY SECTION
-         =================================================== -->
-
+    <!-- ACCURACY -->
     <section
       id="accuracy"
       class="accuracy-section"
@@ -634,9 +522,7 @@
 
       <div class="section-title">
 
-        <h2>
-          📊 Forecast Accuracy
-        </h2>
+        <h2>📊 Forecast Accuracy</h2>
 
         <p>
           Forecast ko actual rainfall observations ke
@@ -665,7 +551,6 @@
         </div>
 
 
-
         <div class="accuracy-card">
 
           <div class="accuracy-card-label">
@@ -680,7 +565,6 @@
           </div>
 
         </div>
-
 
 
         <div class="accuracy-card">
@@ -724,11 +608,10 @@
     </section>
 
 
+    <!-- AUTOMATIC VERIFICATION WILL APPEAR HERE -->
 
-    <!-- ===================================================
-         HISTORICAL MODEL ACCURACY
-         =================================================== -->
 
+    <!-- HISTORICAL MODEL ACCURACY -->
     <section
       id="historicalAccuracy"
       class="accuracy-section"
@@ -736,9 +619,7 @@
 
       <div class="section-title">
 
-        <h2>
-          🧪 Historical Model Accuracy
-        </h2>
+        <h2>🧪 Historical Model Accuracy</h2>
 
         <p>
           ECMWF, GFS aur ICON ko 1–7 day lead time par
@@ -747,8 +628,6 @@
 
       </div>
 
-
-      <!-- RUN BUTTON -->
 
       <button
         id="runHistoricalAccuracy"
@@ -768,8 +647,6 @@
       </button>
 
 
-      <!-- STATUS -->
-
       <div
         id="historicalAccuracyStatus"
         style="
@@ -781,8 +658,6 @@
         Historical test abhi run nahi hua.
       </div>
 
-
-      <!-- RESULTS -->
 
       <div
         id="historicalAccuracyResults"
@@ -810,11 +685,7 @@
     </section>
 
 
-
-    <!-- ===================================================
-         FOOTER
-         =================================================== -->
-
+    <!-- FOOTER -->
     <footer class="site-footer">
 
       <p>
@@ -842,96 +713,75 @@
   </main>
 
 
-
-  <!-- =====================================================
-       JAVASCRIPT
-       ===================================================== -->
-
+  <!-- JAVASCRIPT -->
 
   <!-- Leaflet -->
-
   <script
     src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
   ></script>
 
 
-
   <!-- Main Application -->
-
   <script
     src="app.js?v=7"
   ></script>
 
 
-
   <!-- Multi Model Prediction -->
-
   <script
     src="prediction-engine.js?v=2"
   ></script>
 
 
-
   <!-- Basic Accuracy -->
-
   <script
     src="accuracy-engine.js?v=1"
   ></script>
 
 
-
   <!-- Historical Backtest -->
-
   <script
     src="backtest-engine.js?v=1"
   ></script>
 
 
-
   <!-- Backtest Dashboard -->
-
   <script
     src="backtest-dashboard.js?v=1"
   ></script>
 
 
-
   <!-- Actual Rainfall Observation -->
-
   <script
     src="observation-engine.js?v=1"
   ></script>
 
 
-
   <!-- Forecast Verification -->
-
   <script
     src="accuracy-verification-engine.js?v=2"
   ></script>
 
 
-
   <!-- Forecast Snapshot -->
-
   <script
     src="forecast-snapshot-engine.js?v=2"
   ></script>
 
 
-
-  <!-- Historical Model Accuracy -->
-
+  <!-- Historical Model Accuracy V5 -->
   <script
-    src="historical-model-accuracy-engine.js?v=1"
+    src="historical-model-accuracy-engine.js?v=5"
   ></script>
 
 
+  <!-- NEW: Automatic Forecast vs Actual Verification -->
+  <script
+    src="automatic-verification-engine.js?v=1"
+  ></script>
 
-  <!-- =====================================================
-       HISTORICAL ACCURACY DASHBOARD
-       ===================================================== -->
 
+  <!-- Historical Accuracy Button -->
   <script>
 
     (function () {
@@ -974,292 +824,43 @@
       }
 
 
-      function metricValue(
+      function numberValue(
         value,
-        suffix = ""
+        decimals
       ) {
 
         if (
           value === null ||
-          value === undefined
+          value === undefined ||
+          !Number.isFinite(
+            Number(value)
+          )
         ) {
-
           return "—";
-
         }
 
-        return (
-          String(value) +
-          suffix
-        );
+        return Number(value)
+          .toFixed(
+            decimals
+          );
 
       }
 
 
-      function renderModel(
-        modelName,
-        modelData
-      ) {
-
-        const leadDays = [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7
-        ];
-
-
-        const rows =
-          leadDays
-            .map(
-              function (day) {
-
-                const data =
-                  modelData[
-                    "day" + day
-                  ];
-
-
-                if (!data) {
-
-                  return `
-
-                    <tr>
-
-                      <td style="
-                        padding:9px;
-                        border-top:
-                        1px solid
-                        rgba(255,255,255,.08);
-                      ">
-                        Day ${day}
-                      </td>
-
-                      <td style="
-                        padding:9px;
-                        border-top:
-                        1px solid
-                        rgba(255,255,255,.08);
-                      ">
-                        —
-                      </td>
-
-                      <td style="
-                        padding:9px;
-                        border-top:
-                        1px solid
-                        rgba(255,255,255,.08);
-                      ">
-                        —
-                      </td>
-
-                      <td style="
-                        padding:9px;
-                        border-top:
-                        1px solid
-                        rgba(255,255,255,.08);
-                      ">
-                        —
-                      </td>
-
-                      <td style="
-                        padding:9px;
-                        border-top:
-                        1px solid
-                        rgba(255,255,255,.08);
-                      ">
-                        —
-                      </td>
-
-                    </tr>
-
-                  `;
-
-                }
-
-
-                return `
-
-                  <tr>
-
-                    <td style="
-                      padding:9px;
-                      border-top:
-                      1px solid
-                      rgba(255,255,255,.08);
-                    ">
-                      Day ${day}
-                    </td>
-
-                    <td style="
-                      padding:9px;
-                      border-top:
-                      1px solid
-                      rgba(255,255,255,.08);
-                    ">
-                      ${metricValue(
-                        data.samples
-                      )}
-                    </td>
-
-                    <td style="
-                      padding:9px;
-                      border-top:
-                      1px solid
-                      rgba(255,255,255,.08);
-                    ">
-                      ${metricValue(
-                        data.mae,
-                        " mm"
-                      )}
-                    </td>
-
-                    <td style="
-                      padding:9px;
-                      border-top:
-                      1px solid
-                      rgba(255,255,255,.08);
-                    ">
-                      ${metricValue(
-                        data.rmse,
-                        " mm"
-                      )}
-                    </td>
-
-                    <td style="
-                      padding:9px;
-                      border-top:
-                      1px solid
-                      rgba(255,255,255,.08);
-                    ">
-                      ${metricValue(
-                        data.rainAccuracy,
-                        "%"
-                      )}
-                    </td>
-
-                  </tr>
-
-                `;
-
-              }
-            )
-            .join("");
-
-
-        return `
-
-          <div style="
-            padding:18px;
-            border-radius:16px;
-            background:rgba(255,255,255,.06);
-            border:1px solid rgba(255,255,255,.12);
-          ">
-
-            <h3 style="
-              margin:0 0 14px;
-            ">
-
-              🛰️
-              ${escapeHTML(
-                modelName
-              )}
-
-            </h3>
-
-
-            <div style="
-              overflow-x:auto;
-            ">
-
-              <table style="
-                width:100%;
-                border-collapse:collapse;
-                font-size:12px;
-              ">
-
-                <thead>
-
-                  <tr>
-
-                    <th style="
-                      padding:9px;
-                      text-align:left;
-                    ">
-                      Lead
-                    </th>
-
-                    <th style="
-                      padding:9px;
-                      text-align:left;
-                    ">
-                      Samples
-                    </th>
-
-                    <th style="
-                      padding:9px;
-                      text-align:left;
-                    ">
-                      MAE
-                    </th>
-
-                    <th style="
-                      padding:9px;
-                      text-align:left;
-                    ">
-                      RMSE
-                    </th>
-
-                    <th style="
-                      padding:9px;
-                      text-align:left;
-                    ">
-                      Rain Accuracy
-                    </th>
-
-                  </tr>
-
-                </thead>
-
-
-                <tbody>
-
-                  ${rows}
-
-                </tbody>
-
-              </table>
-
-            </div>
-
-          </div>
-
-        `;
-
-      }
-
-
-      function renderResult(
+      function renderHistoricalResult(
         result
       ) {
 
         if (!result) {
 
           results.innerHTML = `
-
             <div style="
               padding:18px;
               border-radius:16px;
               background:rgba(255,255,255,.06);
             ">
-
               ❌ Historical result available nahi hai.
-
             </div>
-
           `;
 
           return;
@@ -1267,58 +868,23 @@
         }
 
 
-        const modelNames = [
-          "ECMWF",
-          "GFS",
-          "ICON"
-        ];
-
-
-        const cards =
-          modelNames
-            .filter(
-              function (name) {
-
-                return (
-                  result.models &&
-                  result.models[name]
-                );
-
-              }
-            )
-            .map(
-              function (name) {
-
-                return renderModel(
-                  name,
-                  result.models[name]
-                );
-
-              }
-            )
-            .join("");
-
-
-        results.innerHTML = `
+        let html = `
 
           <div style="
             display:grid;
-            gap:14px;
+            gap:16px;
           ">
 
             <div style="
               padding:16px;
               border-radius:14px;
-              background:rgba(255,255,255,.05);
+              background:rgba(255,255,255,.06);
               border:1px solid rgba(255,255,255,.10);
-              font-size:13px;
               line-height:1.7;
+              font-size:13px;
             ">
 
-              <strong>
-                📍 Location:
-              </strong>
-
+              <strong>📍 Location:</strong>
               ${escapeHTML(
                 result.location?.name ||
                 "Selected Location"
@@ -1326,34 +892,232 @@
 
               <br>
 
-              <strong>
-                📅 Period:
-              </strong>
-
+              <strong>📅 Period:</strong>
               ${escapeHTML(
-                result.period?.startDate ||
+                result.period?.start ||
                 ""
               )}
-
               →
               ${escapeHTML(
-                result.period?.endDate ||
+                result.period?.end ||
                 ""
               )}
 
               <br>
 
-              <strong>
-                📚 Reference:
-              </strong>
-
+              <strong>📊 Reference:</strong>
               ERA5 / reanalysis
 
+              <br>
+
+              <strong>📦 Test Days:</strong>
+              ${result.period?.days || 90}
+
             </div>
+        `;
 
 
-            ${cards}
+        (result.models || [])
+          .forEach(
+            function (model) {
 
+              html += `
+
+                <div style="
+                  padding:16px;
+                  border-radius:16px;
+                  background:rgba(255,255,255,.06);
+                  border:1px solid rgba(255,255,255,.12);
+                ">
+
+                  <h3 style="
+                    margin:0 0 14px;
+                  ">
+                    🛰️
+                    ${escapeHTML(
+                      model.name
+                    )}
+                  </h3>
+
+
+                  <div style="
+                    overflow-x:auto;
+                  ">
+
+                    <table style="
+                      width:100%;
+                      border-collapse:collapse;
+                      font-size:12px;
+                    ">
+
+                      <thead>
+
+                        <tr>
+
+                          <th style="
+                            padding:9px;
+                            text-align:left;
+                          ">
+                            Lead
+                          </th>
+
+                          <th style="
+                            padding:9px;
+                            text-align:left;
+                          ">
+                            Samples
+                          </th>
+
+                          <th style="
+                            padding:9px;
+                            text-align:left;
+                          ">
+                            MAE
+                          </th>
+
+                          <th style="
+                            padding:9px;
+                            text-align:left;
+                          ">
+                            RMSE
+                          </th>
+
+                          <th style="
+                            padding:9px;
+                            text-align:left;
+                          ">
+                            Bias
+                          </th>
+
+                          <th style="
+                            padding:9px;
+                            text-align:left;
+                          ">
+                            Rain Accuracy
+                          </th>
+
+                        </tr>
+
+                      </thead>
+
+
+                      <tbody>
+
+              `;
+
+
+              (model.leads || [])
+                .forEach(
+                  function (lead) {
+
+                    const m =
+                      lead.metrics || {};
+
+                    html += `
+
+                      <tr>
+
+                        <td style="
+                          padding:9px;
+                          border-top:
+                          1px solid
+                          rgba(255,255,255,.08);
+                        ">
+                          Day ${lead.day}
+                        </td>
+
+                        <td style="
+                          padding:9px;
+                          border-top:
+                          1px solid
+                          rgba(255,255,255,.08);
+                        ">
+                          ${
+                            m.samples ?? "—"
+                          }
+                        </td>
+
+                        <td style="
+                          padding:9px;
+                          border-top:
+                          1px solid
+                          rgba(255,255,255,.08);
+                        ">
+                          ${
+                            numberValue(
+                              m.mae,
+                              3
+                            )
+                          } mm
+                        </td>
+
+                        <td style="
+                          padding:9px;
+                          border-top:
+                          1px solid
+                          rgba(255,255,255,.08);
+                        ">
+                          ${
+                            numberValue(
+                              m.rmse,
+                              3
+                            )
+                          } mm
+                        </td>
+
+                        <td style="
+                          padding:9px;
+                          border-top:
+                          1px solid
+                          rgba(255,255,255,.08);
+                        ">
+                          ${
+                            numberValue(
+                              m.bias,
+                              3
+                            )
+                          } mm
+                        </td>
+
+                        <td style="
+                          padding:9px;
+                          border-top:
+                          1px solid
+                          rgba(255,255,255,.08);
+                        ">
+                          ${
+                            numberValue(
+                              m.rainAccuracy,
+                              1
+                            )
+                          }%
+                        </td>
+
+                      </tr>
+
+                    `;
+
+                  }
+                );
+
+
+              html += `
+
+                      </tbody>
+
+                    </table>
+
+                  </div>
+
+                </div>
+
+              `;
+
+            }
+          );
+
+
+        html += `
 
             <div style="
               padding:15px;
@@ -1364,29 +1128,27 @@
               line-height:1.7;
             ">
 
-              ⚠️
-
-              Ye test
+              ⚠️ Ye historical test
               <strong>
-                reanalysis reference
+                ERA5/reanalysis
               </strong>
               ke against hai.
 
-              Isko independent
+              Ye independent
               <strong>
-                rain-gauge / IMD accuracy
+                IMD/rain-gauge accuracy
               </strong>
-              nahi maana jayega.
-
-              Actual local accuracy ke liye
-              verified rainfall observations
-              alag se collect ki jayengi.
+              nahi hai.
 
             </div>
 
           </div>
 
         `;
+
+
+        results.innerHTML =
+          html;
 
       }
 
@@ -1396,8 +1158,10 @@
         async function () {
 
           if (
-            typeof window.RRP_HISTORICAL_ACCURACY !==
-            "object"
+            !window.RRP_HISTORICAL_ACCURACY ||
+            typeof window
+              .RRP_HISTORICAL_ACCURACY
+              .run !== "function"
           ) {
 
             status.innerHTML =
@@ -1411,13 +1175,12 @@
           button.disabled =
             true;
 
-
           button.style.opacity =
             "0.6";
 
 
           status.innerHTML =
-            "⏳ Historical ECMWF/GFS/ICON data fetch ho raha hai...";
+            "⏳ 90-day ECMWF/GFS/ICON historical test chal raha hai...";
 
 
           results.innerHTML = `
@@ -1426,14 +1189,15 @@
               padding:18px;
               border-radius:16px;
               background:rgba(255,255,255,.06);
+              line-height:1.7;
             ">
 
               ⏳ Please wait...
 
               <br><br>
 
-              3 weather models × multiple lead times
-              verify kiye ja rahe hain.
+              90 days × 7 lead times ×
+              multiple weather models verify kiye ja rahe hain.
 
             </div>
 
@@ -1445,19 +1209,16 @@
             const result =
               await window
                 .RRP_HISTORICAL_ACCURACY
-                .run({
-                  days: 7
-                });
+                .run();
 
 
-            renderResult(
+            renderHistoricalResult(
               result
             );
 
 
             status.innerHTML =
               "✅ Historical accuracy test complete.";
-
 
           } catch (error) {
 
@@ -1467,38 +1228,13 @@
             );
 
 
-            status.innerHTML = `
-
-              ❌ Test failed:
-
-              ${escapeHTML(
-                error?.message ||
-                String(error)
-              )}
-
-            `;
-
-
-            results.innerHTML = `
-
-              <div style="
-                padding:18px;
-                border-radius:16px;
-                background:rgba(255,0,0,.08);
-                border:1px solid rgba(255,0,0,.18);
-                line-height:1.7;
-              ">
-
-                ❌ Historical test complete nahi ho saka.
-
-                <br><br>
-
-                Browser Console mein exact error
-                check kiya ja sakta hai.
-
-              </div>
-
-            `;
+            status.innerHTML =
+              `❌ Test failed: ${
+                escapeHTML(
+                  error?.message ||
+                  String(error)
+                )
+              }`;
 
           } finally {
 
@@ -1514,16 +1250,61 @@
       );
 
 
+      /*
+        If V5 already has a saved result,
+        show it when the page loads.
+      */
+
+      setTimeout(
+        function () {
+
+          try {
+
+            if (
+              window.RRP_HISTORICAL_ACCURACY &&
+              typeof window
+                .RRP_HISTORICAL_ACCURACY
+                .getResults ===
+                "function"
+            ) {
+
+              const saved =
+                window
+                  .RRP_HISTORICAL_ACCURACY
+                  .getResults();
+
+              if (saved) {
+
+                renderHistoricalResult(
+                  saved
+                );
+
+                status.innerHTML =
+                  "✅ Saved 90-day historical result loaded.";
+
+              }
+
+            }
+
+          } catch (error) {
+
+            console.error(
+              "Could not load saved historical result:",
+              error
+            );
+
+          }
+
+        },
+        1500
+      );
+
     })();
 
   </script>
 
 
-
-  <!-- =====================================================
-       STARTUP CHECK
-       ===================================================== -->
-
+  <!-- STARTUP CHECK -->
   <script>
 
     window.addEventListener(
@@ -1585,6 +1366,12 @@
         );
 
 
+        console.log(
+          "Automatic Verification Engine:",
+          typeof window.RRP_AUTOMATIC_VERIFICATION
+        );
+
+
         if (
           typeof window.RRP_SNAPSHOT ===
           "object"
@@ -1604,6 +1391,18 @@
 
           console.log(
             "✅ Historical Accuracy Engine ready."
+          );
+
+        }
+
+
+        if (
+          typeof window.RRP_AUTOMATIC_VERIFICATION ===
+          "object"
+        ) {
+
+          console.log(
+            "✅ Automatic Verification Engine ready."
           );
 
         }
