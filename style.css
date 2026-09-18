@@ -4,9 +4,9 @@
    ========================================================= */
 
 
-/* =========================
+/* =========================================================
    GLOBAL
-   ========================= */
+   ========================================================= */
 
 * {
     box-sizing: border-box;
@@ -14,20 +14,28 @@
     padding: 0;
 }
 
+html {
+    width: 100%;
+    min-height: 100%;
+}
 
 body {
     font-family: Arial, Helvetica, sans-serif;
     background: #f4f7fb;
     color: #172033;
     line-height: 1.6;
+    width: 100%;
+    min-height: 100vh;
 }
-
 
 button,
 input {
     font-family: inherit;
 }
 
+button {
+    -webkit-tap-highlight-color: transparent;
+}
 
 .container {
     width: min(1180px, 92%);
@@ -35,9 +43,9 @@ input {
 }
 
 
-/* =========================
+/* =========================================================
    HEADER
-   ========================= */
+   ========================================================= */
 
 .header {
     background: linear-gradient(
@@ -53,7 +61,6 @@ input {
         0 4px 15px rgba(0, 0, 0, 0.12);
 }
 
-
 .header-content {
     width: min(1180px, 92%);
     margin: 0 auto;
@@ -62,7 +69,6 @@ input {
     align-items: center;
     gap: 18px;
 }
-
 
 .logo {
     width: 58px;
@@ -78,12 +84,10 @@ input {
     font-size: 30px;
 }
 
-
 .header h1 {
     font-size: 30px;
     margin-bottom: 3px;
 }
-
 
 .header p {
     opacity: 0.9;
@@ -91,9 +95,9 @@ input {
 }
 
 
-/* =========================
+/* =========================================================
    SEARCH SECTION
-   ========================= */
+   ========================================================= */
 
 .search-section {
     margin-top: 28px;
@@ -107,27 +111,22 @@ input {
         0 5px 20px rgba(15, 23, 42, 0.07);
 }
 
-
 .search-section h2 {
     margin-bottom: 5px;
 }
-
 
 .section-description {
     color: #64748b;
     margin-bottom: 18px;
 }
 
-
 .search-box {
     display: flex;
     gap: 10px;
 }
 
-
 .search-box input {
     flex: 1;
-
     min-width: 0;
 
     padding: 14px 16px;
@@ -140,14 +139,12 @@ input {
     font-size: 16px;
 }
 
-
 .search-box input:focus {
     border-color: #0284c7;
 
     box-shadow:
         0 0 0 3px rgba(2, 132, 199, 0.12);
 }
-
 
 .search-box button {
     border: none;
@@ -167,11 +164,9 @@ input {
     transition: 0.2s;
 }
 
-
 .search-box button:hover {
     background: #0369a1;
 }
-
 
 .search-example {
     margin-top: 10px;
@@ -182,9 +177,9 @@ input {
 }
 
 
-/* =========================
+/* =========================================================
    LOCATION
-   ========================= */
+   ========================================================= */
 
 .location-section {
     margin-top: 20px;
@@ -199,7 +194,6 @@ input {
         0 5px 20px rgba(15, 23, 42, 0.07);
 }
 
-
 .location-header {
     display: flex;
     justify-content: space-between;
@@ -207,7 +201,6 @@ input {
 
     gap: 20px;
 }
-
 
 .small-label {
     color: #64748b;
@@ -219,19 +212,16 @@ input {
     letter-spacing: 1px;
 }
 
-
 #locationName {
     font-size: 26px;
 
     margin: 2px 0;
 }
 
-
 #locationCoordinates {
     color: #64748b;
     font-size: 14px;
 }
-
 
 .status {
     display: flex;
@@ -243,7 +233,6 @@ input {
 
     font-size: 14px;
 }
-
 
 .status-dot {
     width: 10px;
@@ -257,9 +246,9 @@ input {
 }
 
 
-/* =========================
+/* =========================================================
    WEATHER SECTION
-   ========================= */
+   ========================================================= */
 
 .weather-section,
 .forecast-section,
@@ -269,7 +258,6 @@ input {
 .info-section {
     margin-top: 28px;
 }
-
 
 .weather-section h2,
 .forecast-section h2,
@@ -281,6 +269,10 @@ input {
 }
 
 
+/* =========================================================
+   WEATHER GRID
+   ========================================================= */
+
 .weather-grid {
     display: grid;
 
@@ -289,7 +281,6 @@ input {
 
     gap: 16px;
 }
-
 
 .weather-card {
     background: white;
@@ -306,7 +297,6 @@ input {
         box-shadow 0.2s;
 }
 
-
 .weather-card:hover {
     transform: translateY(-3px);
 
@@ -314,13 +304,11 @@ input {
         0 9px 25px rgba(15, 23, 42, 0.10);
 }
 
-
 .weather-icon {
     font-size: 28px;
 
     margin-bottom: 8px;
 }
-
 
 .weather-card p {
     color: #64748b;
@@ -330,7 +318,6 @@ input {
     margin-bottom: 4px;
 }
 
-
 .weather-card strong {
     font-size: 27px;
 
@@ -338,9 +325,9 @@ input {
 }
 
 
-/* =========================
+/* =========================================================
    HOURLY FORECAST
-   ========================= */
+   ========================================================= */
 
 .hourly-container {
     display: flex;
@@ -350,8 +337,9 @@ input {
     overflow-x: auto;
 
     padding: 5px 2px 12px;
-}
 
+    scrollbar-width: thin;
+}
 
 .hour-card {
     min-width: 125px;
@@ -368,7 +356,6 @@ input {
         0 5px 18px rgba(15, 23, 42, 0.06);
 }
 
-
 .hour-card .time {
     color: #64748b;
 
@@ -377,13 +364,11 @@ input {
     margin-bottom: 8px;
 }
 
-
 .hour-card .icon {
     font-size: 26px;
 
     margin-bottom: 7px;
 }
-
 
 .hour-card .rain {
     font-size: 18px;
@@ -393,7 +378,6 @@ input {
     color: #0284c7;
 }
 
-
 .hour-card .probability {
     font-size: 12px;
 
@@ -401,9 +385,9 @@ input {
 }
 
 
-/* =========================
+/* =========================================================
    DAILY FORECAST
-   ========================= */
+   ========================================================= */
 
 .daily-container {
     display: grid;
@@ -413,7 +397,6 @@ input {
 
     gap: 10px;
 }
-
 
 .day-card {
     background: white;
@@ -428,13 +411,11 @@ input {
         0 5px 18px rgba(15, 23, 42, 0.06);
 }
 
-
 .day-card .day {
     font-weight: bold;
 
     margin-bottom: 8px;
 }
-
 
 .day-card .day-icon {
     font-size: 27px;
@@ -442,13 +423,11 @@ input {
     margin-bottom: 7px;
 }
 
-
 .day-card .day-rain {
     color: #0284c7;
 
     font-weight: bold;
 }
-
 
 .day-card .day-temp {
     color: #64748b;
@@ -459,9 +438,9 @@ input {
 }
 
 
-/* =========================
+/* =========================================================
    MODEL COMPARISON
-   ========================= */
+   ========================================================= */
 
 .model-grid {
     display: grid;
@@ -471,7 +450,6 @@ input {
 
     gap: 16px;
 }
-
 
 .model-card {
     background: white;
@@ -484,11 +462,9 @@ input {
         0 5px 20px rgba(15, 23, 42, 0.06);
 }
 
-
 .model-card h3 {
     margin-bottom: 5px;
 }
-
 
 .model-card p {
     color: #64748b;
@@ -498,7 +474,6 @@ input {
     margin-bottom: 14px;
 }
 
-
 .model-card strong {
     color: #0284c7;
 
@@ -506,11 +481,13 @@ input {
 }
 
 
-/* =========================
-   MAP
-   ========================= */
+/* =========================================================
+   MAP SECTION
+   ========================================================= */
 
 .map-container {
+    width: 100%;
+
     min-height: 400px;
 
     background: white;
@@ -524,7 +501,50 @@ input {
 }
 
 
+/* =========================================================
+   LEAFLET MAP
+   IMPORTANT:
+   Do NOT style Leaflet's internal tile/pane positioning.
+   Leaflet's own CSS handles that.
+   ========================================================= */
+
+#rainMap {
+    width: 100%;
+    height: 480px;
+    min-height: 360px;
+
+    border-radius: 16px;
+
+    overflow: hidden;
+
+    background: #e2e8f0;
+}
+
+
+/* =========================================================
+   LEAFLET CONTAINER
+   Only basic sizing — no internal positioning overrides.
+   ========================================================= */
+
+#rainMap.leaflet-container {
+    width: 100%;
+    height: 480px;
+
+    background: #e2e8f0;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+}
+
+
+/* =========================================================
+   MAP PLACEHOLDER
+   ========================================================= */
+
 .map-placeholder {
+    width: 100%;
     min-height: 400px;
 
     display: flex;
@@ -539,7 +559,6 @@ input {
     color: #64748b;
 }
 
-
 .map-placeholder div {
     font-size: 55px;
 
@@ -547,9 +566,110 @@ input {
 }
 
 
-/* =========================
+/* =========================================================
+   LEAFLET POPUP
+   ========================================================= */
+
+#rainMap .leaflet-popup-content {
+    line-height: 1.5;
+}
+
+#rainMap .leaflet-popup-content-wrapper {
+    border-radius: 10px;
+}
+
+
+/* =========================================================
+   LEAFLET LEGEND
+   ========================================================= */
+
+.rain-map-legend {
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    color: #172033;
+}
+
+
+/* =========================================================
+   SMART RAIN SUMMARY
+   ========================================================= */
+
+#smartRainSummary {
+    width: 100%;
+
+    margin-top: 18px;
+
+    padding: 18px;
+
+    border-radius: 16px;
+
+    background:
+        rgba(14, 165, 233, 0.08);
+
+    border:
+        1px solid rgba(14, 165, 233, 0.18);
+}
+
+
+/* =========================================================
+   NEXT RAIN ALERT
+   ========================================================= */
+
+#nextRainAlert {
+    width: 100%;
+
+    margin-top: 15px;
+
+    padding: 15px;
+
+    border-radius: 14px;
+
+    background:
+        rgba(59, 130, 246, 0.08);
+
+    border:
+        1px solid rgba(59, 130, 246, 0.18);
+}
+
+
+/* =========================================================
+   HOURLY MODEL COMPARISON
+   ========================================================= */
+
+#hourlyModelComparison {
+    width: 100%;
+
+    margin-top: 18px;
+
+    padding: 18px;
+
+    border-radius: 16px;
+
+    background:
+        rgba(14, 165, 233, 0.06);
+
+    border:
+        1px solid rgba(14, 165, 233, 0.15);
+
+    overflow: hidden;
+}
+
+
+/* =========================================================
+   MODEL CONSENSUS
+   ========================================================= */
+
+#modelConsensus {
+    width: 100%;
+}
+
+
+/* =========================================================
    ACCURACY
-   ========================= */
+   ========================================================= */
 
 .accuracy-grid {
     display: grid;
@@ -561,7 +681,6 @@ input {
 
     margin-top: 15px;
 }
-
 
 .accuracy-card {
     background: white;
@@ -580,18 +699,15 @@ input {
     gap: 5px;
 }
 
-
 .accuracy-card span {
     color: #64748b;
 
     font-size: 14px;
 }
 
-
 .accuracy-card strong {
     font-size: 28px;
 }
-
 
 .accuracy-note {
     margin-top: 15px;
@@ -608,9 +724,9 @@ input {
 }
 
 
-/* =========================
+/* =========================================================
    EMPTY STATE
-   ========================= */
+   ========================================================= */
 
 .empty-state {
     width: 100%;
@@ -629,7 +745,6 @@ input {
         0 5px 20px rgba(15, 23, 42, 0.05);
 }
 
-
 .empty-state div {
     font-size: 35px;
 
@@ -637,9 +752,9 @@ input {
 }
 
 
-/* =========================
+/* =========================================================
    INFORMATION
-   ========================= */
+   ========================================================= */
 
 .info-section {
     background: white;
@@ -652,7 +767,6 @@ input {
         0 5px 20px rgba(15, 23, 42, 0.06);
 }
 
-
 .info-section p {
     color: #64748b;
 
@@ -660,9 +774,9 @@ input {
 }
 
 
-/* =========================
+/* =========================================================
    FOOTER
-   ========================= */
+   ========================================================= */
 
 .footer {
     margin-top: 45px;
@@ -676,11 +790,9 @@ input {
     color: white;
 }
 
-
 .footer h3 {
     margin-bottom: 5px;
 }
-
 
 .footer p {
     color: #cbd5e1;
@@ -690,13 +802,11 @@ input {
     margin-bottom: 7px;
 }
 
-
 .footer-warning {
     max-width: 700px;
 
     margin: 10px auto !important;
 }
-
 
 .copyright {
     margin-top: 15px;
@@ -707,33 +817,21 @@ input {
 }
 
 
-/* =========================
-   MOBILE
-   ========================= */
+/* =========================================================
+   TABLE / MODEL RESPONSIVENESS
+   ========================================================= */
 
-@media (max-width: 800px) {
-
-    .header h1 {
-        font-size: 23px;
-    }
-
-
-    .header p {
-        font-size: 13px;
-    }
-
+@media (max-width: 900px) {
 
     .weather-grid {
         grid-template-columns:
             repeat(2, 1fr);
     }
 
-
     .model-grid {
         grid-template-columns:
-            1fr;
+            repeat(2, 1fr);
     }
-
 
     .daily-container {
         display: flex;
@@ -743,19 +841,54 @@ input {
         padding-bottom: 10px;
     }
 
-
     .day-card {
         min-width: 115px;
     }
 
+}
+
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 800px) {
+
+    .header h1 {
+        font-size: 23px;
+    }
+
+    .header p {
+        font-size: 13px;
+    }
+
+    .weather-grid {
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+
+    .model-grid {
+        grid-template-columns:
+            1fr;
+    }
 
     .accuracy-grid {
         grid-template-columns:
             1fr;
     }
 
+    #rainMap,
+    #rainMap.leaflet-container {
+        height: 420px;
+        min-height: 320px;
+    }
+
 }
 
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
 
 @media (max-width: 520px) {
 
@@ -763,11 +896,9 @@ input {
         padding: 20px 0;
     }
 
-
     .header-content {
         gap: 12px;
     }
-
 
     .logo {
         width: 48px;
@@ -776,11 +907,9 @@ input {
         font-size: 25px;
     }
 
-
     .header h1 {
         font-size: 20px;
     }
-
 
     .search-section,
     .location-section,
@@ -788,23 +917,19 @@ input {
         padding: 18px;
     }
 
-
     .search-box {
         flex-direction: column;
     }
 
-
     .search-box button {
         min-height: 48px;
     }
-
 
     .location-header {
         align-items: flex-start;
 
         flex-direction: column;
     }
-
 
     .weather-grid {
         grid-template-columns:
@@ -813,179 +938,51 @@ input {
         gap: 10px;
     }
 
-
     .weather-card {
         padding: 16px;
     }
-
 
     .weather-card strong {
         font-size: 22px;
     }
 
-
-    .map-container,
-    .map-placeholder {
-        min-height: 300px;
+    .map-container {
+        min-height: 320px;
     }
-
-}
-/* =========================================================
-   LEAFLET MAP TILE FIX
-   Prevent responsive image CSS from breaking map tiles
-   ========================================================= */
-
-#rainMap {
-    position: relative !important;
-    overflow: hidden !important;
-    width: 100% !important;
-    height: 480px !important;
-    min-height: 360px !important;
-}
-
-/* Leaflet itself */
-#rainMap.leaflet-container {
-    position: relative !important;
-    overflow: hidden !important;
-}
-
-/* IMPORTANT:
-   Do not allow global img CSS to resize Leaflet tiles
-*/
-#rainMap .leaflet-tile {
-    max-width: none !important;
-    max-height: none !important;
-}
-
-/* Leaflet tile images */
-#rainMap img.leaflet-tile {
-    width: 256px !important;
-    height: 256px !important;
-    max-width: none !important;
-    max-height: none !important;
-}
-
-/* Leaflet tile containers */
-#rainMap .leaflet-tile-container {
-    position: absolute !important;
-}
-
-/* Keep map panes positioned correctly */
-#rainMap .leaflet-map-pane,
-#rainMap .leaflet-tile-pane,
-#rainMap .leaflet-overlay-pane,
-#rainMap .leaflet-shadow-pane,
-#rainMap .leaflet-marker-pane,
-#rainMap .leaflet-tooltip-pane,
-#rainMap .leaflet-popup-pane {
-    position: absolute !important;
-}
-
-/* Prevent other website CSS from affecting Leaflet */
-#rainMap .leaflet-control {
-    z-index: 1000 !important;
-}
-
-#rainMap .leaflet-marker-icon,
-#rainMap .leaflet-marker-shadow {
-    max-width: none !important;
-    max-height: none !important;
-}
-/* =========================================================
-   LEAFLET COMPLETE RESET / MAP TILE FIX
-   ========================================================= */
-
-#rainMap,
-#rainMap.leaflet-container {
-    position: relative !important;
-    width: 100% !important;
-    height: 480px !important;
-    min-height: 360px !important;
-    overflow: hidden !important;
-    box-sizing: border-box !important;
-}
-
-/* Leaflet panes */
-#rainMap .leaflet-map-pane,
-#rainMap .leaflet-tile-pane,
-#rainMap .leaflet-overlay-pane,
-#rainMap .leaflet-shadow-pane,
-#rainMap .leaflet-marker-pane,
-#rainMap .leaflet-tooltip-pane,
-#rainMap .leaflet-popup-pane {
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
-}
-
-/* Tile containers — IMPORTANT */
-#rainMap .leaflet-tile-container {
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
-    width: auto !important;
-    height: auto !important;
-}
-
-/* Tile images — do NOT let website responsive CSS resize them */
-#rainMap .leaflet-tile-pane img,
-#rainMap img.leaflet-tile {
-    display: block !important;
-    position: absolute !important;
-
-    width: 256px !important;
-    height: 256px !important;
-
-    max-width: none !important;
-    max-height: none !important;
-
-    min-width: 256px !important;
-    min-height: 256px !important;
-
-    margin: 0 !important;
-    padding: 0 !important;
-
-    border: 0 !important;
-    outline: none !important;
-
-    box-sizing: content-box !important;
-}
-
-/* Do not let generic img rules affect map */
-#rainMap img {
-    max-width: none !important;
-}
-
-/* Leaflet controls */
-#rainMap .leaflet-control {
-    box-sizing: content-box !important;
-}
-
-/* Marker images must remain normal Leaflet size */
-#rainMap .leaflet-marker-icon,
-#rainMap .leaflet-marker-shadow {
-    max-width: none !important;
-    max-height: none !important;
-}
-
-/* Make sure Leaflet panes don't inherit weird transforms */
-#rainMap .leaflet-tile-pane {
-    overflow: visible !important;
-}
-
-/* Map wrapper */
-#rainMap .leaflet-map-pane {
-    width: auto !important;
-    height: auto !important;
-}
-
-/* Mobile */
-@media (max-width: 768px) {
 
     #rainMap,
     #rainMap.leaflet-container {
-        height: 420px !important;
-        min-height: 320px !important;
+        height: 380px;
+        min-height: 300px;
+
+        border-radius: 14px;
+    }
+
+}
+
+
+/* =========================================================
+   VERY SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 360px) {
+
+    .weather-grid {
+        grid-template-columns:
+            1fr;
+    }
+
+    .header h1 {
+        font-size: 18px;
+    }
+
+    #locationName {
+        font-size: 22px;
+    }
+
+    #rainMap,
+    #rainMap.leaflet-container {
+        height: 340px;
     }
 
 }
