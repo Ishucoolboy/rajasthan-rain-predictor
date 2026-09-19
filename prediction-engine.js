@@ -1,6 +1,6 @@
 /* =========================================================
    RAJASTHAN RAIN PREDICTOR
-   MULTI-MODEL PREDICTION ENGINE V5
+   MULTI-MODEL PREDICTION ENGINE V6
    ========================================================= */
 
 (() => {
@@ -546,6 +546,9 @@
                     "unknown",
 
                 score:
+                    null,
+
+                spread:
                     null
 
             };
@@ -565,6 +568,9 @@
             average(values);
 
 
+        // IMPORTANT:
+        // All models dry = spread 0
+        // This prevents undefined.toFixed()
         if (
             mean === 0
         ) {
@@ -578,7 +584,10 @@
                     "high",
 
                 score:
-                    100
+                    100,
+
+                spread:
+                    0
 
             };
 
@@ -688,10 +697,45 @@
         maximumRain
     ) {
 
+        const spread =
+            Number.isFinite(
+                Number(
+                    consistency?.spread
+                )
+            )
+                ? Number(
+                    consistency.spread
+                )
+                : 0;
+
+
         if (
             consistency.level ===
             "high"
         ) {
+
+            if (
+                maximumRain === 0
+            ) {
+
+                return `
+
+                    ECMWF, GFS aur ICON
+                    teeno models rainfall ka
+                    very low / dry signal de rahe hain.
+
+                    <br><br>
+
+                    Model spread:
+
+                    <strong>
+                        ${spread.toFixed(1)}%
+                    </strong>
+
+                `;
+
+            }
+
 
             return `
 
@@ -701,7 +745,7 @@
                 Model spread:
 
                 <strong>
-                    ${consistency.spread.toFixed(1)}%
+                    ${spread.toFixed(1)}%
                 </strong>
 
             `;
@@ -718,6 +762,8 @@
 
                 Models ke rainfall estimates
                 mein noticeable difference hai.
+
+                <br><br>
 
                 Range:
 
@@ -737,6 +783,8 @@
 
             ECMWF, GFS aur ICON ke forecasts
             mein significant difference hai.
+
+            <br><br>
 
             Range:
 
@@ -892,7 +940,7 @@
         } catch (error) {
 
             console.warn(
-                "[RRP Prediction V5] Regional context unavailable:",
+                "[RRP Prediction V6] Regional context unavailable:",
                 error
             );
 
@@ -1497,12 +1545,8 @@
 
 
         // =================================================
-        // CONSISTENCY BADGE
+        // CONSISTENCY DESCRIPTION
         // =================================================
-
-        let consistencyTitle =
-            "Forecast Consistency";
-
 
         let consistencyDescription =
             "";
@@ -1530,6 +1574,20 @@
                 "Models show significant spread.";
 
         }
+
+
+        // =================================================
+        // SCORE TEXT
+        // =================================================
+
+        const consistencyScoreText =
+            consistency.score !== null &&
+            consistency.score !== undefined
+                ? Math.round(
+                    consistency.score
+                ) +
+                "/100 consistency"
+                : "Insufficient data";
 
 
         // =================================================
@@ -1686,7 +1744,7 @@
 
 
             <!-- =========================================
-                 FORECAST CONFIDENCE / CONSISTENCY
+                 FORECAST CONSISTENCY
                  ========================================= -->
 
             <div style="
@@ -1744,14 +1802,7 @@
                         font-weight:700;
                     ">
 
-                        ${
-                            consistency.score !== null
-                                ? Math.round(
-                                    consistency.score
-                                  ) +
-                                  "/100 consistency"
-                                : "Insufficient data"
-                        }
+                        ${consistencyScoreText}
 
                     </div>
 
@@ -2144,7 +2195,7 @@
                                 error => {
 
                                     console.warn(
-                                        "[RRP Prediction V5]",
+                                        "[RRP Prediction V6]",
                                         model.name +
                                         " prediction failed:",
                                         error
@@ -2230,7 +2281,7 @@
 
 
     // =====================================================
-    // REFRESH AFTER OTHER ENGINES LOAD
+    // REFRESH
     // =====================================================
 
     window.addEventListener(
