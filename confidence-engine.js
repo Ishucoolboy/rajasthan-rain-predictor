@@ -1,6 +1,6 @@
 /* =========================================================
    RAJASTHAN RAIN PREDICTOR
-   FORECAST CONFIDENCE ENGINE V1
+   FORECAST CONFIDENCE ENGINE V2
    ========================================================= */
 
 (() => {
@@ -8,12 +8,8 @@
     "use strict";
 
 
-    // =====================================================
-    // CONFIG
-    // =====================================================
-
     const ENGINE_NAME =
-        "[RRP Forecast Confidence V1]";
+        "[RRP Forecast Confidence V2]";
 
 
     let lastRenderedLocation = null;
@@ -25,51 +21,11 @@
 
     function number(value) {
 
-        const n =
-            Number(value);
+        const n = Number(value);
 
         return Number.isFinite(n)
             ? n
             : null;
-
-    }
-
-
-    function escapeHTML(value) {
-
-        return String(value ?? "")
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
-
-    }
-
-
-    function average(values) {
-
-        const valid =
-            values
-                .map(number)
-                .filter(
-                    value =>
-                        value !== null
-                );
-
-
-        if (!valid.length) {
-
-            return null;
-
-        }
-
-
-        return valid.reduce(
-            (sum, value) =>
-                sum + value,
-            0
-        ) / valid.length;
 
     }
 
@@ -91,8 +47,20 @@
     }
 
 
+    function escapeHTML(value) {
+
+        return String(value ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+
+    }
+
+
     // =====================================================
-    // GET PREDICTION
+    // PREDICTION
     // =====================================================
 
     function getPrediction() {
@@ -102,8 +70,7 @@
             if (
                 !window.RRP_PREDICTION_ENGINE ||
                 typeof
-                window.RRP_PREDICTION_ENGINE
-                    .getLatest !==
+                window.RRP_PREDICTION_ENGINE.getLatest !==
                 "function"
             ) {
 
@@ -124,7 +91,6 @@
                 error
             );
 
-
             return null;
 
         }
@@ -133,7 +99,7 @@
 
 
     // =====================================================
-    // GET REGIONAL DATA
+    // REGIONAL DATA
     // =====================================================
 
     function getRegionalData() {
@@ -143,8 +109,7 @@
             if (
                 !window.RRP_REGIONAL_ACCURACY ||
                 typeof
-                window.RRP_REGIONAL_ACCURACY
-                    .getSelectedMetrics !==
+                window.RRP_REGIONAL_ACCURACY.getSelectedMetrics !==
                 "function"
             ) {
 
@@ -165,7 +130,6 @@
                 error
             );
 
-
             return null;
 
         }
@@ -174,220 +138,7 @@
 
 
     // =====================================================
-    // GET AUTOMATIC VERIFICATION
-    // =====================================================
-
-    function getAutomaticVerification() {
-
-        try {
-
-            if (
-                !window.RRP_AUTOMATIC_VERIFICATION ||
-                typeof
-                window.RRP_AUTOMATIC_VERIFICATION
-                    .getMetrics !==
-                "function"
-            ) {
-
-                return null;
-
-            }
-
-
-            return window
-                .RRP_AUTOMATIC_VERIFICATION
-                .getMetrics();
-
-        } catch (error) {
-
-            console.warn(
-                ENGINE_NAME,
-                "Automatic verification unavailable:",
-                error
-            );
-
-
-            return null;
-
-        }
-
-    }
-
-
-    // =====================================================
-    // FIND MODEL METRIC
-    // =====================================================
-
-    function findModelMetric(
-        regional,
-        modelName
-    ) {
-
-        if (!regional) {
-
-            return null;
-
-        }
-
-
-        const models =
-            regional.models ||
-            regional.modelMetrics ||
-            {};
-
-
-        return (
-            models[modelName] ||
-            models[
-                modelName.toLowerCase()
-            ] ||
-            null
-        );
-
-    }
-
-
-    // =====================================================
-    // REGIONAL SCORE
-    // =====================================================
-
-    function getRegionalScore(
-        regional,
-        modelNames
-    ) {
-
-        if (!regional) {
-
-            return null;
-
-        }
-
-
-        const scores = [];
-
-
-        modelNames.forEach(
-            modelName => {
-
-                const metric =
-                    findModelMetric(
-                        regional,
-                        modelName
-                    );
-
-
-                if (!metric) {
-
-                    return;
-
-                }
-
-
-                const accuracy =
-                    number(
-                        metric.rainAccuracy ??
-                        metric.rain_accuracy_percent ??
-                        metric.rainAccuracyPercent
-                    );
-
-
-                if (
-                    accuracy !== null
-                ) {
-
-                    scores.push(
-                        clamp(
-                            accuracy,
-                            0,
-                            100
-                        )
-                    );
-
-                }
-
-            }
-        );
-
-
-        if (!scores.length) {
-
-            return null;
-
-        }
-
-
-        return average(
-            scores
-        );
-
-    }
-
-
-    // =====================================================
-    // VERIFICATION SCORE
-    // =====================================================
-
-    function getVerificationScore(
-        verification
-    ) {
-
-        if (!verification) {
-
-            return null;
-
-        }
-
-
-        const candidates = [
-
-            verification.rainAccuracy,
-
-            verification.rain_accuracy_percent,
-
-            verification.overallRainAccuracy,
-
-            verification.overall?.rainAccuracy,
-
-            verification.metrics?.rainAccuracy,
-
-            verification.metrics?.rain_accuracy_percent,
-
-            verification.accuracy
-
-        ];
-
-
-        for (
-            const candidate
-            of candidates
-        ) {
-
-            const value =
-                number(candidate);
-
-
-            if (
-                value !== null
-            ) {
-
-                return clamp(
-                    value,
-                    0,
-                    100
-                );
-
-            }
-
-        }
-
-
-        return null;
-
-    }
-
-
-    // =====================================================
-    // MODEL CONSISTENCY SCORE
+    // MODEL CONSISTENCY
     // =====================================================
 
     function getConsistencyScore(
@@ -402,8 +153,7 @@
 
 
         const consistency =
-            prediction
-                .forecastConsistency;
+            prediction.forecastConsistency;
 
 
         if (
@@ -490,64 +240,153 @@
 
 
     // =====================================================
-    // OVERALL CONFIDENCE
+    // MODEL COMPLETENESS
+    // =====================================================
+
+    function getModelCompleteness(
+        prediction
+    ) {
+
+        if (
+            !prediction ||
+            !Array.isArray(
+                prediction.models
+            )
+        ) {
+
+            return null;
+
+        }
+
+
+        const models =
+            prediction.models.filter(
+                model =>
+                    model &&
+                    model.success !== false
+            );
+
+
+        const count =
+            models.length;
+
+
+        if (
+            count >= 3
+        ) {
+
+            return 100;
+
+        }
+
+
+        if (
+            count === 2
+        ) {
+
+            return 75;
+
+        }
+
+
+        if (
+            count === 1
+        ) {
+
+            return 45;
+
+        }
+
+
+        return 0;
+
+    }
+
+
+    // =====================================================
+    // REGIONAL CONTEXT
+    // =====================================================
+
+    function getRegionalContext(
+        regional
+    ) {
+
+        if (!regional) {
+
+            return {
+
+                available:
+                    false,
+
+                name:
+                    null,
+
+                distance:
+                    null,
+
+                type:
+                    null
+
+            };
+
+        }
+
+
+        const distance =
+            number(
+                regional.distanceKm
+            );
+
+
+        return {
+
+            available:
+                true,
+
+            name:
+                regional.regionalLocation?.name ||
+                regional.selectedLocation?.name ||
+                null,
+
+            distance,
+
+            type:
+                regional.matchType ||
+                "nearest"
+
+        };
+
+    }
+
+
+    // =====================================================
+    // CONFIDENCE CALCULATION
+    // =====================================================
+    //
+    // IMPORTANT:
+    //
+    // Historical regional accuracy is NOT directly
+    // converted into current forecast confidence.
+    //
+    // Current confidence is based primarily on:
+    //
+    // 1. Model agreement
+    // 2. Model availability
+    //
+    // This avoids treating historical accuracy as
+    // a guaranteed probability for today's forecast.
+    //
     // =====================================================
 
     function calculateConfidence(
         consistencyScore,
-        regionalScore,
-        verificationScore
+        completenessScore
     ) {
 
-        const values = [];
-
-
         if (
-            consistencyScore !== null
+            consistencyScore === null &&
+            completenessScore === null
         ) {
-
-            values.push({
-                value:
-                    consistencyScore,
-
-                weight:
-                    0.50
-            });
-
-        }
-
-
-        if (
-            regionalScore !== null
-        ) {
-
-            values.push({
-                value:
-                    regionalScore,
-
-                weight:
-                    0.30
-            });
-
-        }
-
-
-        if (
-            verificationScore !== null
-        ) {
-
-            values.push({
-                value:
-                    verificationScore,
-
-                weight:
-                    0.20
-            });
-
-        }
-
-
-        if (!values.length) {
 
             return {
 
@@ -562,31 +401,25 @@
         }
 
 
-        let weightedTotal =
-            0;
+        const consistency =
+            consistencyScore !== null
+                ? consistencyScore
+                : 50;
 
 
-        let totalWeight =
-            0;
-
-
-        values.forEach(
-            item => {
-
-                weightedTotal +=
-                    item.value *
-                    item.weight;
-
-                totalWeight +=
-                    item.weight;
-
-            }
-        );
+        const completeness =
+            completenessScore !== null
+                ? completenessScore
+                : 50;
 
 
         const score =
-            weightedTotal /
-            totalWeight;
+            (
+                consistency * 0.75
+            ) +
+            (
+                completeness * 0.25
+            );
 
 
         let level;
@@ -617,10 +450,7 @@
         return {
 
             score:
-
-                Math.round(
-                    score
-                ),
+                Math.round(score),
 
             level
 
@@ -636,24 +466,27 @@
     function buildExplanation(
         prediction,
         consistencyScore,
-        regionalScore,
-        verificationScore
+        completenessScore,
+        regionalContext
     ) {
 
         const parts = [];
 
+
+        // -------------------------------------------------
+        // MODEL AGREEMENT
+        // -------------------------------------------------
 
         if (
             consistencyScore !== null
         ) {
 
             if (
-                consistencyScore >= 80
+                consistencyScore >= 85
             ) {
 
                 parts.push(
-                    "ECMWF, GFS aur ICON ke rainfall signals kaafi close hain."
-
+                    "ECMWF, GFS aur ICON ke forecasts mein strong agreement hai."
                 );
 
             } else if (
@@ -661,13 +494,13 @@
             ) {
 
                 parts.push(
-                    "Weather models mein moderate difference hai."
+                    "ECMWF, GFS aur ICON ke forecasts mein moderate agreement hai."
                 );
 
             } else {
 
                 parts.push(
-                    "Weather models ke rainfall estimates mein significant difference hai."
+                    "ECMWF, GFS aur ICON ke forecasts mein noticeable disagreement hai."
                 );
 
             }
@@ -675,24 +508,63 @@
         }
 
 
+        // -------------------------------------------------
+        // MODEL AVAILABILITY
+        // -------------------------------------------------
+
         if (
-            regionalScore !== null
+            completenessScore === 100
         ) {
 
             parts.push(
-                "Selected region ke historical model performance ko bhi context mein liya gaya hai."
+                "Teeno major models successfully available hain."
+            );
+
+        } else if (
+            completenessScore >= 75
+        ) {
+
+            parts.push(
+                "Do major models successfully available hain."
+            );
+
+        } else if (
+            completenessScore !== null
+        ) {
+
+            parts.push(
+                "Model data partially available hai."
             );
 
         }
 
 
+        // -------------------------------------------------
+        // REGIONAL CONTEXT
+        // -------------------------------------------------
+
         if (
-            verificationScore !== null
+            regionalContext.available
         ) {
 
-            parts.push(
-                "Past automatic verification data available hai."
-            );
+            if (
+                regionalContext.type ===
+                "exact"
+            ) {
+
+                parts.push(
+                    "Selected location ke liye exact regional historical reference available hai."
+                );
+
+            } else if (
+                regionalContext.distance !== null
+            ) {
+
+                parts.push(
+                    `Historical regional reference ${regionalContext.distance.toFixed(1)} km door hai.`
+                );
+
+            }
 
         }
 
@@ -700,15 +572,13 @@
         if (!parts.length) {
 
             parts.push(
-                "Abhi sufficient historical verification data available nahi hai; confidence mainly current model agreement par depend karega."
+                "Current model data se confidence calculate kiya gaya hai."
             );
 
         }
 
 
-        return parts.join(
-            " "
-        );
+        return parts.join(" ");
 
     }
 
@@ -799,38 +669,28 @@
             getRegionalData();
 
 
-        const verification =
-            getAutomaticVerification();
-
-
         const consistencyScore =
             getConsistencyScore(
                 prediction
             );
 
 
-        const regionalScore =
-            getRegionalScore(
-                regional,
-                [
-                    "ECMWF",
-                    "GFS",
-                    "ICON"
-                ]
+        const completenessScore =
+            getModelCompleteness(
+                prediction
             );
 
 
-        const verificationScore =
-            getVerificationScore(
-                verification
+        const regionalContext =
+            getRegionalContext(
+                regional
             );
 
 
         const confidence =
             calculateConfidence(
                 consistencyScore,
-                regionalScore,
-                verificationScore
+                completenessScore
             );
 
 
@@ -838,8 +698,8 @@
             buildExplanation(
                 prediction,
                 consistencyScore,
-                regionalScore,
-                verificationScore
+                completenessScore,
+                regionalContext
             );
 
 
@@ -854,7 +714,12 @@
         }
 
 
-        let confidenceTitle =
+        const locationName =
+            prediction.location?.name ||
+            "Selected Location";
+
+
+        let title =
             "Forecast Confidence";
 
 
@@ -863,7 +728,7 @@
             "High"
         ) {
 
-            confidenceTitle =
+            title =
                 "High Forecast Confidence";
 
         } else if (
@@ -871,7 +736,7 @@
             "Moderate"
         ) {
 
-            confidenceTitle =
+            title =
                 "Moderate Forecast Confidence";
 
         } else if (
@@ -879,12 +744,12 @@
             "Low"
         ) {
 
-            confidenceTitle =
+            title =
                 "Low Forecast Confidence";
 
         } else {
 
-            confidenceTitle =
+            title =
                 "Forecast Confidence — Limited Data";
 
         }
@@ -896,12 +761,90 @@
                 : "—";
 
 
-        const locationName =
-            prediction
-                .location
-                ?.name ||
-            "Selected Location";
+        const modelCount =
+            Array.isArray(
+                prediction.models
+            )
+                ? prediction.models.length
+                : 0;
 
+
+        // =================================================
+        // MODEL AGREEMENT LABEL
+        // =================================================
+
+        let agreementLabel =
+            "Unavailable";
+
+
+        if (
+            consistencyScore !== null
+        ) {
+
+            if (
+                consistencyScore >= 85
+            ) {
+
+                agreementLabel =
+                    "Strong";
+
+            } else if (
+                consistencyScore >= 60
+            ) {
+
+                agreementLabel =
+                    "Moderate";
+
+            } else {
+
+                agreementLabel =
+                    "Low";
+
+            }
+
+        }
+
+
+        // =================================================
+        // REGIONAL TEXT
+        // =================================================
+
+        let regionalText =
+            "Historical regional context unavailable";
+
+
+        if (
+            regionalContext.available
+        ) {
+
+            if (
+                regionalContext.type ===
+                "exact"
+            ) {
+
+                regionalText =
+                    "Exact regional reference available";
+
+            } else if (
+                regionalContext.distance !== null
+            ) {
+
+                regionalText =
+                    `Nearest regional reference: ${regionalContext.distance.toFixed(1)} km`;
+
+            } else {
+
+                regionalText =
+                    "Regional proxy available";
+
+            }
+
+        }
+
+
+        // =================================================
+        // HTML
+        // =================================================
 
         container.innerHTML = `
 
@@ -913,6 +856,10 @@
                 box-shadow:0 5px 20px rgba(15,23,42,.06);
             ">
 
+
+                <!-- =====================================
+                     HEADER
+                     ===================================== -->
 
                 <div style="
                     display:flex;
@@ -942,7 +889,7 @@
                             font-size:22px;
                         ">
 
-                            ${confidenceTitle}
+                            ${title}
 
                         </h2>
 
@@ -996,8 +943,9 @@
                 </div>
 
 
+
                 <!-- =====================================
-                     INPUT FACTORS
+                     FACTORS
                      ===================================== -->
 
                 <div style="
@@ -1009,8 +957,10 @@
                 ">
 
 
+                    <!-- MODEL AGREEMENT -->
+
                     <div style="
-                        padding:13px;
+                        padding:14px;
                         border-radius:13px;
                         background:#f8fafc;
                         border:1px solid #e2e8f0;
@@ -1021,7 +971,7 @@
                             color:#64748b;
                         ">
 
-                            🤖 Model Consistency
+                            🤖 Model Agreement
 
                         </div>
 
@@ -1030,6 +980,17 @@
                             display:block;
                             margin-top:5px;
                             font-size:18px;
+                        ">
+
+                            ${agreementLabel}
+
+                        </strong>
+
+
+                        <div style="
+                            margin-top:3px;
+                            font-size:11px;
+                            color:#64748b;
                         ">
 
                             ${
@@ -1040,15 +1001,16 @@
                                     : "—"
                             }
 
-                        </strong>
-
+                        </div>
 
                     </div>
 
 
 
+                    <!-- MODEL AVAILABILITY -->
+
                     <div style="
-                        padding:13px;
+                        padding:14px;
                         border-radius:13px;
                         background:#f8fafc;
                         border:1px solid #e2e8f0;
@@ -1059,7 +1021,7 @@
                             color:#64748b;
                         ">
 
-                            📍 Regional History
+                            🛰️ Models Available
 
                         </div>
 
@@ -1070,23 +1032,29 @@
                             font-size:18px;
                         ">
 
-                            ${
-                                regionalScore !== null
-                                    ? Math.round(
-                                        regionalScore
-                                      ) + "%"
-                                    : "—"
-                            }
+                            ${modelCount}/3
 
                         </strong>
 
+
+                        <div style="
+                            margin-top:3px;
+                            font-size:11px;
+                            color:#64748b;
+                        ">
+
+                            ECMWF / GFS / ICON
+
+                        </div>
 
                     </div>
 
 
 
+                    <!-- REGIONAL CONTEXT -->
+
                     <div style="
-                        padding:13px;
+                        padding:14px;
                         border-radius:13px;
                         background:#f8fafc;
                         border:1px solid #e2e8f0;
@@ -1097,7 +1065,7 @@
                             color:#64748b;
                         ">
 
-                            🔎 Past Verification
+                            📍 Regional Context
 
                         </div>
 
@@ -1105,24 +1073,21 @@
                         <strong style="
                             display:block;
                             margin-top:5px;
-                            font-size:18px;
+                            font-size:15px;
+                            line-height:1.4;
                         ">
 
-                            ${
-                                verificationScore !== null
-                                    ? Math.round(
-                                        verificationScore
-                                      ) + "%"
-                                    : "—"
-                            }
+                            ${escapeHTML(
+                                regionalText
+                            )}
 
                         </strong>
-
 
                     </div>
 
 
                 </div>
+
 
 
                 <!-- =====================================
@@ -1146,6 +1111,47 @@
                 </div>
 
 
+
+                <!-- =====================================
+                     HISTORICAL INFO
+                     ===================================== -->
+
+                ${
+                    regional
+                        ? `
+
+                            <div style="
+                                margin-top:12px;
+                                padding:13px;
+                                border-radius:12px;
+                                background:#f1f5f9;
+                                font-size:11px;
+                                line-height:1.7;
+                                color:#475569;
+                            ">
+
+                                📊
+
+                                <strong>
+                                    Historical regional data:
+                                </strong>
+
+                                Is data ko current
+                                forecast ke context ke
+                                liye dikhaya ja raha hai.
+
+                                Historical performance
+                                current forecast ki
+                                guaranteed accuracy nahi hai.
+
+                            </div>
+
+                          `
+                        : ""
+                }
+
+
+
                 <!-- =====================================
                      IMPORTANT
                      ===================================== -->
@@ -1167,18 +1173,15 @@
                         Important:
                     </strong>
 
-                    Confidence Index koi guaranteed
-                    accuracy percentage nahi hai.
+                    Confidence Index forecast accuracy
+                    ya rain probability nahi hai.
 
-                    Ye current model agreement,
-                    available regional historical
-                    performance aur available
-                    verification information ko
-                    combine karta hai.
+                    Ye mainly current weather models ke
+                    agreement aur available model data
+                    completeness ko represent karta hai.
 
-                    Jahan historical data unavailable
-                    ho, wahan us factor ko calculation
-                    se automatically exclude kiya jata hai.
+                    Historical accuracy alag verification
+                    system mein measure hoti hai.
 
                 </div>
 
@@ -1196,7 +1199,22 @@
             ENGINE_NAME,
             "Rendered:",
             locationName,
-            confidence
+            {
+                score:
+                    confidence.score,
+
+                level:
+                    confidence.level,
+
+                consistency:
+                    consistencyScore,
+
+                modelCompleteness:
+                    completenessScore,
+
+                regional:
+                    regionalContext
+            }
         );
 
     }
@@ -1217,7 +1235,7 @@
 
 
     // =====================================================
-    // WEATHER UPDATE
+    // EVENTS
     // =====================================================
 
     window.addEventListener(
@@ -1230,10 +1248,6 @@
     );
 
 
-    // =====================================================
-    // CUSTOM EVENTS
-    // =====================================================
-
     window.addEventListener(
         "rrp:prediction-updated",
         () => {
@@ -1243,10 +1257,6 @@
         }
     );
 
-
-    // =====================================================
-    // PAGE LOAD
-    // =====================================================
 
     window.addEventListener(
         "load",
