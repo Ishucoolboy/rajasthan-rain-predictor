@@ -1,11 +1,12 @@
 {
-  "schema_version": "1.0",
-  "generated_at_utc": "2026-09-19T06:04:15+00:00",
+  "schema_version": "2.0",
+  "generated_at_utc": "2026-09-19T06:22:47+00:00",
   "status": "unavailable",
   "source": {
     "name": "India Meteorological Department",
-    "product": "District-wise Rainfall",
-    "url": "https://mausam.imd.gov.in/api/districtwise_rainfall_api.php"
+    "product": "District Rainfall",
+    "method": "IMD official sources",
+    "url": "https://mausam.imd.gov.in/imd_latest/contents/rainfall_statistics_3.php"
   },
   "coverage": {
     "state": "Rajasthan",
@@ -13,8 +14,8 @@
   },
   "period": {
     "type": "IMD_DAILY",
-    "note": "Daily rainfall values are preserved as reported by IMD. They are not converted to midnight-to-midnight totals."
+    "note": "IMD daily rainfall follows the official IMD rainfall reporting period."
   },
   "records": [],
-  "error": "IMD API returned HTTP 401"
+  "error": "Direct IMD API unavailable. Public IMD PDF fallback did not produce safely mapped rainfall records. API: IMD API returned HTTP 401. PDF: PDF was downloaded but no table rows were extracted."
 }
