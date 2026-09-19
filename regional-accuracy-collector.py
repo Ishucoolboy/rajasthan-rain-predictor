@@ -1,21 +1,20 @@
 """
 Rajasthan Rain Predictor
-Regional Accuracy Collector V2
+Regional Accuracy Collector V3
 
 Purpose:
 - Read Rajasthan monitoring locations
-- Get coordinates automatically
-- Fetch historical rainfall reference
+- Geocode locations automatically
+- Fetch ERA5/reanalysis rainfall reference
 - Fetch ECMWF / GFS / ICON previous-run forecasts
-- Calculate Day 1-7 forecast accuracy
-- Store results in a regional JSON database
-- Continue processing even when individual API requests fail
-
-Reference:
-Open-Meteo ERA5 / reanalysis
+- Calculate Day 1-7 rainfall forecast accuracy
+- Build a Rajasthan regional accuracy database
+- Preserve successful existing records
+- Recover gracefully from API timeouts
 
 IMPORTANT:
-This is NOT independent IMD rain-gauge accuracy.
+This uses ERA5 / Open-Meteo reanalysis as the reference.
+It is NOT independent IMD rain-gauge accuracy.
 """
 
 import json
@@ -29,7 +28,7 @@ import requests
 
 
 # ============================================================
-# CONFIGURATION
+# PATHS
 # ============================================================
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -41,6 +40,11 @@ LOCATIONS_FILE = (
 OUTPUT_FILE = (
     BASE_DIR / "regional-accuracy-database.json"
 )
+
+
+# ============================================================
+# API ENDPOINTS
+# ============================================================
 
 GEOCODING_URL = (
     "https://geocoding-api.open-meteo.com/v1/search"
@@ -54,6 +58,10 @@ PREVIOUS_RUNS_URL = (
     "https://previous-runs-api.open-meteo.com/v1/forecast"
 )
 
+
+# ============================================================
+# MODELS
+# ============================================================
 
 MODELS = [
     {
@@ -72,7 +80,7 @@ MODELS = [
 
 
 # ============================================================
-# HISTORICAL TEST SETTINGS
+# HISTORICAL SETTINGS
 # ============================================================
 
 INITIAL_TEST_DAYS = 90
@@ -81,26 +89,24 @@ HISTORICAL_DELAY_DAYS = 8
 
 
 # ============================================================
-# REQUEST SETTINGS
+# NETWORK SETTINGS
 # ============================================================
 
-REQUEST_TIMEOUT = 90
+# Reduced from 90 seconds because the previous run
+# was spending too much time waiting on a single request.
 
-REQUEST_DELAY_SECONDS = 0.8
+REQUEST_TIMEOUT = 35
 
-MAX_RETRIES = 5
+# Only two attempts.
+MAX_RETRIES = 2
 
-RETRY_DELAYS = [
-    3,
-    8,
-    15,
-    30,
-    60,
-]
+RETRY_DELAY_SECONDS = 5
+
+REQUEST_DELAY_SECONDS = 0.5
 
 
 # ============================================================
-# HTTP SESSION
+# SESSION
 # ============================================================
 
 SESSION = requests.Session()
@@ -109,7 +115,7 @@ SESSION.headers.update(
     {
         "User-Agent": (
             "Rajasthan-Rain-Predictor/"
-            "regional-accuracy-collector"
+            "Regional-Accuracy-Collector-V3"
         )
     }
 )
@@ -120,7 +126,7 @@ SESSION.headers.update(
 # ============================================================
 
 def log(message):
-    """Print timestamped log message."""
+    """Print timestamped log."""
 
     now = datetime.now().strftime(
         "%Y-%m-%d %H:%M:%S"
@@ -133,7 +139,7 @@ def log(message):
 
 
 def warning(message):
-    """Print warning message."""
+    """Print warning."""
 
     log(
         f"WARNING: {message}"
@@ -141,7 +147,7 @@ def warning(message):
 
 
 def log_error(message):
-    """Print error message."""
+    """Print error."""
 
     log(
         f"ERROR: {message}"
@@ -149,47 +155,45 @@ def log_error(message):
 
 
 # ============================================================
-# SAFE CONVERSION
+# SAFE FLOAT
 # ============================================================
 
 def safe_float(value):
-    """Convert value to finite float safely."""
+    """Convert value safely to finite float."""
 
     try:
 
         number = float(value)
 
         if math.isfinite(number):
+
             return number
 
     except (
         TypeError,
         ValueError,
     ):
+
         pass
 
     return None
 
 
 # ============================================================
-# REQUEST HELPER WITH RETRIES
+# HTTP REQUEST WITH SHORT RETRIES
 # ============================================================
 
 def request_json(
     url,
     params,
-    description="API request",
+    description,
 ):
     """
-    GET JSON with retry support.
+    Request JSON from an API.
 
-    Retries:
-    - HTTP 429
-    - HTTP 500+
-    - network errors
-    - timeout errors
-
-    Does not retry most 4xx errors.
+    Retry only a small number of times so that
+    one slow API request cannot block the entire
+    Rajasthan collection for several minutes.
     """
 
     last_error = None
@@ -216,14 +220,18 @@ def request_json(
             body = ""
 
             try:
+
                 body = response.text[:500]
+
             except Exception:
+
                 body = ""
 
             last_error = RuntimeError(
                 f"HTTP {status}: {body}"
             )
 
+            # Retry temporary server/rate-limit errors.
             retryable = (
                 status == 429
                 or status >= 500
@@ -234,9 +242,8 @@ def request_json(
                 raise last_error
 
             warning(
-                f"{description} failed with "
-                f"HTTP {status}. "
-                f"Retry {attempt}/{MAX_RETRIES}"
+                f"{description}: HTTP {status} "
+                f"(attempt {attempt}/{MAX_RETRIES})"
             )
 
         except (
@@ -248,9 +255,9 @@ def request_json(
             last_error = request_error
 
             warning(
-                f"{description} network error: "
-                f"{request_error}. "
-                f"Retry {attempt}/{MAX_RETRIES}"
+                f"{description}: "
+                f"{request_error} "
+                f"(attempt {attempt}/{MAX_RETRIES})"
             )
 
         except ValueError as json_error:
@@ -258,26 +265,20 @@ def request_json(
             last_error = json_error
 
             warning(
-                f"{description} returned invalid JSON. "
-                f"Retry {attempt}/{MAX_RETRIES}"
+                f"{description}: invalid JSON "
+                f"(attempt {attempt}/{MAX_RETRIES})"
             )
 
         if attempt < MAX_RETRIES:
 
-            delay_index = min(
-                attempt - 1,
-                len(RETRY_DELAYS) - 1,
-            )
-
-            delay = RETRY_DELAYS[
-                delay_index
-            ]
-
             log(
-                f"Waiting {delay}s before retry..."
+                f"Retrying in "
+                f"{RETRY_DELAY_SECONDS}s..."
             )
 
-            time.sleep(delay)
+            time.sleep(
+                RETRY_DELAY_SECONDS
+            )
 
     raise RuntimeError(
         f"{description} failed after "
@@ -319,27 +320,28 @@ def load_locations():
         )
 
     log(
-        f"Loaded {len(locations)} monitoring locations."
+        f"Loaded {len(locations)} "
+        f"monitoring locations."
     )
 
     return locations
 
 
 # ============================================================
-# LOAD EXISTING DATABASE
+# LOAD DATABASE
 # ============================================================
 
 def load_database():
-    """
-    Load existing database.
-
-    Existing successful location records are preserved.
-    """
+    """Load existing regional database."""
 
     if not OUTPUT_FILE.exists():
 
+        log(
+            "No existing database found."
+        )
+
         return {
-            "version": "regional-accuracy-v2",
+            "version": "regional-accuracy-v3",
             "generated_at": None,
             "reference": {
                 "name": (
@@ -366,7 +368,7 @@ def load_database():
         ):
 
             raise ValueError(
-                "Database is not a JSON object."
+                "Database format is invalid."
             )
 
         data.setdefault(
@@ -379,21 +381,21 @@ def load_database():
         )
 
         log(
-            "Existing locations: "
+            f"Existing locations: "
             f"{len(data['locations'])}"
         )
 
         return data
 
-    except Exception as load_error:
+    except Exception as error:
 
         warning(
-            "Existing database could not be loaded: "
-            f"{load_error}"
+            f"Could not load existing database: "
+            f"{error}"
         )
 
         return {
-            "version": "regional-accuracy-v2",
+            "version": "regional-accuracy-v3",
             "generated_at": None,
             "reference": {
                 "name": (
@@ -410,11 +412,11 @@ def load_database():
 # ============================================================
 
 def save_database(database):
-    """Save database safely."""
+    """Safely save regional database."""
 
     database[
         "version"
-    ] = "regional-accuracy-v2"
+    ] = "regional-accuracy-v3"
 
     database[
         "generated_at"
@@ -451,9 +453,7 @@ def save_database(database):
 # ============================================================
 
 def geocode_location(query):
-    """
-    Convert location name into coordinates.
-    """
+    """Convert location query into coordinates."""
 
     params = {
         "name": query,
@@ -465,7 +465,7 @@ def geocode_location(query):
     data = request_json(
         GEOCODING_URL,
         params,
-        description=f"Geocoding {query}",
+        f"Geocoding {query}",
     )
 
     results = data.get(
@@ -482,11 +482,15 @@ def geocode_location(query):
     result = results[0]
 
     latitude = safe_float(
-        result.get("latitude")
+        result.get(
+            "latitude"
+        )
     )
 
     longitude = safe_float(
-        result.get("longitude")
+        result.get(
+            "longitude"
+        )
     )
 
     if (
@@ -495,39 +499,25 @@ def geocode_location(query):
     ):
 
         raise RuntimeError(
-            f"Invalid coordinates for: {query}"
+            f"Invalid coordinates: {query}"
         )
 
     return {
         "latitude": latitude,
         "longitude": longitude,
-        "name": result.get(
-            "name",
-            query,
-        ),
-        "country": result.get(
-            "country",
-            "India",
-        ),
-        "admin1": result.get(
-            "admin1",
-            "Rajasthan",
-        ),
     }
 
 
 # ============================================================
-# DATE RANGE
+# DATE PERIOD
 # ============================================================
 
 def get_test_period():
     """
-    Return completed historical period.
+    Return historical test period.
 
-    Latest date:
-    today - HISTORICAL_DELAY_DAYS
-
-    Then INITIAL_TEST_DAYS backwards.
+    The latest 8 days are skipped because recent
+    historical data may still be incomplete.
     """
 
     today = datetime.now(
@@ -555,7 +545,7 @@ def get_test_period():
 
 
 # ============================================================
-# HISTORICAL REFERENCE
+# REFERENCE RAINFALL
 # ============================================================
 
 def fetch_reference(
@@ -564,9 +554,7 @@ def fetch_reference(
     start_date,
     end_date,
 ):
-    """
-    Fetch ERA5/reanalysis daily rainfall.
-    """
+    """Fetch ERA5/reanalysis daily rainfall."""
 
     params = {
         "latitude": latitude,
@@ -581,7 +569,7 @@ def fetch_reference(
     data = request_json(
         ARCHIVE_URL,
         params,
-        description=(
+        (
             "ERA5 reference "
             f"{latitude},{longitude}"
         ),
@@ -611,6 +599,7 @@ def fetch_reference(
         if index >= len(
             rainfall
         ):
+
             continue
 
         value = safe_float(
@@ -618,6 +607,7 @@ def fetch_reference(
         )
 
         if value is None:
+
             continue
 
         result[date] = value
@@ -637,23 +627,23 @@ def fetch_previous_runs(
     model_id,
 ):
     """
-    Fetch fixed lead-time forecast rainfall.
+    Fetch fixed lead-time rainfall forecasts.
 
-    IMPORTANT:
-    previous_day1 ... previous_day7
-    are hourly variables.
+    previous_day1 ... previous_day7 are
+    hourly variables and are later aggregated
+    into daily rainfall totals.
     """
 
-    variables = []
-
-    for day in range(
-        1,
-        8,
-    ):
-
-        variables.append(
-            f"precipitation_previous_day{day}"
+    variables = [
+        (
+            "precipitation_previous_day"
+            f"{day}"
         )
+        for day in range(
+            1,
+            8,
+        )
+    ]
 
     params = {
         "latitude": latitude,
@@ -671,7 +661,7 @@ def fetch_previous_runs(
     return request_json(
         PREVIOUS_RUNS_URL,
         params,
-        description=(
+        (
             f"{model_id} previous runs "
             f"{latitude},{longitude}"
         ),
@@ -679,19 +669,16 @@ def fetch_previous_runs(
 
 
 # ============================================================
-# HOURLY TO DAILY
+# HOURLY → DAILY
 # ============================================================
 
 def aggregate_hourly_to_daily(
     hourly,
     variable_name,
 ):
-    """
-    Convert hourly precipitation
-    into daily totals.
-    """
+    """Aggregate hourly rainfall into daily totals."""
 
-    dates = hourly.get(
+    times = hourly.get(
         "time",
         [],
     )
@@ -704,13 +691,15 @@ def aggregate_hourly_to_daily(
     result = {}
 
     for index, timestamp in enumerate(
-        dates
+        times
     ):
 
         if index >= len(values):
+
             continue
 
         if not timestamp:
+
             continue
 
         date = str(
@@ -722,6 +711,7 @@ def aggregate_hourly_to_daily(
         )
 
         if value is None:
+
             continue
 
         result[date] = (
@@ -740,9 +730,7 @@ def aggregate_hourly_to_daily(
 # ============================================================
 
 def calculate_metrics(pairs):
-    """
-    Calculate rainfall forecast metrics.
-    """
+    """Calculate rainfall forecast metrics."""
 
     if not pairs:
 
@@ -830,7 +818,9 @@ def calculate_metrics(pairs):
 
             correct_no_rain += 1
 
-    samples = len(pairs)
+    samples = len(
+        pairs
+    )
 
     return {
         "samples": samples,
@@ -880,7 +870,7 @@ def calculate_metrics(pairs):
 
 
 # ============================================================
-# TEST ONE MODEL
+# TEST MODEL
 # ============================================================
 
 def test_model(
@@ -890,9 +880,7 @@ def test_model(
     start_date,
     end_date,
 ):
-    """
-    Test one weather model.
-    """
+    """Test one model at one location."""
 
     model_name = model[
         "name"
@@ -951,6 +939,7 @@ def test_model(
         ) in reference.items():
 
             if date not in forecast_daily:
+
                 continue
 
             forecast = safe_float(
@@ -965,6 +954,7 @@ def test_model(
                 forecast is None
                 or actual_value is None
             ):
+
                 continue
 
             pairs.append(
@@ -1005,41 +995,105 @@ def test_model(
 
 
 # ============================================================
-# FIND EXISTING LOCATION
+# EXISTING LOCATION LOOKUP
 # ============================================================
 
-def find_existing_location(
+def get_existing_location(
     database,
     location_id,
 ):
-    """
-    Find existing location record.
-    """
+    """Return existing location record."""
 
-    locations = database.setdefault(
+    for record in database.get(
         "locations",
         [],
-    )
-
-    for index, record in enumerate(
-        locations
     ):
 
-        current_location = record.get(
+        location = record.get(
             "location",
             {},
         )
 
         if (
-            current_location.get(
-                "id"
-            )
+            location.get("id")
             == location_id
         ):
 
-            return index
+            return record
 
     return None
+
+
+# ============================================================
+# CHECK COMPLETE RECORD
+# ============================================================
+
+def record_is_complete(
+    record,
+    start_date,
+    end_date,
+):
+    """
+    Check whether a record already contains
+    the requested historical period and all
+    three model results.
+    """
+
+    if not isinstance(
+        record,
+        dict,
+    ):
+
+        return False
+
+    period = record.get(
+        "period",
+        {},
+    )
+
+    if (
+        period.get("start")
+        != start_date
+        or period.get("end")
+        != end_date
+    ):
+
+        return False
+
+    models = record.get(
+        "models",
+        [],
+    )
+
+    if len(models) < 3:
+
+        return False
+
+    required_models = {
+        "ECMWF",
+        "GFS",
+        "ICON",
+    }
+
+    available_models = set()
+
+    for model in models:
+
+        if (
+            model.get("success")
+            is True
+        ):
+
+            available_models.add(
+                model.get("name")
+            )
+
+    return (
+        required_models
+        .issubset(
+            available_models
+        )
+    )
 
 
 # ============================================================
@@ -1052,10 +1106,7 @@ def update_location(
     start_date,
     end_date,
 ):
-    """
-    Generate regional accuracy
-    for one location.
-    """
+    """Generate accuracy for one location."""
 
     log(
         "------------------------------------------------"
@@ -1130,7 +1181,7 @@ def update_location(
 
     model_results = []
 
-    model_failures = 0
+    successful_models = 0
 
     for model in MODELS:
 
@@ -1148,13 +1199,13 @@ def update_location(
                 result
             )
 
+            successful_models += 1
+
         except Exception as model_error:
 
-            model_failures += 1
-
             log_error(
-                f"{model['name']} failed "
-                f"for {location['name']}: "
+                f"{model['name']} failed for "
+                f"{location['name']}: "
                 f"{model_error}"
             )
 
@@ -1205,47 +1256,51 @@ def update_location(
         ).isoformat(),
     }
 
-    if model_failures == len(
-        MODELS
-    ):
-
-        warning(
-            f"{location['name']}: "
-            "all weather models failed."
-        )
-
     # --------------------------------------------------------
-    # SAVE / REPLACE LOCATION
+    # REPLACE OR ADD
     # --------------------------------------------------------
 
-    existing_index = (
-        find_existing_location(
-            database,
-            location["id"],
-        )
+    locations = database.setdefault(
+        "locations",
+        [],
     )
 
-    if existing_index is not None:
+    replaced = False
 
-        database[
-            "locations"
-        ][existing_index] = record
+    for index, existing in enumerate(
+        locations
+    ):
 
-        log(
-            f"Updated existing location: "
-            f"{location['name']}"
+        existing_location = (
+            existing.get(
+                "location",
+                {},
+            )
         )
 
-    else:
+        if (
+            existing_location.get(
+                "id"
+            )
+            == location["id"]
+        ):
 
-        database[
-            "locations"
-        ].append(record)
+            locations[index] = record
 
-        log(
-            f"Added new location: "
-            f"{location['name']}"
+            replaced = True
+
+            break
+
+    if not replaced:
+
+        locations.append(
+            record
         )
+
+    log(
+        f"{location['name']}: "
+        f"{successful_models}/3 models successful."
+    )
 
     return record
 
@@ -1255,14 +1310,14 @@ def update_location(
 # ============================================================
 
 def main():
-    """Run regional accuracy collector."""
+    """Run regional collector."""
 
     log(
         "=============================================="
     )
 
     log(
-        "RAJASTHAN REGIONAL ACCURACY COLLECTOR V2"
+        "RAJASTHAN REGIONAL ACCURACY COLLECTOR V3"
     )
 
     log(
@@ -1278,7 +1333,7 @@ def main():
     database = load_database()
 
     # --------------------------------------------------------
-    # PERIOD
+    # DATE PERIOD
     # --------------------------------------------------------
 
     start_date, end_date = (
@@ -1296,15 +1351,33 @@ def main():
     )
 
     # --------------------------------------------------------
+    # EXISTING COUNT
+    # --------------------------------------------------------
+
+    existing_count = len(
+        database.get(
+            "locations",
+            [],
+        )
+    )
+
+    log(
+        f"Existing database locations: "
+        f"{existing_count}"
+    )
+
+    # --------------------------------------------------------
     # COUNTERS
     # --------------------------------------------------------
 
-    successful_locations = 0
+    processed = 0
 
-    failed_locations = 0
+    skipped = 0
+
+    failed = 0
 
     # --------------------------------------------------------
-    # PROCESS LOCATIONS
+    # PROCESS
     # --------------------------------------------------------
 
     for index, location in enumerate(
@@ -1321,6 +1394,40 @@ def main():
             f"{location['name']}"
         )
 
+        existing_record = (
+            get_existing_location(
+                database,
+                location["id"],
+            )
+        )
+
+        # ----------------------------------------------------
+        # SKIP ONLY IF CURRENT PERIOD IS COMPLETE
+        # ----------------------------------------------------
+
+        if (
+            existing_record is not None
+            and record_is_complete(
+                existing_record,
+                start_date,
+                end_date,
+            )
+        ):
+
+            skipped += 1
+
+            log(
+                f"SKIP: "
+                f"{location['name']} "
+                "already complete."
+            )
+
+            continue
+
+        # ----------------------------------------------------
+        # PROCESS
+        # ----------------------------------------------------
+
         try:
 
             update_location(
@@ -1330,7 +1437,7 @@ def main():
                 end_date=end_date,
             )
 
-            successful_locations += 1
+            processed += 1
 
             log(
                 f"SUCCESS: "
@@ -1339,19 +1446,15 @@ def main():
 
         except Exception as location_error:
 
-            failed_locations += 1
+            failed += 1
 
             log_error(
                 f"{location['name']} failed: "
                 f"{location_error}"
             )
 
-            # IMPORTANT:
-            # Do not delete existing successful
-            # database record if a new attempt fails.
-
         # ----------------------------------------------------
-        # SAVE AFTER EVERY LOCATION
+        # CHECKPOINT
         # ----------------------------------------------------
 
         try:
@@ -1367,7 +1470,7 @@ def main():
         except Exception as save_error:
 
             log_error(
-                "Database save failed: "
+                f"Database save failed: "
                 f"{save_error}"
             )
 
@@ -1386,10 +1489,10 @@ def main():
     )
 
     # --------------------------------------------------------
-    # FINAL REPORT
+    # FINAL COUNTS
     # --------------------------------------------------------
 
-    database_locations = len(
+    database_count = len(
         database.get(
             "locations",
             [],
@@ -1410,22 +1513,27 @@ def main():
     )
 
     log(
-        f"Successful locations: "
-        f"{successful_locations}"
+        f"Processed: "
+        f"{processed}"
     )
 
     log(
-        f"Failed locations: "
-        f"{failed_locations}"
+        f"Skipped: "
+        f"{skipped}"
+    )
+
+    log(
+        f"Failed: "
+        f"{failed}"
     )
 
     log(
         f"Locations in database: "
-        f"{database_locations}"
+        f"{database_count}"
     )
 
     log(
-        f"Database: "
+        f"Database file: "
         f"{OUTPUT_FILE}"
     )
 
@@ -1433,23 +1541,26 @@ def main():
         "=============================================="
     )
 
-    # --------------------------------------------------------
-    # IMPORTANT:
-    # We intentionally keep exit code 0 so that the GitHub
-    # workflow can commit partial progress.
-    #
-    # Failed locations will be retried on the next daily run.
-    # --------------------------------------------------------
-
-    if failed_locations > 0:
+    if (
+        database_count
+        < len(locations)
+    ):
 
         warning(
-            "Some locations failed. "
-            "They will be retried on the next run."
+            "Database is not complete yet. "
+            "Failed/missing locations will be "
+            "retried on the next run."
+        )
+
+    else:
+
+        log(
+            "ALL MONITORING LOCATIONS "
+            "ARE PRESENT IN DATABASE."
         )
 
     log(
-        "Collector finished successfully."
+        "Collector finished."
     )
 
 
@@ -1466,7 +1577,7 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
 
         log(
-            "Collector interrupted by user."
+            "Collector interrupted."
         )
 
         sys.exit(1)
@@ -1474,8 +1585,7 @@ if __name__ == "__main__":
     except Exception as fatal_error:
 
         log_error(
-            f"Fatal collector error: "
-            f"{fatal_error}"
+            f"Fatal error: {fatal_error}"
         )
 
         sys.exit(1)
