@@ -733,7 +733,7 @@
 
 
     <!-- ===================================================
-         AUTOMATIC VERIFICATION
+         AUTOMATIC VERIFICATION V3
          =================================================== -->
 
     <section
@@ -748,9 +748,9 @@
         </h2>
 
         <p>
-          Completed forecast dates ko automatically
-          historical rainfall reference ke saath verify
-          kiya jayega.
+          Actual observation available hone par usko
+          priority milegi; warna ERA5/reanalysis fallback
+          use hoga.
         </p>
 
       </div>
@@ -973,7 +973,6 @@
     src="backtest-engine.js?v=1"
   ></script>
 
-
   <script
     src="backtest-dashboard.js?v=1"
   ></script>
@@ -1001,7 +1000,7 @@
 
 
   <!-- =====================================================
-       SNAPSHOT
+       SNAPSHOT V2
        ===================================================== -->
 
   <script
@@ -1021,11 +1020,11 @@
 
 
   <!-- =====================================================
-       AUTOMATIC VERIFICATION V2
+       AUTOMATIC VERIFICATION V3
        ===================================================== -->
 
   <script
-    src="automatic-verification-engine.js?v=2"
+    src="automatic-verification-engine.js?v=3"
   ></script>
 
 
@@ -1234,7 +1233,6 @@
               font-size:13px;
             ">
 
-
               <strong>
                 📍 Location:
               </strong>
@@ -1244,9 +1242,7 @@
                 "Selected Location"
               )}
 
-
               <br>
-
 
               <strong>
                 📅 Period:
@@ -1266,9 +1262,7 @@
                 ""
               )}
 
-
               <br>
-
 
               <strong>
                 📊 Reference:
@@ -1276,9 +1270,7 @@
 
               ERA5 / reanalysis
 
-
               <br>
-
 
               <strong>
                 📦 Test Days:
@@ -1289,7 +1281,6 @@
                 result.period?.days ||
                 90
               }
-
 
             </div>
 
@@ -1308,13 +1299,11 @@
                 border:1px solid rgba(255,255,255,.12);
               ">
 
-
                 <h3 style="
                   margin:0 0 14px;
                 ">
 
                   🛰️
-
                   ${escapeHTML(
                     model.name
                   )}
@@ -1326,13 +1315,11 @@
                   overflow-x:auto;
                 ">
 
-
                   <table style="
                     width:100%;
                     border-collapse:collapse;
                     font-size:12px;
                   ">
-
 
                     <thead>
 
@@ -1345,14 +1332,12 @@
                           Lead
                         </th>
 
-
                         <th style="
                           padding:9px;
                           text-align:left;
                         ">
                           Samples
                         </th>
-
 
                         <th style="
                           padding:9px;
@@ -1361,7 +1346,6 @@
                           MAE
                         </th>
 
-
                         <th style="
                           padding:9px;
                           text-align:left;
@@ -1369,14 +1353,12 @@
                           RMSE
                         </th>
 
-
                         <th style="
                           padding:9px;
                           text-align:left;
                         ">
                           Bias
                         </th>
-
 
                         <th style="
                           padding:9px;
