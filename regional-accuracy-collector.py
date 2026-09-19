@@ -1,6 +1,6 @@
 """
 Rajasthan Rain Predictor
-Regional Accuracy Collector V3
+Regional Accuracy Collector V4
 
 Purpose:
 - Read Rajasthan monitoring locations
@@ -9,13 +9,15 @@ Purpose:
 - Fetch ECMWF / GFS / ICON previous-run forecasts
 - Calculate Day 1-7 rainfall forecast accuracy
 - Build a Rajasthan regional accuracy database
-- Preserve successful existing records
+- Preserve successful model results
+- Retry only missing/failed models
 - Recover gracefully from API timeouts
 
 IMPORTANT:
 This uses ERA5 / Open-Meteo reanalysis as the reference.
 It is NOT independent IMD rain-gauge accuracy.
 """
+
 
 import json
 import math
@@ -92,12 +94,8 @@ HISTORICAL_DELAY_DAYS = 8
 # NETWORK SETTINGS
 # ============================================================
 
-# Reduced from 90 seconds because the previous run
-# was spending too much time waiting on a single request.
-
 REQUEST_TIMEOUT = 35
 
-# Only two attempts.
 MAX_RETRIES = 2
 
 RETRY_DELAY_SECONDS = 5
@@ -115,7 +113,7 @@ SESSION.headers.update(
     {
         "User-Agent": (
             "Rajasthan-Rain-Predictor/"
-            "Regional-Accuracy-Collector-V3"
+            "Regional-Accuracy-Collector-V4"
         )
     }
 )
@@ -180,7 +178,7 @@ def safe_float(value):
 
 
 # ============================================================
-# HTTP REQUEST WITH SHORT RETRIES
+# HTTP REQUEST
 # ============================================================
 
 def request_json(
@@ -189,11 +187,10 @@ def request_json(
     description,
 ):
     """
-    Request JSON from an API.
+    Request JSON from API.
 
-    Retry only a small number of times so that
-    one slow API request cannot block the entire
-    Rajasthan collection for several minutes.
+    Uses short retries so one slow API request
+    cannot block the entire collection.
     """
 
     last_error = None
@@ -231,7 +228,6 @@ def request_json(
                 f"HTTP {status}: {body}"
             )
 
-            # Retry temporary server/rate-limit errors.
             retryable = (
                 status == 429
                 or status >= 500
@@ -246,23 +242,36 @@ def request_json(
                 f"(attempt {attempt}/{MAX_RETRIES})"
             )
 
-        except (
-            requests.Timeout,
-            requests.ConnectionError,
-            requests.RequestException,
-        ) as request_error:
+        except requests.Timeout as error:
 
-            last_error = request_error
+            last_error = error
 
             warning(
-                f"{description}: "
-                f"{request_error} "
+                f"{description}: timeout "
                 f"(attempt {attempt}/{MAX_RETRIES})"
             )
 
-        except ValueError as json_error:
+        except requests.ConnectionError as error:
 
-            last_error = json_error
+            last_error = error
+
+            warning(
+                f"{description}: connection error "
+                f"(attempt {attempt}/{MAX_RETRIES})"
+            )
+
+        except requests.RequestException as error:
+
+            last_error = error
+
+            warning(
+                f"{description}: {error} "
+                f"(attempt {attempt}/{MAX_RETRIES})"
+            )
+
+        except ValueError as error:
+
+            last_error = error
 
             warning(
                 f"{description}: invalid JSON "
@@ -328,6 +337,29 @@ def load_locations():
 
 
 # ============================================================
+# EMPTY DATABASE
+# ============================================================
+
+def create_empty_database():
+    """Create empty database structure."""
+
+    return {
+        "version": "regional-accuracy-v4",
+
+        "generated_at": None,
+
+        "reference": {
+            "name": (
+                "ERA5 / Open-Meteo reanalysis"
+            ),
+            "type": "reanalysis",
+        },
+
+        "locations": [],
+    }
+
+
+# ============================================================
 # LOAD DATABASE
 # ============================================================
 
@@ -340,17 +372,7 @@ def load_database():
             "No existing database found."
         )
 
-        return {
-            "version": "regional-accuracy-v3",
-            "generated_at": None,
-            "reference": {
-                "name": (
-                    "ERA5 / Open-Meteo reanalysis"
-                ),
-                "type": "reanalysis",
-            },
-            "locations": [],
-        }
+        return create_empty_database()
 
     try:
 
@@ -394,17 +416,7 @@ def load_database():
             f"{error}"
         )
 
-        return {
-            "version": "regional-accuracy-v3",
-            "generated_at": None,
-            "reference": {
-                "name": (
-                    "ERA5 / Open-Meteo reanalysis"
-                ),
-                "type": "reanalysis",
-            },
-            "locations": [],
-        }
+        return create_empty_database()
 
 
 # ============================================================
@@ -416,7 +428,7 @@ def save_database(database):
 
     database[
         "version"
-    ] = "regional-accuracy-v3"
+    ] = "regional-accuracy-v4"
 
     database[
         "generated_at"
@@ -629,9 +641,8 @@ def fetch_previous_runs(
     """
     Fetch fixed lead-time rainfall forecasts.
 
-    previous_day1 ... previous_day7 are
-    hourly variables and are later aggregated
-    into daily rainfall totals.
+    previous_day1 ... previous_day7 are hourly
+    variables and are aggregated into daily totals.
     """
 
     variables = [
@@ -870,7 +881,7 @@ def calculate_metrics(pairs):
 
 
 # ============================================================
-# TEST MODEL
+# TEST ONE MODEL
 # ============================================================
 
 def test_model(
@@ -960,9 +971,11 @@ def test_model(
             pairs.append(
                 {
                     "date": date,
+
                     "forecast_rain_mm": (
                         forecast
                     ),
+
                     "actual_rain_mm": (
                         actual_value
                     ),
@@ -1025,19 +1038,49 @@ def get_existing_location(
 
 
 # ============================================================
-# CHECK COMPLETE RECORD
+# FIND EXISTING MODEL
 # ============================================================
 
-def record_is_complete(
+def get_existing_model(
+    record,
+    model_name,
+):
+    """Find an existing model result."""
+
+    if not isinstance(
+        record,
+        dict,
+    ):
+
+        return None
+
+    for model in record.get(
+        "models",
+        [],
+    ):
+
+        if (
+            model.get("name")
+            == model_name
+            and model.get("success")
+            is True
+        ):
+
+            return model
+
+    return None
+
+
+# ============================================================
+# RECORD PERIOD CHECK
+# ============================================================
+
+def record_has_current_period(
     record,
     start_date,
     end_date,
 ):
-    """
-    Check whether a record already contains
-    the requested historical period and all
-    three model results.
-    """
+    """Check whether record belongs to current test period."""
 
     if not isinstance(
         record,
@@ -1051,49 +1094,227 @@ def record_is_complete(
         {},
     )
 
-    if (
+    return (
         period.get("start")
-        != start_date
-        or period.get("end")
-        != end_date
-    ):
-
-        return False
-
-    models = record.get(
-        "models",
-        [],
+        == start_date
+        and
+        period.get("end")
+        == end_date
     )
 
-    if len(models) < 3:
 
-        return False
+# ============================================================
+# MODEL COMPLETENESS
+# ============================================================
 
-    required_models = {
+def get_model_status(
+    record,
+):
+    """Return successful and missing models."""
+
+    successful = set()
+
+    if isinstance(
+        record,
+        dict,
+    ):
+
+        for model in record.get(
+            "models",
+            [],
+        ):
+
+            if (
+                model.get("success")
+                is True
+            ):
+
+                successful.add(
+                    model.get("name")
+                )
+
+    required = {
         "ECMWF",
         "GFS",
         "ICON",
     }
 
-    available_models = set()
-
-    for model in models:
-
-        if (
-            model.get("success")
-            is True
-        ):
-
-            available_models.add(
-                model.get("name")
-            )
+    missing = (
+        required
+        - successful
+    )
 
     return (
-        required_models
-        .issubset(
-            available_models
+        successful,
+        missing,
+    )
+
+
+# ============================================================
+# RECORD COMPLETE
+# ============================================================
+
+def record_is_complete(
+    record,
+    start_date,
+    end_date,
+):
+    """Check whether all three models are successful."""
+
+    if not record_has_current_period(
+        record,
+        start_date,
+        end_date,
+    ):
+
+        return False
+
+    successful, missing = (
+        get_model_status(
+            record
         )
     )
+
+    return (
+        len(successful) == 3
+        and len(missing) == 0
+    )
+
+
+# ============================================================
+# BUILD LOCATION
+# ============================================================
+
+def resolve_location(
+    location,
+    existing_record,
+):
+    """
+    Resolve coordinates.
+
+    Existing coordinates are reused whenever
+    possible to avoid unnecessary geocoding calls.
+    """
+
+    if isinstance(
+        existing_record,
+        dict,
+    ):
+
+        existing_location = (
+            existing_record.get(
+                "location",
+                {},
+            )
+        )
+
+        old_latitude = safe_float(
+            existing_location.get(
+                "latitude"
+            )
+        )
+
+        old_longitude = safe_float(
+            existing_location.get(
+                "longitude"
+            )
+        )
+
+        if (
+            old_latitude is not None
+            and old_longitude is not None
+        ):
+
+            log(
+                "Using saved coordinates."
+            )
+
+            return {
+                "id": location["id"],
+
+                "name": location["name"],
+
+                "query": location.get(
+                    "query",
+                    location["name"],
+                ),
+
+                "latitude": old_latitude,
+
+                "longitude": old_longitude,
+            }
+
+    query = location.get(
+        "query",
+        location["name"],
+    )
+
+    coordinates = geocode_location(
+        query
+    )
+
+    return {
+        "id": location["id"],
+
+        "name": location["name"],
+
+        "query": query,
+
+        "latitude": coordinates[
+            "latitude"
+        ],
+
+        "longitude": coordinates[
+            "longitude"
+        ],
+    }
+
+
+# ============================================================
+# UPDATE MODEL RESULT
+# ============================================================
+
+def merge_model_result(
+    existing_models,
+    new_result,
+):
+    """
+    Merge one model result into existing results.
+
+    Successful results are preserved unless the
+    new result is also successful.
+    """
+
+    models = []
+
+    replaced = False
+
+    for existing in existing_models:
+
+        if (
+            existing.get("name")
+            == new_result.get("name")
+        ):
+
+            models.append(
+                new_result
+            )
+
+            replaced = True
+
+        else:
+
+            models.append(
+                existing
+            )
+
+    if not replaced:
+
+        models.append(
+            new_result
+        )
+
+    return models
 
 
 # ============================================================
@@ -1106,7 +1327,13 @@ def update_location(
     start_date,
     end_date,
 ):
-    """Generate accuracy for one location."""
+    """
+    Generate or repair accuracy for one location.
+
+    IMPORTANT:
+    Only missing/failed models are requested.
+    Existing successful models are preserved.
+    """
 
     log(
         "------------------------------------------------"
@@ -1116,30 +1343,21 @@ def update_location(
         f"Processing: {location['name']}"
     )
 
-    query = location.get(
-        "query",
-        location["name"],
+    existing_record = (
+        get_existing_location(
+            database,
+            location["id"],
+        )
     )
 
     # --------------------------------------------------------
-    # GEOCODE
+    # RESOLVE LOCATION
     # --------------------------------------------------------
 
-    coordinates = geocode_location(
-        query
+    resolved_location = resolve_location(
+        location,
+        existing_record,
     )
-
-    resolved_location = {
-        "id": location["id"],
-        "name": location["name"],
-        "query": query,
-        "latitude": coordinates[
-            "latitude"
-        ],
-        "longitude": coordinates[
-            "longitude"
-        ],
-    }
 
     log(
         "Coordinates: "
@@ -1147,9 +1365,69 @@ def update_location(
         f"{resolved_location['longitude']}"
     )
 
-    time.sleep(
-        REQUEST_DELAY_SECONDS
+    # --------------------------------------------------------
+    # CHECK PERIOD
+    # --------------------------------------------------------
+
+    if record_has_current_period(
+        existing_record,
+        start_date,
+        end_date,
+    ):
+
+        existing_models = (
+            existing_record.get(
+                "models",
+                [],
+            )
+        )
+
+    else:
+
+        existing_models = []
+
+    successful_models, missing_models = (
+        get_model_status(
+            {
+                "models": existing_models
+            }
+        )
     )
+
+    if successful_models:
+
+        log(
+            "Already successful: "
+            + ", ".join(
+                sorted(
+                    successful_models
+                )
+            )
+        )
+
+    if missing_models:
+
+        log(
+            "Models needing retry: "
+            + ", ".join(
+                sorted(
+                    missing_models
+                )
+            )
+        )
+
+    # --------------------------------------------------------
+    # IF NOTHING NEEDS WORK
+    # --------------------------------------------------------
+
+    if not missing_models:
+
+        log(
+            f"{location['name']}: "
+            "all 3 models already complete."
+        )
+
+        return existing_record
 
     # --------------------------------------------------------
     # REFERENCE
@@ -1176,14 +1454,35 @@ def update_location(
     )
 
     # --------------------------------------------------------
-    # MODELS
+    # MODEL RETRIES
     # --------------------------------------------------------
 
-    model_results = []
+    model_lookup = {
+        model["name"]: model
+        for model in MODELS
+    }
 
-    successful_models = 0
+    current_models = list(
+        existing_models
+    )
 
-    for model in MODELS:
+    successful_now = 0
+
+    failed_now = 0
+
+    for model_name in [
+        "ECMWF",
+        "GFS",
+        "ICON",
+    ]:
+
+        if model_name not in missing_models:
+
+            continue
+
+        model = model_lookup[
+            model_name
+        ]
 
         try:
 
@@ -1195,34 +1494,53 @@ def update_location(
                 end_date=end_date,
             )
 
-            model_results.append(
-                result
+            current_models = (
+                merge_model_result(
+                    current_models,
+                    result,
+                )
             )
 
-            successful_models += 1
+            successful_now += 1
+
+            log(
+                f"{location['name']} → "
+                f"{model_name}: SUCCESS"
+            )
 
         except Exception as model_error:
 
+            failed_now += 1
+
             log_error(
-                f"{model['name']} failed for "
+                f"{model_name} failed for "
                 f"{location['name']}: "
                 f"{model_error}"
             )
 
-            model_results.append(
-                {
-                    "name": model[
-                        "name"
-                    ],
-                    "model_id": model[
-                        "model_id"
-                    ],
-                    "success": False,
-                    "error": str(
-                        model_error
-                    ),
-                    "leads": [],
-                }
+            failure_result = {
+                "name": model[
+                    "name"
+                ],
+
+                "model_id": model[
+                    "model_id"
+                ],
+
+                "success": False,
+
+                "error": str(
+                    model_error
+                ),
+
+                "leads": [],
+            }
+
+            current_models = (
+                merge_model_result(
+                    current_models,
+                    failure_result,
+                )
             )
 
         time.sleep(
@@ -1230,7 +1548,7 @@ def update_location(
         )
 
     # --------------------------------------------------------
-    # RECORD
+    # BUILD RECORD
     # --------------------------------------------------------
 
     record = {
@@ -1249,15 +1567,43 @@ def update_location(
             "type": "reanalysis",
         },
 
-        "models": model_results,
+        "models": current_models,
 
         "updated_at": datetime.now(
             timezone.utc
         ).isoformat(),
+
+        "collector_version": "V4",
     }
 
     # --------------------------------------------------------
-    # REPLACE OR ADD
+    # MODEL STATUS
+    # --------------------------------------------------------
+
+    final_successful, final_missing = (
+        get_model_status(
+            record
+        )
+    )
+
+    record[
+        "collection_status"
+    ] = {
+        "complete": (
+            len(final_missing) == 0
+        ),
+
+        "successful_models": sorted(
+            final_successful
+        ),
+
+        "missing_models": sorted(
+            final_missing
+        ),
+    }
+
+    # --------------------------------------------------------
+    # REPLACE OR ADD LOCATION
     # --------------------------------------------------------
 
     locations = database.setdefault(
@@ -1299,10 +1645,130 @@ def update_location(
 
     log(
         f"{location['name']}: "
-        f"{successful_models}/3 models successful."
+        f"{len(final_successful)}/3 models available."
+    )
+
+    if final_missing:
+
+        log(
+            "Still missing: "
+            + ", ".join(
+                sorted(
+                    final_missing
+                )
+            )
+        )
+
+    else:
+
+        log(
+            f"{location['name']}: "
+            "ALL 3 MODELS COMPLETE."
+        )
+
+    log(
+        f"New successes this run: "
+        f"{successful_now}"
+    )
+
+    log(
+        f"Failures this run: "
+        f"{failed_now}"
     )
 
     return record
+
+
+# ============================================================
+# DATABASE SUMMARY
+# ============================================================
+
+def database_summary(
+    database,
+    requested_locations,
+    start_date,
+    end_date,
+):
+    """Calculate final database status."""
+
+    present = 0
+
+    complete = 0
+
+    incomplete = 0
+
+    missing_ids = []
+
+    incomplete_locations = []
+
+    for location in requested_locations:
+
+        record = get_existing_location(
+            database,
+            location["id"],
+        )
+
+        if record is None:
+
+            missing_ids.append(
+                location["id"]
+            )
+
+            continue
+
+        present += 1
+
+        if record_is_complete(
+            record,
+            start_date,
+            end_date,
+        ):
+
+            complete += 1
+
+        else:
+
+            incomplete += 1
+
+            successful, missing = (
+                get_model_status(
+                    record
+                )
+            )
+
+            incomplete_locations.append(
+                {
+                    "id": location["id"],
+
+                    "name": location["name"],
+
+                    "successful": sorted(
+                        successful
+                    ),
+
+                    "missing": sorted(
+                        missing
+                    ),
+                }
+            )
+
+    return {
+        "requested": len(
+            requested_locations
+        ),
+
+        "present": present,
+
+        "complete": complete,
+
+        "incomplete": incomplete,
+
+        "missing": missing_ids,
+
+        "incomplete_locations": (
+            incomplete_locations
+        ),
+    }
 
 
 # ============================================================
@@ -1317,7 +1783,7 @@ def main():
     )
 
     log(
-        "RAJASTHAN REGIONAL ACCURACY COLLECTOR V3"
+        "RAJASTHAN REGIONAL ACCURACY COLLECTOR V4"
     )
 
     log(
@@ -1351,20 +1817,48 @@ def main():
     )
 
     # --------------------------------------------------------
-    # EXISTING COUNT
+    # INITIAL SUMMARY
     # --------------------------------------------------------
 
-    existing_count = len(
-        database.get(
-            "locations",
-            [],
-        )
+    initial_summary = database_summary(
+        database,
+        locations,
+        start_date,
+        end_date,
     )
 
     log(
-        f"Existing database locations: "
-        f"{existing_count}"
+        "----------------------------------------------"
     )
+
+    log(
+        f"Database present: "
+        f"{initial_summary['present']}/"
+        f"{initial_summary['requested']}"
+    )
+
+    log(
+        f"Complete locations: "
+        f"{initial_summary['complete']}"
+    )
+
+    log(
+        f"Incomplete locations: "
+        f"{initial_summary['incomplete']}"
+    )
+
+    if initial_summary[
+        "missing"
+    ]:
+
+        log(
+            "Missing location IDs: "
+            + ", ".join(
+                initial_summary[
+                    "missing"
+                ]
+            )
+        )
 
     # --------------------------------------------------------
     # COUNTERS
@@ -1402,7 +1896,7 @@ def main():
         )
 
         # ----------------------------------------------------
-        # SKIP ONLY IF CURRENT PERIOD IS COMPLETE
+        # COMPLETE?
         # ----------------------------------------------------
 
         if (
@@ -1417,30 +1911,32 @@ def main():
             skipped += 1
 
             log(
-                f"SKIP: "
-                f"{location['name']} "
+                f"SKIP: {location['name']} "
                 "already complete."
             )
 
             continue
 
         # ----------------------------------------------------
-        # PROCESS
+        # PROCESS / REPAIR
         # ----------------------------------------------------
 
         try:
 
             update_location(
                 database=database,
+
                 location=location,
+
                 start_date=start_date,
+
                 end_date=end_date,
             )
 
             processed += 1
 
             log(
-                f"SUCCESS: "
+                f"SUCCESS/UPDATED: "
                 f"{location['name']}"
             )
 
@@ -1489,14 +1985,14 @@ def main():
     )
 
     # --------------------------------------------------------
-    # FINAL COUNTS
+    # FINAL SUMMARY
     # --------------------------------------------------------
 
-    database_count = len(
-        database.get(
-            "locations",
-            [],
-        )
+    final_summary = database_summary(
+        database,
+        locations,
+        start_date,
+        end_date,
     )
 
     log(
@@ -1509,11 +2005,26 @@ def main():
 
     log(
         f"Requested locations: "
-        f"{len(locations)}"
+        f"{final_summary['requested']}"
     )
 
     log(
-        f"Processed: "
+        f"Locations present: "
+        f"{final_summary['present']}"
+    )
+
+    log(
+        f"Complete locations: "
+        f"{final_summary['complete']}"
+    )
+
+    log(
+        f"Incomplete locations: "
+        f"{final_summary['incomplete']}"
+    )
+
+    log(
+        f"Processed/updated: "
         f"{processed}"
     )
 
@@ -1527,37 +2038,82 @@ def main():
         f"{failed}"
     )
 
-    log(
-        f"Locations in database: "
-        f"{database_count}"
-    )
-
-    log(
-        f"Database file: "
-        f"{OUTPUT_FILE}"
-    )
-
-    log(
-        "=============================================="
-    )
-
-    if (
-        database_count
-        < len(locations)
-    ):
+    if final_summary[
+        "missing"
+    ]:
 
         warning(
-            "Database is not complete yet. "
-            "Failed/missing locations will be "
-            "retried on the next run."
+            "Still missing locations: "
+            + ", ".join(
+                final_summary[
+                    "missing"
+                ]
+            )
+        )
+
+    if final_summary[
+        "incomplete_locations"
+    ]:
+
+        log(
+            "----------------------------------------------"
+        )
+
+        log(
+            "INCOMPLETE MODEL DATA:"
+        )
+
+        for item in final_summary[
+            "incomplete_locations"
+        ]:
+
+            log(
+                f"  {item['name']}: "
+                f"missing "
+                f"{', '.join(item['missing'])}"
+            )
+
+    if (
+        final_summary["complete"]
+        == final_summary["requested"]
+    ):
+
+        log(
+            "=============================================="
+        )
+
+        log(
+            "ALL 41 MONITORING LOCATIONS "
+            "HAVE ALL 3 MODELS."
+        )
+
+        log(
+            "=============================================="
         )
 
     else:
 
         log(
-            "ALL MONITORING LOCATIONS "
-            "ARE PRESENT IN DATABASE."
+            "=============================================="
         )
+
+        log(
+            "COLLECTION IS PARTIALLY COMPLETE."
+        )
+
+        log(
+            "Next daily run will retry only "
+            "missing/incomplete model data."
+        )
+
+        log(
+            "=============================================="
+        )
+
+    log(
+        f"Database file: "
+        f"{OUTPUT_FILE}"
+    )
 
     log(
         "Collector finished."
