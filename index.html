@@ -507,7 +507,7 @@
 
 
     <!-- ===================================================
-         PREDICTION ENGINE V6
+         PREDICTION ENGINE
          =================================================== -->
 
     <section
@@ -518,7 +518,7 @@
 
 
     <!-- ===================================================
-         FORECAST CONFIDENCE V2
+         FORECAST CONFIDENCE V3
          =================================================== -->
 
     <section
@@ -991,11 +991,11 @@
 
 
   <!-- =====================================================
-       VERIFICATION
+       VERIFICATION V3
        ===================================================== -->
 
   <script
-    src="accuracy-verification-engine.js?v=2"
+    src="accuracy-verification-engine.js?v=3"
   ></script>
 
 
@@ -1041,11 +1041,11 @@
 
 
   <!-- =====================================================
-       FORECAST CONFIDENCE V2
+       FORECAST CONFIDENCE V3
        ===================================================== -->
 
   <script
-    src="confidence-engine.js?v=2"
+    src="confidence-engine.js?v=3"
   ></script>
 
 
@@ -1913,7 +1913,20 @@
         ) {
 
           console.log(
-            "✅ Forecast Confidence Engine V2 ready."
+            "✅ Forecast Confidence Engine V3 ready."
+          );
+
+        }
+
+
+        if (
+          typeof
+            window.RRP_VERIFICATION ===
+          "object"
+        ) {
+
+          console.log(
+            "✅ Accuracy Verification Engine V3 ready."
           );
 
         }
