@@ -518,6 +518,17 @@
 
 
     <!-- ===================================================
+         FORECAST CONFIDENCE V1
+         =================================================== -->
+
+    <section
+      id="forecastConfidence"
+      class="forecast-confidence"
+    ></section>
+
+
+
+    <!-- ===================================================
          HOURLY MODEL COMPARISON
          =================================================== -->
 
@@ -1025,6 +1036,16 @@
 
   <script
     src="regional-accuracy-engine.js?v=4"
+  ></script>
+
+
+
+  <!-- =====================================================
+       FORECAST CONFIDENCE V1
+       ===================================================== -->
+
+  <script
+    src="confidence-engine.js?v=1"
   ></script>
 
 
@@ -1771,6 +1792,13 @@
 
 
         console.log(
+          "Confidence Engine:",
+          typeof
+            window.RRP_FORECAST_CONFIDENCE
+        );
+
+
+        console.log(
           "Backtest Engine:",
           typeof
             window.RRP_BACKTEST
@@ -1873,6 +1901,19 @@
 
           console.log(
             "✅ Regional Accuracy Engine ready."
+          );
+
+        }
+
+
+        if (
+          typeof
+            window.RRP_FORECAST_CONFIDENCE ===
+          "object"
+        ) {
+
+          console.log(
+            "✅ Forecast Confidence Engine ready."
           );
 
         }
