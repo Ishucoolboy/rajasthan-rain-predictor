@@ -1,6 +1,6 @@
 /* =========================================================
    RAJASTHAN RAIN PREDICTOR
-   MULTI-MODEL PREDICTION ENGINE V4
+   MULTI-MODEL PREDICTION ENGINE V5
    ========================================================= */
 
 (() => {
@@ -71,8 +71,11 @@
     function average(values) {
 
         if (!values.length) {
+
             return 0;
+
         }
+
 
         return values.reduce(
             (sum, value) =>
@@ -109,7 +112,8 @@
             (time, index) => {
 
                 const parsed =
-                    new Date(time).getTime();
+                    new Date(time)
+                        .getTime();
 
 
                 if (
@@ -223,7 +227,7 @@
 
 
         // =================================================
-        // CURRENT RAIN
+        // CURRENT
         // =================================================
 
         const currentRain =
@@ -413,7 +417,18 @@
             values.length < 2
         ) {
 
-            return "Insufficient model data";
+            return {
+
+                label:
+                    "Insufficient model data",
+
+                level:
+                    "unknown",
+
+                spread:
+                    null
+
+            };
 
         }
 
@@ -434,7 +449,18 @@
             mean === 0
         ) {
 
-            return "Models mostly dry";
+            return {
+
+                label:
+                    "Models mostly dry",
+
+                level:
+                    "high",
+
+                spread:
+                    0
+
+            };
 
         }
 
@@ -450,7 +476,17 @@
             spread <= 25
         ) {
 
-            return "Strong model agreement";
+            return {
+
+                label:
+                    "Strong model agreement",
+
+                level:
+                    "high",
+
+                spread
+
+            };
 
         }
 
@@ -459,12 +495,264 @@
             spread <= 60
         ) {
 
-            return "Moderate model agreement";
+            return {
+
+                label:
+                    "Moderate model agreement",
+
+                level:
+                    "moderate",
+
+                spread
+
+            };
 
         }
 
 
-        return "Models disagree";
+        return {
+
+            label:
+                "Models disagree",
+
+            level:
+                "low",
+
+            spread
+
+        };
+
+    }
+
+
+    // =====================================================
+    // FORECAST CONSISTENCY
+    // =====================================================
+
+    function getForecastConsistency(
+        values
+    ) {
+
+        if (
+            values.length < 2
+        ) {
+
+            return {
+
+                label:
+                    "Insufficient data",
+
+                level:
+                    "unknown",
+
+                score:
+                    null
+
+            };
+
+        }
+
+
+        const minimum =
+            Math.min(...values);
+
+
+        const maximum =
+            Math.max(...values);
+
+
+        const mean =
+            average(values);
+
+
+        if (
+            mean === 0
+        ) {
+
+            return {
+
+                label:
+                    "Very consistent dry signal",
+
+                level:
+                    "high",
+
+                score:
+                    100
+
+            };
+
+        }
+
+
+        const spread =
+            (
+                (maximum - minimum) /
+                mean
+            ) * 100;
+
+
+        let score;
+
+
+        if (
+            spread <= 10
+        ) {
+
+            score = 95;
+
+        } else if (
+            spread <= 25
+        ) {
+
+            score = 85;
+
+        } else if (
+            spread <= 40
+        ) {
+
+            score = 70;
+
+        } else if (
+            spread <= 60
+        ) {
+
+            score = 55;
+
+        } else if (
+            spread <= 100
+        ) {
+
+            score = 40;
+
+        } else {
+
+            score = 25;
+
+        }
+
+
+        let label;
+
+
+        if (
+            score >= 85
+        ) {
+
+            label =
+                "High consistency";
+
+        } else if (
+            score >= 55
+        ) {
+
+            label =
+                "Moderate consistency";
+
+        } else {
+
+            label =
+                "Low consistency";
+
+        }
+
+
+        return {
+
+            label,
+
+            level:
+                score >= 85
+                    ? "high"
+                    : score >= 55
+                        ? "moderate"
+                        : "low",
+
+            score,
+
+            spread
+
+        };
+
+    }
+
+
+    // =====================================================
+    // CONFIDENCE EXPLANATION
+    // =====================================================
+
+    function getConfidenceExplanation(
+        consistency,
+        modelAgreement,
+        minimumRain,
+        maximumRain
+    ) {
+
+        if (
+            consistency.level ===
+            "high"
+        ) {
+
+            return `
+
+                ECMWF, GFS aur ICON ke
+                rainfall signals kaafi close hain.
+
+                Model spread:
+
+                <strong>
+                    ${consistency.spread.toFixed(1)}%
+                </strong>
+
+            `;
+
+        }
+
+
+        if (
+            consistency.level ===
+            "moderate"
+        ) {
+
+            return `
+
+                Models ke rainfall estimates
+                mein noticeable difference hai.
+
+                Range:
+
+                <strong>
+                    ${minimumRain.toFixed(1)}
+                    –
+                    ${maximumRain.toFixed(1)}
+                    mm
+                </strong>
+
+            `;
+
+        }
+
+
+        return `
+
+            ECMWF, GFS aur ICON ke forecasts
+            mein significant difference hai.
+
+            Range:
+
+            <strong>
+                ${minimumRain.toFixed(1)}
+                –
+                ${maximumRain.toFixed(1)}
+                mm
+            </strong>
+
+            <br><br>
+
+            Is situation mein forecast uncertainty
+            relatively higher hai.
+
+        `;
 
     }
 
@@ -577,7 +865,7 @@
 
 
     // =====================================================
-    // REGIONAL ACCURACY
+    // REGIONAL CONTEXT
     // =====================================================
 
     function getRegionalContext() {
@@ -604,7 +892,7 @@
         } catch (error) {
 
             console.warn(
-                "[RRP Prediction V4] Regional context unavailable:",
+                "[RRP Prediction V5] Regional context unavailable:",
                 error
             );
 
@@ -647,7 +935,7 @@
 
 
     // =====================================================
-    // REGIONAL CONTEXT UI
+    // REGIONAL UI
     // =====================================================
 
     function renderRegionalContext() {
@@ -709,16 +997,13 @@
             );
 
 
-        const matchType =
-            regional.matchType;
-
-
         let description =
             "";
 
 
         if (
-            matchType === "exact"
+            regional.matchType ===
+            "exact"
         ) {
 
             description = `
@@ -730,6 +1015,7 @@
                 <br>
 
                 Monitoring point:
+
                 <strong>
                     ${escapeHTML(
                         regionalName
@@ -745,12 +1031,14 @@
             `;
 
         } else if (
-            matchType === "nearest"
+            regional.matchType ===
+            "nearest"
         ) {
 
             description = `
 
                 Selected location:
+
                 <strong>
                     ${escapeHTML(
                         selectedName
@@ -760,6 +1048,7 @@
                 <br>
 
                 Nearest monitoring point:
+
                 <strong>
                     ${escapeHTML(
                         regionalName
@@ -774,9 +1063,14 @@
 
                 <br><br>
 
-                Ye metrics searched location ke
-                liye <strong>regional proxy</strong>
-                hain, exact village accuracy nahi.
+                Ye historical metrics searched
+                location ke liye
+
+                <strong>
+                    regional proxy
+                </strong>
+
+                hain.
 
             `;
 
@@ -785,6 +1079,7 @@
             description = `
 
                 Nearest monitoring location:
+
                 <strong>
                     ${escapeHTML(
                         regionalName
@@ -800,8 +1095,8 @@
                 <br><br>
 
                 Distance zyada hone ke karan
-                is historical data ko exact
-                local accuracy nahi maana jana chahiye.
+                ye data exact local accuracy
+                nahi maana jana chahiye.
 
             `;
 
@@ -825,7 +1120,9 @@
 
 
                 if (!model) {
+
                     return;
+
                 }
 
 
@@ -849,6 +1146,7 @@
                         ">
 
                             Samples:
+
                             <strong>
                                 ${
                                     model.samples ??
@@ -859,6 +1157,7 @@
                             <br>
 
                             MAE:
+
                             <strong>
                                 ${regionalMetric(
                                     model.mae,
@@ -869,6 +1168,7 @@
                             <br>
 
                             RMSE:
+
                             <strong>
                                 ${regionalMetric(
                                     model.rmse,
@@ -879,6 +1179,7 @@
                             <br>
 
                             Bias:
+
                             <strong>
                                 ${regionalMetric(
                                     model.bias,
@@ -889,6 +1190,7 @@
                             <br>
 
                             Rain Accuracy:
+
                             <strong>
                                 ${regionalMetric(
                                     model.rainAccuracy,
@@ -969,8 +1271,7 @@
                     current forecast probability ko
                     directly modify nahi karte.
 
-                    Ye sirf forecast ko interpret
-                    karne ke liye historical context hain.
+                    Ye sirf historical context hain.
 
                 </div>
 
@@ -982,7 +1283,7 @@
 
 
     // =====================================================
-    // RENDER PREDICTION
+    // RENDER
     // =====================================================
 
     function renderPrediction(
@@ -1028,7 +1329,7 @@
 
 
         // =================================================
-        // COMBINED VALUES
+        // VALUES
         // =================================================
 
         const rainValues =
@@ -1070,10 +1371,6 @@
             );
 
 
-        // =================================================
-        // NEW RAINFALL RANGE
-        // =================================================
-
         const minimumRain =
             Math.min(
                 ...rainValues
@@ -1098,15 +1395,18 @@
             );
 
 
-        const thunderstorm =
-            validModels.some(
-                model =>
-                    model.thunderstorm
+        // =================================================
+        // SIGNALS
+        // =================================================
+
+        const agreement =
+            getModelAgreement(
+                rainValues
             );
 
 
-        const modelAgreement =
-            getModelAgreement(
+        const consistency =
+            getForecastConsistency(
                 rainValues
             );
 
@@ -1115,6 +1415,26 @@
             getRainRisk(
                 combinedProbability,
                 combinedRain
+            );
+
+
+        const thunderstorm =
+            validModels.some(
+                model =>
+                    model.thunderstorm
+            );
+
+
+        // =================================================
+        // CONFIDENCE EXPLANATION
+        // =================================================
+
+        const confidenceExplanation =
+            getConfidenceExplanation(
+                consistency,
+                agreement,
+                minimumRain,
+                maximumRain
             );
 
 
@@ -1177,7 +1497,43 @@
 
 
         // =================================================
-        // UI
+        // CONSISTENCY BADGE
+        // =================================================
+
+        let consistencyTitle =
+            "Forecast Consistency";
+
+
+        let consistencyDescription =
+            "";
+
+
+        if (
+            consistency.level ===
+            "high"
+        ) {
+
+            consistencyDescription =
+                "Models are relatively close.";
+
+        } else if (
+            consistency.level ===
+            "moderate"
+        ) {
+
+            consistencyDescription =
+                "Models show some disagreement.";
+
+        } else {
+
+            consistencyDescription =
+                "Models show significant spread.";
+
+        }
+
+
+        // =================================================
+        // MAIN UI
         // =================================================
 
         container.innerHTML = `
@@ -1330,6 +1686,126 @@
 
 
             <!-- =========================================
+                 FORECAST CONFIDENCE / CONSISTENCY
+                 ========================================= -->
+
+            <div style="
+                margin-bottom:18px;
+                padding:18px;
+                border-radius:16px;
+                border:1px solid #e2e8f0;
+                background:#f8fafc;
+            ">
+
+
+                <div style="
+                    display:flex;
+                    justify-content:space-between;
+                    align-items:center;
+                    gap:12px;
+                    flex-wrap:wrap;
+                ">
+
+                    <div>
+
+                        <div style="
+                            font-size:11px;
+                            color:#64748b;
+                            text-transform:uppercase;
+                            letter-spacing:.05em;
+                        ">
+
+                            Forecast Consistency
+
+                        </div>
+
+
+                        <div style="
+                            font-size:21px;
+                            font-weight:700;
+                            margin-top:4px;
+                        ">
+
+                            ${escapeHTML(
+                                consistency.label
+                            )}
+
+                        </div>
+
+                    </div>
+
+
+                    <div style="
+                        padding:8px 12px;
+                        border-radius:999px;
+                        background:white;
+                        border:1px solid #e2e8f0;
+                        font-size:12px;
+                        font-weight:700;
+                    ">
+
+                        ${
+                            consistency.score !== null
+                                ? Math.round(
+                                    consistency.score
+                                  ) +
+                                  "/100 consistency"
+                                : "Insufficient data"
+                        }
+
+                    </div>
+
+                </div>
+
+
+                <div style="
+                    margin-top:12px;
+                    font-size:12px;
+                    color:#475569;
+                    line-height:1.7;
+                ">
+
+                    ${confidenceExplanation}
+
+                    <br><br>
+
+                    ${consistencyDescription}
+
+                </div>
+
+
+                <div style="
+                    margin-top:12px;
+                    padding:10px 12px;
+                    border-radius:10px;
+                    background:#fff7ed;
+                    border:1px solid #fed7aa;
+                    font-size:11px;
+                    line-height:1.6;
+                ">
+
+                    ⚠️
+
+                    <strong>
+                        Important:
+                    </strong>
+
+                    Ye consistency score
+                    <strong>
+                        forecast accuracy
+                    </strong>
+                    nahi hai.
+
+                    Ye sirf ECMWF, GFS aur ICON
+                    ke current forecasts ke
+                    beech agreement ko describe karta hai.
+
+                </div>
+
+            </div>
+
+
+            <!-- =========================================
                  3 DAY RANGE
                  ========================================= -->
 
@@ -1361,9 +1837,9 @@
                     color:#64748b;
                 ">
 
-                    Range ECMWF, GFS aur ICON
-                    ke rainfall forecasts ke beech
-                    ka difference show karta hai.
+                    ECMWF, GFS aur ICON ke
+                    3-day rainfall estimates ka
+                    minimum–maximum range.
 
                 </span>
 
@@ -1398,7 +1874,7 @@
                     <br>
 
                     ${escapeHTML(
-                        modelAgreement
+                        agreement.label
                     )}
 
                 </div>
@@ -1525,34 +2001,30 @@
                 ℹ️
 
                 <strong>
-                    Model Range:
+                    Consistency:
                 </strong>
 
                 ECMWF, GFS aur ICON ke
-                individual rainfall forecasts
-                ka minimum–maximum range.
+                rainfall forecasts ke beech
+                agreement/spread.
 
                 <br>
 
                 <strong>
-                    Average:
+                    Rain Probability:
                 </strong>
 
-                Available models ke rainfall
-                forecasts ka arithmetic mean.
+                Weather-model forecast signal.
 
                 <br>
 
                 <strong>
-                    Accuracy:
+                    Historical Accuracy:
                 </strong>
 
-                Model consensus ya range ko
-                measured accuracy nahi maana jaata.
-
-                Historical accuracy ke liye
-                independent observations/reference
-                dataset required hai.
+                Separate verification system ke
+                through measured reference data ke
+                against calculate hoti hai.
 
             </div>
 
@@ -1560,7 +2032,7 @@
 
 
         // =================================================
-        // SAVE LATEST RESULT
+        // SAVE RESULT
         // =================================================
 
         latestPrediction = {
@@ -1588,7 +2060,17 @@
             threeDayRainMax:
                 maximum3DayRain,
 
-            modelAgreement,
+            modelAgreement:
+                agreement.label,
+
+            modelAgreementLevel:
+                agreement.level,
+
+            modelSpread:
+                agreement.spread,
+
+            forecastConsistency:
+                consistency,
 
             rainRisk,
 
@@ -1662,7 +2144,7 @@
                                 error => {
 
                                     console.warn(
-                                        "[RRP Prediction V4]",
+                                        "[RRP Prediction V5]",
                                         model.name +
                                         " prediction failed:",
                                         error
@@ -1722,7 +2204,7 @@
 
 
     // =====================================================
-    // WEATHER EVENT
+    // WEATHER UPDATE
     // =====================================================
 
     window.addEventListener(
@@ -1748,7 +2230,7 @@
 
 
     // =====================================================
-    // REFRESH AFTER REGIONAL ENGINE LOAD
+    // REFRESH AFTER OTHER ENGINES LOAD
     // =====================================================
 
     window.addEventListener(
