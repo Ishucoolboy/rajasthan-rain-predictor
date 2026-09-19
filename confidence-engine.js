@@ -1,1303 +1,831 @@
-/* =========================================================
-   RAJASTHAN RAIN PREDICTOR
-   FORECAST CONFIDENCE ENGINE V2
-   ========================================================= */
-
-(() => {
-
+(function () {
     "use strict";
 
+    /*
+     * Rajasthan Rain Predictor
+     * Forecast Confidence Engine V3
+     *
+     * Purpose:
+     * - Estimate forecast consistency between available weather models.
+     * - Uses model rain probability + rainfall amount agreement.
+     * - Does NOT claim forecast accuracy.
+     * - Regional historical data is shown as context only.
+     */
 
-    const ENGINE_NAME =
-        "[RRP Forecast Confidence V2]";
+    const ENGINE_VERSION = "3.0";
+    const STORAGE_KEY = "rrp_forecast_confidence_v3";
 
-
-    let lastRenderedLocation = null;
-
-
-    // =====================================================
-    // HELPERS
-    // =====================================================
-
-    function number(value) {
-
-        const n = Number(value);
-
-        return Number.isFinite(n)
-            ? n
-            : null;
-
+    function log(...args) {
+        console.log("[RRP Forecast Confidence V3]", ...args);
     }
 
-
-    function clamp(
-        value,
-        minimum,
-        maximum
-    ) {
-
-        return Math.min(
-            maximum,
-            Math.max(
-                minimum,
-                value
-            )
-        );
-
+    function warn(...args) {
+        console.warn("[RRP Forecast Confidence V3]", ...args);
     }
-
 
     function escapeHTML(value) {
-
         return String(value ?? "")
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
-
     }
 
+    function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+    }
 
-    // =====================================================
-    // PREDICTION
-    // =====================================================
+    function number(value, fallback = 0) {
+        const n = Number(value);
+        return Number.isFinite(n) ? n : fallback;
+    }
+
+    function round(value, decimals = 1) {
+        const p = Math.pow(10, decimals);
+        return Math.round(value * p) / p;
+    }
 
     function getPrediction() {
-
         try {
-
             if (
-                !window.RRP_PREDICTION_ENGINE ||
-                typeof
-                window.RRP_PREDICTION_ENGINE.getLatest !==
-                "function"
+                window.RRP_PREDICTION_ENGINE &&
+                typeof window.RRP_PREDICTION_ENGINE.getLatest === "function"
             ) {
-
-                return null;
-
+                return window.RRP_PREDICTION_ENGINE.getLatest();
             }
-
-
-            return window
-                .RRP_PREDICTION_ENGINE
-                .getLatest();
-
         } catch (error) {
-
-            console.warn(
-                ENGINE_NAME,
-                "Prediction unavailable:",
-                error
-            );
-
-            return null;
-
+            warn("Could not read prediction engine:", error);
         }
 
+        return null;
     }
 
-
-    // =====================================================
-    // REGIONAL DATA
-    // =====================================================
-
-    function getRegionalData() {
-
+    function getRegionalMetrics() {
         try {
-
             if (
-                !window.RRP_REGIONAL_ACCURACY ||
-                typeof
-                window.RRP_REGIONAL_ACCURACY.getSelectedMetrics !==
-                "function"
+                window.RRP_REGIONAL_ACCURACY &&
+                typeof window.RRP_REGIONAL_ACCURACY.getSelectedMetrics === "function"
             ) {
-
-                return null;
-
+                return window.RRP_REGIONAL_ACCURACY.getSelectedMetrics();
             }
-
-
-            return window
-                .RRP_REGIONAL_ACCURACY
-                .getSelectedMetrics();
-
         } catch (error) {
-
-            console.warn(
-                ENGINE_NAME,
-                "Regional data unavailable:",
-                error
-            );
-
-            return null;
-
+            warn("Could not read regional metrics:", error);
         }
 
+        return null;
     }
 
-
-    // =====================================================
-    // MODEL CONSISTENCY
-    // =====================================================
-
-    function getConsistencyScore(
-        prediction
-    ) {
-
-        if (!prediction) {
-
-            return null;
-
+    function getSuccessfulModels(prediction) {
+        if (!prediction || !Array.isArray(prediction.models)) {
+            return [];
         }
 
-
-        const consistency =
-            prediction.forecastConsistency;
-
-
-        if (
-            consistency &&
-            number(
-                consistency.score
-            ) !== null
-        ) {
-
-            return clamp(
-                number(
-                    consistency.score
-                ),
-                0,
-                100
-            );
-
-        }
-
-
-        const spread =
-            number(
-                prediction.modelSpread
-            );
-
-
-        if (
-            spread === null
-        ) {
-
-            return null;
-
-        }
-
-
-        if (
-            spread <= 10
-        ) {
-
-            return 95;
-
-        }
-
-
-        if (
-            spread <= 25
-        ) {
-
-            return 85;
-
-        }
-
-
-        if (
-            spread <= 40
-        ) {
-
-            return 70;
-
-        }
-
-
-        if (
-            spread <= 60
-        ) {
-
-            return 55;
-
-        }
-
-
-        if (
-            spread <= 100
-        ) {
-
-            return 40;
-
-        }
-
-
-        return 25;
-
+        return prediction.models.filter(function (model) {
+            return model && model.success !== false;
+        });
     }
 
+    /*
+     * MODEL AVAILABILITY
+     */
 
-    // =====================================================
-    // MODEL COMPLETENESS
-    // =====================================================
+    function calculateModelCompleteness(models) {
+        const count = models.length;
 
-    function getModelCompleteness(
-        prediction
-    ) {
-
-        if (
-            !prediction ||
-            !Array.isArray(
-                prediction.models
-            )
-        ) {
-
-            return null;
-
-        }
-
-
-        const models =
-            prediction.models.filter(
-                model =>
-                    model &&
-                    model.success !== false
-            );
-
-
-        const count =
-            models.length;
-
-
-        if (
-            count >= 3
-        ) {
-
-            return 100;
-
-        }
-
-
-        if (
-            count === 2
-        ) {
-
-            return 75;
-
-        }
-
-
-        if (
-            count === 1
-        ) {
-
-            return 45;
-
-        }
-
-
-        return 0;
-
-    }
-
-
-    // =====================================================
-    // REGIONAL CONTEXT
-    // =====================================================
-
-    function getRegionalContext(
-        regional
-    ) {
-
-        if (!regional) {
-
+        if (count >= 3) {
             return {
-
-                available:
-                    false,
-
-                name:
-                    null,
-
-                distance:
-                    null,
-
-                type:
-                    null
-
+                score: 100,
+                level: "3/3 models",
+                count: count
             };
-
         }
 
+        if (count === 2) {
+            return {
+                score: 75,
+                level: "2/3 models",
+                count: count
+            };
+        }
 
-        const distance =
-            number(
-                regional.distanceKm
-            );
-
+        if (count === 1) {
+            return {
+                score: 45,
+                level: "1/3 models",
+                count: count
+            };
+        }
 
         return {
-
-            available:
-                true,
-
-            name:
-                regional.regionalLocation?.name ||
-                regional.selectedLocation?.name ||
-                null,
-
-            distance,
-
-            type:
-                regional.matchType ||
-                "nearest"
-
+            score: 0,
+            level: "0/3 models",
+            count: 0
         };
-
     }
 
+    /*
+     * RAIN PROBABILITY AGREEMENT
+     *
+     * Important:
+     * We use peakProbability/currentProbability instead of rainfall
+     * amount alone because rainfall amounts can differ considerably
+     * even when models agree that the practical rain signal is weak.
+     */
 
-    // =====================================================
-    // CONFIDENCE CALCULATION
-    // =====================================================
-    //
-    // IMPORTANT:
-    //
-    // Historical regional accuracy is NOT directly
-    // converted into current forecast confidence.
-    //
-    // Current confidence is based primarily on:
-    //
-    // 1. Model agreement
-    // 2. Model availability
-    //
-    // This avoids treating historical accuracy as
-    // a guaranteed probability for today's forecast.
-    //
-    // =====================================================
+    function getModelProbability(model) {
+        const candidates = [
+            model.peakProbability,
+            model.currentProbability,
+            model.rainProbability
+        ];
 
-    function calculateConfidence(
-        consistencyScore,
-        completenessScore
-    ) {
+        for (let i = 0; i < candidates.length; i++) {
+            const n = Number(candidates[i]);
 
-        if (
-            consistencyScore === null &&
-            completenessScore === null
-        ) {
-
-            return {
-
-                score:
-                    null,
-
-                level:
-                    "Limited data"
-
-            };
-
+            if (Number.isFinite(n)) {
+                return clamp(n, 0, 100);
+            }
         }
 
+        return null;
+    }
 
-        const consistency =
-            consistencyScore !== null
-                ? consistencyScore
-                : 50;
+    function calculateProbabilityAgreement(models) {
+        const values = models
+            .map(getModelProbability)
+            .filter(function (value) {
+                return Number.isFinite(value);
+            });
 
+        if (values.length < 2) {
+            return {
+                score: values.length === 1 ? 45 : 0,
+                range: null,
+                mean: values.length ? values[0] : null,
+                values: values
+            };
+        }
 
-        const completeness =
-            completenessScore !== null
-                ? completenessScore
-                : 50;
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        const range = max - min;
+        const mean =
+            values.reduce(function (sum, value) {
+                return sum + value;
+            }, 0) / values.length;
 
+        let score;
 
-        const score =
-            (
-                consistency * 0.75
-            ) +
-            (
-                completeness * 0.25
-            );
+        if (range <= 10) {
+            score = 100;
+        } else if (range <= 20) {
+            score = 90;
+        } else if (range <= 35) {
+            score = 75;
+        } else if (range <= 50) {
+            score = 55;
+        } else if (range <= 70) {
+            score = 35;
+        } else {
+            score = 20;
+        }
 
+        return {
+            score: score,
+            range: round(range, 1),
+            mean: round(mean, 1),
+            values: values
+        };
+    }
+
+    /*
+     * RAINFALL AMOUNT AGREEMENT
+     *
+     * Uses an absolute floor of 5 mm in the denominator.
+     * This prevents tiny values like 0.2 vs 1.5 mm from creating
+     * an artificially huge relative spread.
+     */
+
+    function getModelRain(model) {
+        const candidates = [
+            model.next24Rain,
+            model.rainfall,
+            model.currentRain
+        ];
+
+        for (let i = 0; i < candidates.length; i++) {
+            const n = Number(candidates[i]);
+
+            if (Number.isFinite(n)) {
+                return Math.max(0, n);
+            }
+        }
+
+        return null;
+    }
+
+    function calculateRainfallAgreement(models) {
+        const values = models
+            .map(getModelRain)
+            .filter(function (value) {
+                return Number.isFinite(value);
+            });
+
+        if (values.length < 2) {
+            return {
+                score: values.length === 1 ? 45 : 0,
+                min: values.length ? round(values[0], 1) : null,
+                max: values.length ? round(values[0], 1) : null,
+                mean: values.length ? round(values[0], 1) : null,
+                spread: null,
+                values: values
+            };
+        }
+
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+
+        const mean =
+            values.reduce(function (sum, value) {
+                return sum + value;
+            }, 0) / values.length;
+
+        /*
+         * Practical dry / very-low-rain rule.
+         *
+         * Example:
+         * 0.2 mm
+         * 1.0 mm
+         * 2.0 mm
+         *
+         * These can have a mathematically large relative spread,
+         * but practically they are all indicating very little rain.
+         */
+        if (max <= 2) {
+            return {
+                score: 95,
+                min: round(min, 1),
+                max: round(max, 1),
+                mean: round(mean, 1),
+                spread: round(max - min, 1),
+                values: values
+            };
+        }
+
+        if (max <= 5 && mean <= 3) {
+            return {
+                score: 90,
+                min: round(min, 1),
+                max: round(max, 1),
+                mean: round(mean, 1),
+                spread: round(max - min, 1),
+                values: values
+            };
+        }
+
+        const denominator = Math.max(mean, 5);
+        const relativeSpread = ((max - min) / denominator) * 100;
+
+        let score;
+
+        if (relativeSpread <= 10) {
+            score = 100;
+        } else if (relativeSpread <= 25) {
+            score = 90;
+        } else if (relativeSpread <= 50) {
+            score = 75;
+        } else if (relativeSpread <= 100) {
+            score = 55;
+        } else if (relativeSpread <= 150) {
+            score = 35;
+        } else {
+            score = 20;
+        }
+
+        return {
+            score: score,
+            min: round(min, 1),
+            max: round(max, 1),
+            mean: round(mean, 1),
+            spread: round(max - min, 1),
+            relativeSpread: round(relativeSpread, 1),
+            values: values
+        };
+    }
+
+    /*
+     * PRACTICAL SIGNAL
+     */
+
+    function getPracticalSignal(probability, rainfall) {
+        const probabilityMean = probability.mean;
+        const rainfallMean = rainfall.mean;
+
+        if (
+            Number.isFinite(probabilityMean) &&
+            probabilityMean < 25 &&
+            Number.isFinite(rainfallMean) &&
+            rainfallMean <= 2
+        ) {
+            return {
+                type: "dry",
+                text: "Models broadly agree on a low-rain / dry signal."
+            };
+        }
+
+        if (
+            Number.isFinite(probabilityMean) &&
+            probabilityMean >= 60 &&
+            Number.isFinite(rainfallMean) &&
+            rainfallMean >= 5
+        ) {
+            return {
+                type: "rain",
+                text: "Models show a meaningful rain signal."
+            };
+        }
+
+        if (
+            Number.isFinite(probabilityMean) &&
+            probabilityMean >= 40
+        ) {
+            return {
+                type: "mixed",
+                text: "Models indicate a moderate or mixed rain signal."
+            };
+        }
+
+        return {
+            type: "neutral",
+            text: "Model signal is currently mixed or limited."
+        };
+    }
+
+    /*
+     * FINAL CONFIDENCE
+     *
+     * This is forecast consistency, NOT measured forecast accuracy.
+     */
+
+    function calculateConfidence(prediction) {
+        const models = getSuccessfulModels(prediction);
+
+        const completeness = calculateModelCompleteness(models);
+        const probability = calculateProbabilityAgreement(models);
+        const rainfall = calculateRainfallAgreement(models);
+
+        /*
+         * Probability agreement gets more weight because it is more
+         * useful for identifying whether models agree on the rain event.
+         *
+         * Rainfall amount agreement gets a smaller weight because exact
+         * precipitation totals are naturally more variable.
+         */
+        let consistency = 0;
+
+        if (probability.score > 0 && rainfall.score > 0) {
+            consistency =
+                probability.score * 0.65 +
+                rainfall.score * 0.35;
+        } else if (probability.score > 0) {
+            consistency = probability.score;
+        } else if (rainfall.score > 0) {
+            consistency = rainfall.score;
+        }
+
+        /*
+         * Keep model availability separate from consistency.
+         * We don't want one missing model to destroy an otherwise
+         * consistent forecast signal.
+         */
+        let finalScore;
+
+        if (models.length >= 3) {
+            finalScore = consistency;
+        } else if (models.length === 2) {
+            finalScore = consistency * 0.90;
+        } else if (models.length === 1) {
+            finalScore = consistency * 0.65;
+        } else {
+            finalScore = 0;
+        }
+
+        finalScore = Math.round(clamp(finalScore, 0, 100));
 
         let level;
 
-
-        if (
-            score >= 80
-        ) {
-
-            level =
-                "High";
-
-        } else if (
-            score >= 60
-        ) {
-
-            level =
-                "Moderate";
-
+        if (finalScore >= 85) {
+            level = "High";
+        } else if (finalScore >= 70) {
+            level = "Moderate-High";
+        } else if (finalScore >= 50) {
+            level = "Moderate";
+        } else if (finalScore >= 30) {
+            level = "Low";
         } else {
-
-            level =
-                "Low";
-
+            level = "Very Low";
         }
 
+        const signal = getPracticalSignal(probability, rainfall);
 
         return {
+            engineVersion: ENGINE_VERSION,
+            score: finalScore,
+            level: level,
 
-            score:
-                Math.round(score),
+            consistency: Math.round(consistency),
 
-            level
+            probabilityAgreement: probability,
+            rainfallAgreement: rainfall,
 
+            modelCompleteness: completeness,
+
+            practicalSignal: signal,
+
+            location: prediction
+                ? prediction.location || null
+                : null,
+
+            generatedAt: new Date().toISOString(),
+
+            note:
+                "Confidence represents agreement/consistency between available forecast models. It is not a measured accuracy percentage."
         };
-
     }
 
+    /*
+     * REGIONAL CONTEXT
+     */
 
-    // =====================================================
-    // EXPLANATION
-    // =====================================================
+    function getRegionalContext() {
+        const regional = getRegionalMetrics();
 
-    function buildExplanation(
-        prediction,
-        consistencyScore,
-        completenessScore,
-        regionalContext
-    ) {
-
-        const parts = [];
-
-
-        // -------------------------------------------------
-        // MODEL AGREEMENT
-        // -------------------------------------------------
-
-        if (
-            consistencyScore !== null
-        ) {
-
-            if (
-                consistencyScore >= 85
-            ) {
-
-                parts.push(
-                    "ECMWF, GFS aur ICON ke forecasts mein strong agreement hai."
-                );
-
-            } else if (
-                consistencyScore >= 60
-            ) {
-
-                parts.push(
-                    "ECMWF, GFS aur ICON ke forecasts mein moderate agreement hai."
-                );
-
-            } else {
-
-                parts.push(
-                    "ECMWF, GFS aur ICON ke forecasts mein noticeable disagreement hai."
-                );
-
-            }
-
+        if (!regional) {
+            return {
+                available: false,
+                text: "Regional historical context is not available yet."
+            };
         }
-
-
-        // -------------------------------------------------
-        // MODEL AVAILABILITY
-        // -------------------------------------------------
-
-        if (
-            completenessScore === 100
-        ) {
-
-            parts.push(
-                "Teeno major models successfully available hain."
-            );
-
-        } else if (
-            completenessScore >= 75
-        ) {
-
-            parts.push(
-                "Do major models successfully available hain."
-            );
-
-        } else if (
-            completenessScore !== null
-        ) {
-
-            parts.push(
-                "Model data partially available hai."
-            );
-
-        }
-
-
-        // -------------------------------------------------
-        // REGIONAL CONTEXT
-        // -------------------------------------------------
-
-        if (
-            regionalContext.available
-        ) {
-
-            if (
-                regionalContext.type ===
-                "exact"
-            ) {
-
-                parts.push(
-                    "Selected location ke liye exact regional historical reference available hai."
-                );
-
-            } else if (
-                regionalContext.distance !== null
-            ) {
-
-                parts.push(
-                    `Historical regional reference ${regionalContext.distance.toFixed(1)} km door hai.`
-                );
-
-            }
-
-        }
-
-
-        if (!parts.length) {
-
-            parts.push(
-                "Current model data se confidence calculate kiya gaya hai."
-            );
-
-        }
-
-
-        return parts.join(" ");
-
-    }
-
-
-    // =====================================================
-    // CONTAINER
-    // =====================================================
-
-    function getContainer() {
-
-        let container =
-            document.getElementById(
-                "forecastConfidence"
-            );
-
-
-        if (container) {
-
-            return container;
-
-        }
-
-
-        container =
-            document.createElement(
-                "section"
-            );
-
-
-        container.id =
-            "forecastConfidence";
-
-
-        container.style.marginTop =
-            "18px";
-
-
-        const predictionContainer =
-            document.getElementById(
-                "predictionEngine"
-            );
-
-
-        if (
-            predictionContainer &&
-            predictionContainer.parentNode
-        ) {
-
-            predictionContainer.parentNode.insertBefore(
-                container,
-                predictionContainer.nextSibling
-            );
-
-        } else {
-
-            document
-                .querySelector("main")
-                ?.appendChild(
-                    container
-                );
-
-        }
-
-
-        return container;
-
-    }
-
-
-    // =====================================================
-    // RENDER
-    // =====================================================
-
-    function render() {
-
-        const prediction =
-            getPrediction();
-
-
-        if (!prediction) {
-
-            return;
-
-        }
-
-
-        const regional =
-            getRegionalData();
-
-
-        const consistencyScore =
-            getConsistencyScore(
-                prediction
-            );
-
-
-        const completenessScore =
-            getModelCompleteness(
-                prediction
-            );
-
-
-        const regionalContext =
-            getRegionalContext(
-                regional
-            );
-
-
-        const confidence =
-            calculateConfidence(
-                consistencyScore,
-                completenessScore
-            );
-
-
-        const explanation =
-            buildExplanation(
-                prediction,
-                consistencyScore,
-                completenessScore,
-                regionalContext
-            );
-
-
-        const container =
-            getContainer();
-
-
-        if (!container) {
-
-            return;
-
-        }
-
 
         const locationName =
-            prediction.location?.name ||
-            "Selected Location";
+            regional.locationName ||
+            regional.name ||
+            "Regional proxy";
 
+        const distance =
+            Number.isFinite(Number(regional.distanceKm))
+                ? Number(regional.distanceKm)
+                : null;
 
-        let title =
-            "Forecast Confidence";
+        const successfulModels =
+            Number(regional.successfulModels) ||
+            Number(regional.modelsAvailable) ||
+            null;
 
+        let text = locationName;
 
-        if (
-            confidence.level ===
-            "High"
-        ) {
-
-            title =
-                "High Forecast Confidence";
-
-        } else if (
-            confidence.level ===
-            "Moderate"
-        ) {
-
-            title =
-                "Moderate Forecast Confidence";
-
-        } else if (
-            confidence.level ===
-            "Low"
-        ) {
-
-            title =
-                "Low Forecast Confidence";
-
-        } else {
-
-            title =
-                "Forecast Confidence — Limited Data";
-
+        if (distance !== null) {
+            text += " (" + round(distance, 1) + " km)";
         }
 
-
-        const scoreText =
-            confidence.score !== null
-                ? `${confidence.score}/100`
-                : "—";
-
-
-        const modelCount =
-            Array.isArray(
-                prediction.models
-            )
-                ? prediction.models.length
-                : 0;
-
-
-        // =================================================
-        // MODEL AGREEMENT LABEL
-        // =================================================
-
-        let agreementLabel =
-            "Unavailable";
-
-
-        if (
-            consistencyScore !== null
-        ) {
-
-            if (
-                consistencyScore >= 85
-            ) {
-
-                agreementLabel =
-                    "Strong";
-
-            } else if (
-                consistencyScore >= 60
-            ) {
-
-                agreementLabel =
-                    "Moderate";
-
-            } else {
-
-                agreementLabel =
-                    "Low";
-
-            }
-
+        if (successfulModels !== null) {
+            text += " • " + successfulModels + " model datasets";
         }
 
+        return {
+            available: true,
+            locationName: locationName,
+            distanceKm: distance,
+            successfulModels: successfulModels,
+            raw: regional,
+            text: text
+        };
+    }
 
-        // =================================================
-        // REGIONAL TEXT
-        // =================================================
+    /*
+     * BUILD COMPLETE RESULT
+     */
 
-        let regionalText =
-            "Historical regional context unavailable";
+    function buildResult() {
+        const prediction = getPrediction();
 
-
-        if (
-            regionalContext.available
-        ) {
-
-            if (
-                regionalContext.type ===
-                "exact"
-            ) {
-
-                regionalText =
-                    "Exact regional reference available";
-
-            } else if (
-                regionalContext.distance !== null
-            ) {
-
-                regionalText =
-                    `Nearest regional reference: ${regionalContext.distance.toFixed(1)} km`;
-
-            } else {
-
-                regionalText =
-                    "Regional proxy available";
-
-            }
-
+        if (!prediction) {
+            return null;
         }
 
+        const confidence = calculateConfidence(prediction);
+        const regional = getRegionalContext();
 
-        // =================================================
-        // HTML
-        // =================================================
+        return {
+            ...confidence,
+            regional: regional
+        };
+    }
+
+    /*
+     * DISPLAY HELPERS
+     */
+
+    function scoreClass(score) {
+        if (score >= 85) return "high";
+        if (score >= 70) return "moderate-high";
+        if (score >= 50) return "moderate";
+        if (score >= 30) return "low";
+        return "very-low";
+    }
+
+    function signalText(signal) {
+        if (!signal) {
+            return "No clear signal available.";
+        }
+
+        return signal.text;
+    }
+
+    function render() {
+        const container = document.getElementById("forecastConfidence");
+
+        if (!container) {
+            return;
+        }
+
+        const result = buildResult();
+
+        if (!result) {
+            container.innerHTML = `
+                <div class="confidence-card">
+                    <div class="confidence-title">
+                        Forecast Confidence
+                    </div>
+
+                    <div class="confidence-muted">
+                        Waiting for forecast model data...
+                    </div>
+                </div>
+            `;
+
+            return;
+        }
+
+        const score = result.score;
+        const probability = result.probabilityAgreement;
+        const rainfall = result.rainfallAgreement;
+        const completeness = result.modelCompleteness;
+        const regional = result.regional;
+
+        const probabilityRange =
+            probability.range !== null
+                ? probability.range + "%"
+                : "N/A";
+
+        const rainfallSpread =
+            rainfall.spread !== null
+                ? rainfall.spread + " mm"
+                : "N/A";
+
+        const probabilityMean =
+            probability.mean !== null
+                ? probability.mean + "%"
+                : "N/A";
+
+        const rainfallMean =
+            rainfall.mean !== null
+                ? rainfall.mean + " mm"
+                : "N/A";
+
+        const regionalText = regional
+            ? regional.text
+            : "Not available";
 
         container.innerHTML = `
+            <div class="confidence-card">
 
-            <div style="
-                background:#ffffff;
-                border:1px solid #e2e8f0;
-                border-radius:18px;
-                padding:20px;
-                box-shadow:0 5px 20px rgba(15,23,42,.06);
-            ">
-
-
-                <!-- =====================================
-                     HEADER
-                     ===================================== -->
-
-                <div style="
-                    display:flex;
-                    justify-content:space-between;
-                    align-items:center;
-                    gap:15px;
-                    flex-wrap:wrap;
-                ">
-
-
+                <div class="confidence-header">
                     <div>
-
-                        <div style="
-                            font-size:11px;
-                            color:#64748b;
-                            text-transform:uppercase;
-                            letter-spacing:.06em;
-                        ">
-
-                            🧠 Forecast Confidence
-
+                        <div class="confidence-title">
+                            Forecast Confidence
                         </div>
 
+                        <div class="confidence-subtitle">
+                            Model-consistency based indicator
+                        </div>
+                    </div>
 
-                        <h2 style="
-                            margin:5px 0 0;
-                            font-size:22px;
-                        ">
+                    <div class="confidence-version">
+                        V${escapeHTML(ENGINE_VERSION)}
+                    </div>
+                </div>
 
-                            ${title}
+                <div class="confidence-main">
 
-                        </h2>
+                    <div class="confidence-score-box">
+                        <div class="confidence-score">
+                            ${escapeHTML(score)}
+                        </div>
 
+                        <div class="confidence-percent">
+                            / 100
+                        </div>
 
-                        <div style="
-                            margin-top:4px;
-                            font-size:12px;
-                            color:#64748b;
-                        ">
+                        <div class="confidence-level ${escapeHTML(
+                            scoreClass(score)
+                        )}">
+                            ${escapeHTML(result.level)}
+                        </div>
+                    </div>
 
+                    <div class="confidence-summary">
+                        <div class="confidence-signal">
                             ${escapeHTML(
-                                locationName
+                                signalText(result.practicalSignal)
                             )}
-
                         </div>
 
+                        <div class="confidence-note">
+                            This is model agreement, not guaranteed forecast accuracy.
+                        </div>
                     </div>
-
-
-                    <div style="
-                        min-width:95px;
-                        text-align:center;
-                        padding:12px 15px;
-                        border-radius:14px;
-                        background:#f8fafc;
-                        border:1px solid #e2e8f0;
-                    ">
-
-                        <div style="
-                            font-size:24px;
-                            font-weight:800;
-                        ">
-
-                            ${scoreText}
-
-                        </div>
-
-
-                        <div style="
-                            font-size:10px;
-                            color:#64748b;
-                        ">
-
-                            confidence index
-
-                        </div>
-
-                    </div>
-
 
                 </div>
 
+                <div class="confidence-grid">
 
-
-                <!-- =====================================
-                     FACTORS
-                     ===================================== -->
-
-                <div style="
-                    display:grid;
-                    grid-template-columns:
-                        repeat(auto-fit,minmax(170px,1fr));
-                    gap:10px;
-                    margin-top:18px;
-                ">
-
-
-                    <!-- MODEL AGREEMENT -->
-
-                    <div style="
-                        padding:14px;
-                        border-radius:13px;
-                        background:#f8fafc;
-                        border:1px solid #e2e8f0;
-                    ">
-
-                        <div style="
-                            font-size:11px;
-                            color:#64748b;
-                        ">
-
-                            🤖 Model Agreement
-
+                    <div class="confidence-factor">
+                        <div class="factor-label">
+                            Rain Probability Agreement
                         </div>
 
-
-                        <strong style="
-                            display:block;
-                            margin-top:5px;
-                            font-size:18px;
-                        ">
-
-                            ${agreementLabel}
-
-                        </strong>
-
-
-                        <div style="
-                            margin-top:3px;
-                            font-size:11px;
-                            color:#64748b;
-                        ">
-
-                            ${
-                                consistencyScore !== null
-                                    ? Math.round(
-                                        consistencyScore
-                                      ) + "%"
-                                    : "—"
-                            }
-
+                        <div class="factor-value">
+                            ${escapeHTML(probability.score)} / 100
                         </div>
 
+                        <div class="factor-detail">
+                            Mean ${escapeHTML(probabilityMean)}
+                            • Range ${escapeHTML(probabilityRange)}
+                        </div>
                     </div>
 
-
-
-                    <!-- MODEL AVAILABILITY -->
-
-                    <div style="
-                        padding:14px;
-                        border-radius:13px;
-                        background:#f8fafc;
-                        border:1px solid #e2e8f0;
-                    ">
-
-                        <div style="
-                            font-size:11px;
-                            color:#64748b;
-                        ">
-
-                            🛰️ Models Available
-
+                    <div class="confidence-factor">
+                        <div class="factor-label">
+                            Rainfall Amount Agreement
                         </div>
 
-
-                        <strong style="
-                            display:block;
-                            margin-top:5px;
-                            font-size:18px;
-                        ">
-
-                            ${modelCount}/3
-
-                        </strong>
-
-
-                        <div style="
-                            margin-top:3px;
-                            font-size:11px;
-                            color:#64748b;
-                        ">
-
-                            ECMWF / GFS / ICON
-
+                        <div class="factor-value">
+                            ${escapeHTML(rainfall.score)} / 100
                         </div>
 
+                        <div class="factor-detail">
+                            Mean ${escapeHTML(rainfallMean)}
+                            • Spread ${escapeHTML(rainfallSpread)}
+                        </div>
                     </div>
 
-
-
-                    <!-- REGIONAL CONTEXT -->
-
-                    <div style="
-                        padding:14px;
-                        border-radius:13px;
-                        background:#f8fafc;
-                        border:1px solid #e2e8f0;
-                    ">
-
-                        <div style="
-                            font-size:11px;
-                            color:#64748b;
-                        ">
-
-                            📍 Regional Context
-
+                    <div class="confidence-factor">
+                        <div class="factor-label">
+                            Model Availability
                         </div>
 
+                        <div class="factor-value">
+                            ${escapeHTML(completeness.score)} / 100
+                        </div>
 
-                        <strong style="
-                            display:block;
-                            margin-top:5px;
-                            font-size:15px;
-                            line-height:1.4;
-                        ">
-
-                            ${escapeHTML(
-                                regionalText
-                            )}
-
-                        </strong>
-
+                        <div class="factor-detail">
+                            ${escapeHTML(completeness.level)}
+                        </div>
                     </div>
 
+                    <div class="confidence-factor">
+                        <div class="factor-label">
+                            Regional Context
+                        </div>
+
+                        <div class="factor-value">
+                            ${regional && regional.available
+                                ? "Available"
+                                : "Pending"}
+                        </div>
+
+                        <div class="factor-detail">
+                            ${escapeHTML(regionalText)}
+                        </div>
+                    </div>
 
                 </div>
 
-
-
-                <!-- =====================================
-                     EXPLANATION
-                     ===================================== -->
-
-                <div style="
-                    margin-top:15px;
-                    padding:14px;
-                    border-radius:13px;
-                    background:#f8fafc;
-                    color:#475569;
-                    font-size:12px;
-                    line-height:1.7;
-                ">
-
-                    ${escapeHTML(
-                        explanation
-                    )}
-
+                <div class="confidence-explanation">
+                    <strong>How this score works:</strong>
+                    Rain-probability agreement has higher weight than exact
+                    rainfall totals. Very small rainfall differences are treated
+                    as a low-rain signal instead of creating an exaggerated
+                    disagreement.
                 </div>
 
-
-
-                <!-- =====================================
-                     HISTORICAL INFO
-                     ===================================== -->
-
-                ${
-                    regional
-                        ? `
-
-                            <div style="
-                                margin-top:12px;
-                                padding:13px;
-                                border-radius:12px;
-                                background:#f1f5f9;
-                                font-size:11px;
-                                line-height:1.7;
-                                color:#475569;
-                            ">
-
-                                📊
-
-                                <strong>
-                                    Historical regional data:
-                                </strong>
-
-                                Is data ko current
-                                forecast ke context ke
-                                liye dikhaya ja raha hai.
-
-                                Historical performance
-                                current forecast ki
-                                guaranteed accuracy nahi hai.
-
-                            </div>
-
-                          `
-                        : ""
-                }
-
-
-
-                <!-- =====================================
-                     IMPORTANT
-                     ===================================== -->
-
-                <div style="
-                    margin-top:12px;
-                    padding:12px;
-                    border-radius:11px;
-                    background:#fff7ed;
-                    border:1px solid #fed7aa;
-                    color:#7c2d12;
-                    font-size:11px;
-                    line-height:1.6;
-                ">
-
-                    ⚠️
-
-                    <strong>
-                        Important:
-                    </strong>
-
-                    Confidence Index forecast accuracy
-                    ya rain probability nahi hai.
-
-                    Ye mainly current weather models ke
-                    agreement aur available model data
-                    completeness ko represent karta hai.
-
-                    Historical accuracy alag verification
-                    system mein measure hoti hai.
-
+                <div class="confidence-footer">
+                    Historical/regional data is shown as context only.
+                    It is not directly converted into this confidence score.
                 </div>
-
 
             </div>
-
         `;
 
+        try {
+            localStorage.setItem(
+                STORAGE_KEY,
+                JSON.stringify(result)
+            );
+        } catch (error) {
+            warn("Could not save confidence result:", error);
+        }
 
-        lastRenderedLocation =
-            locationName;
-
-
-        console.log(
-            ENGINE_NAME,
+        log(
             "Rendered:",
-            locationName,
-            {
-                score:
-                    confidence.score,
+            result.location || "Selected location",
+            result
+        );
+    }
 
-                level:
-                    confidence.level,
+    /*
+     * PUBLIC API
+     */
 
-                consistency:
-                    consistencyScore,
+    function getLatest() {
+        return buildResult();
+    }
 
-                modelCompleteness:
-                    completenessScore,
+    function getSaved() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
 
-                regional:
-                    regionalContext
+            if (!raw) {
+                return null;
             }
-        );
 
+            return JSON.parse(raw);
+        } catch (error) {
+            return null;
+        }
     }
 
+    function init() {
+        render();
 
-    // =====================================================
-    // RUN
-    // =====================================================
-
-    function run() {
-
-        setTimeout(
-            render,
-            250
-        );
-
+        /*
+         * Prediction engine may finish after this engine loads.
+         * Give it a few chances to render after forecast data arrives.
+         */
+        setTimeout(render, 500);
+        setTimeout(render, 1500);
+        setTimeout(render, 3000);
     }
 
-
-    // =====================================================
-    // EVENTS
-    // =====================================================
+    /*
+     * EVENTS
+     */
 
     window.addEventListener(
         "rrp:weather-updated",
-        () => {
-
-            run();
-
+        function () {
+            setTimeout(render, 250);
         }
     );
-
 
     window.addEventListener(
         "rrp:prediction-updated",
-        () => {
-
-            run();
-
+        function () {
+            setTimeout(render, 150);
         }
     );
-
 
     window.addEventListener(
-        "load",
-        () => {
-
-            setTimeout(
-                run,
-                3500
-            );
-
-
-            setTimeout(
-                run,
-                7000
-            );
-
+        "rrp:location-selected",
+        function () {
+            setTimeout(render, 300);
         }
     );
 
-
-    // =====================================================
-    // PUBLIC API
-    // =====================================================
+    /*
+     * PUBLIC GLOBAL
+     */
 
     window.RRP_FORECAST_CONFIDENCE = {
-
-        run,
-
-        render,
-
-        getLastLocation:
-            () =>
-                lastRenderedLocation
-
+        version: ENGINE_VERSION,
+        run: render,
+        render: render,
+        getLatest: getLatest,
+        getSaved: getSaved,
+        calculateConfidence: calculateConfidence
     };
 
+    /*
+     * START
+     */
 
-    console.log(
-        ENGINE_NAME,
-        "Forecast Confidence Engine ready."
-    );
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init);
+    } else {
+        init();
+    }
 
-
+    log("Forecast Confidence Engine V3 ready.");
 })();
