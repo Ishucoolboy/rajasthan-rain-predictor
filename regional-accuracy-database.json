@@ -1,6 +1,6 @@
 {
-  "version": "regional-accuracy-v3",
-  "generated_at": "2026-09-19T01:27:13.384708+00:00",
+  "version": "regional-accuracy-v4",
+  "generated_at": "2026-09-19T02:10:21.314931+00:00",
   "reference": {
     "name": "ERA5 / Open-Meteo reanalysis",
     "type": "reanalysis"
@@ -1023,8 +1023,8 @@
         "longitude": 76.33584
       },
       "period": {
-        "start": "2026-06-13",
-        "end": "2026-09-10",
+        "start": "2026-06-14",
+        "end": "2026-09-11",
         "days": 90
       },
       "reference": {
@@ -1041,13 +1041,13 @@
               "lead_day": 1,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 2.5233,
-                "rmse_mm": 4.6593,
-                "bias_mm": -0.3189,
-                "rain_accuracy_percent": 82.22,
-                "hits": 65,
+                "mae_mm": 2.43,
+                "rmse_mm": 4.5499,
+                "bias_mm": -0.4122,
+                "rain_accuracy_percent": 83.33,
+                "hits": 66,
                 "misses": 8,
-                "false_alarms": 8,
+                "false_alarms": 7,
                 "correct_no_rain": 9
               }
             },
@@ -1055,13 +1055,13 @@
               "lead_day": 2,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 4.2156,
-                "rmse_mm": 10.6424,
-                "bias_mm": 2.4644,
-                "rain_accuracy_percent": 80.0,
-                "hits": 63,
+                "mae_mm": 4.2256,
+                "rmse_mm": 10.6442,
+                "bias_mm": 2.4744,
+                "rain_accuracy_percent": 81.11,
+                "hits": 64,
                 "misses": 10,
-                "false_alarms": 8,
+                "false_alarms": 7,
                 "correct_no_rain": 9
               }
             },
@@ -1069,13 +1069,13 @@
               "lead_day": 3,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 4.4611,
-                "rmse_mm": 7.1375,
-                "bias_mm": 1.5011,
-                "rain_accuracy_percent": 80.0,
-                "hits": 63,
+                "mae_mm": 4.4578,
+                "rmse_mm": 7.1371,
+                "bias_mm": 1.4978,
+                "rain_accuracy_percent": 81.11,
+                "hits": 64,
                 "misses": 10,
-                "false_alarms": 8,
+                "false_alarms": 7,
                 "correct_no_rain": 9
               }
             },
@@ -1083,13 +1083,13 @@
               "lead_day": 4,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 4.9011,
-                "rmse_mm": 8.3737,
-                "bias_mm": 2.1344,
-                "rain_accuracy_percent": 76.67,
-                "hits": 62,
+                "mae_mm": 4.8644,
+                "rmse_mm": 8.3401,
+                "bias_mm": 2.0978,
+                "rain_accuracy_percent": 77.78,
+                "hits": 63,
                 "misses": 11,
-                "false_alarms": 10,
+                "false_alarms": 9,
                 "correct_no_rain": 7
               }
             },
@@ -1097,13 +1097,13 @@
               "lead_day": 5,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 5.9944,
-                "rmse_mm": 10.0472,
-                "bias_mm": 2.6944,
-                "rain_accuracy_percent": 75.56,
-                "hits": 59,
+                "mae_mm": 5.9611,
+                "rmse_mm": 10.0352,
+                "bias_mm": 2.6611,
+                "rain_accuracy_percent": 76.67,
+                "hits": 60,
                 "misses": 14,
-                "false_alarms": 8,
+                "false_alarms": 7,
                 "correct_no_rain": 9
               }
             },
@@ -1111,13 +1111,13 @@
               "lead_day": 6,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 6.0767,
-                "rmse_mm": 10.1539,
-                "bias_mm": 3.7478,
-                "rain_accuracy_percent": 73.33,
-                "hits": 61,
+                "mae_mm": 6.15,
+                "rmse_mm": 10.1864,
+                "bias_mm": 3.8211,
+                "rain_accuracy_percent": 74.44,
+                "hits": 62,
                 "misses": 12,
-                "false_alarms": 12,
+                "false_alarms": 11,
                 "correct_no_rain": 5
               }
             },
@@ -1125,13 +1125,13 @@
               "lead_day": 7,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 5.9656,
-                "rmse_mm": 10.729,
-                "bias_mm": 2.7278,
-                "rain_accuracy_percent": 76.67,
-                "hits": 60,
+                "mae_mm": 6.0356,
+                "rmse_mm": 10.7554,
+                "bias_mm": 2.7978,
+                "rain_accuracy_percent": 77.78,
+                "hits": 61,
                 "misses": 13,
-                "false_alarms": 8,
+                "false_alarms": 7,
                 "correct_no_rain": 9
               }
             }
@@ -1148,11 +1148,11 @@
                 "samples": 90,
                 "mae_mm": 3.9344,
                 "rmse_mm": 7.5718,
-                "bias_mm": -0.7944,
+                "bias_mm": -0.8011,
                 "rain_accuracy_percent": 81.11,
                 "hits": 64,
-                "misses": 9,
-                "false_alarms": 8,
+                "misses": 10,
+                "false_alarms": 7,
                 "correct_no_rain": 9
               }
             },
@@ -1160,13 +1160,13 @@
               "lead_day": 2,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 4.34,
+                "mae_mm": 4.3411,
                 "rmse_mm": 8.1968,
-                "bias_mm": -1.1778,
+                "bias_mm": -1.1833,
                 "rain_accuracy_percent": 76.67,
                 "hits": 59,
-                "misses": 14,
-                "false_alarms": 7,
+                "misses": 15,
+                "false_alarms": 6,
                 "correct_no_rain": 10
               }
             },
@@ -1174,70 +1174,70 @@
               "lead_day": 3,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 5.0444,
-                "rmse_mm": 8.5871,
-                "bias_mm": -0.4578,
-                "rain_accuracy_percent": 76.67,
+                "mae_mm": 5.0478,
+                "rmse_mm": 8.5872,
+                "bias_mm": -0.4611,
+                "rain_accuracy_percent": 75.56,
                 "hits": 56,
-                "misses": 17,
+                "misses": 18,
                 "false_alarms": 4,
-                "correct_no_rain": 13
+                "correct_no_rain": 12
               }
             },
             {
               "lead_day": 4,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 4.5756,
+                "mae_mm": 4.5789,
                 "rmse_mm": 7.6101,
-                "bias_mm": -0.06,
-                "rain_accuracy_percent": 65.56,
+                "bias_mm": -0.0633,
+                "rain_accuracy_percent": 64.44,
                 "hits": 48,
-                "misses": 25,
+                "misses": 26,
                 "false_alarms": 6,
-                "correct_no_rain": 11
+                "correct_no_rain": 10
               }
             },
             {
               "lead_day": 5,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 4.4367,
-                "rmse_mm": 8.1826,
-                "bias_mm": -0.2433,
-                "rain_accuracy_percent": 61.11,
+                "mae_mm": 4.44,
+                "rmse_mm": 8.1827,
+                "bias_mm": -0.2467,
+                "rain_accuracy_percent": 60.0,
                 "hits": 42,
-                "misses": 31,
+                "misses": 32,
                 "false_alarms": 4,
-                "correct_no_rain": 13
+                "correct_no_rain": 12
               }
             },
             {
               "lead_day": 6,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 4.5333,
-                "rmse_mm": 8.5568,
-                "bias_mm": -1.2467,
-                "rain_accuracy_percent": 61.11,
+                "mae_mm": 4.5367,
+                "rmse_mm": 8.5569,
+                "bias_mm": -1.25,
+                "rain_accuracy_percent": 60.0,
                 "hits": 42,
-                "misses": 31,
+                "misses": 32,
                 "false_alarms": 4,
-                "correct_no_rain": 13
+                "correct_no_rain": 12
               }
             },
             {
               "lead_day": 7,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 4.6689,
-                "rmse_mm": 9.5976,
-                "bias_mm": -1.6378,
-                "rain_accuracy_percent": 61.11,
+                "mae_mm": 4.6722,
+                "rmse_mm": 9.5977,
+                "bias_mm": -1.6411,
+                "rain_accuracy_percent": 60.0,
                 "hits": 42,
-                "misses": 31,
+                "misses": 32,
                 "false_alarms": 4,
-                "correct_no_rain": 13
+                "correct_no_rain": 12
               }
             }
           ]
@@ -1251,13 +1251,13 @@
               "lead_day": 1,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 3.2356,
-                "rmse_mm": 5.3317,
-                "bias_mm": 1.3911,
-                "rain_accuracy_percent": 81.11,
-                "hits": 64,
+                "mae_mm": 3.18,
+                "rmse_mm": 5.3046,
+                "bias_mm": 1.3356,
+                "rain_accuracy_percent": 82.22,
+                "hits": 65,
                 "misses": 9,
-                "false_alarms": 8,
+                "false_alarms": 7,
                 "correct_no_rain": 9
               }
             },
@@ -1265,13 +1265,13 @@
               "lead_day": 2,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 7.1489,
-                "rmse_mm": 13.9426,
-                "bias_mm": 4.4911,
-                "rain_accuracy_percent": 81.11,
-                "hits": 67,
+                "mae_mm": 7.1233,
+                "rmse_mm": 13.9365,
+                "bias_mm": 4.4656,
+                "rain_accuracy_percent": 82.22,
+                "hits": 68,
                 "misses": 6,
-                "false_alarms": 11,
+                "false_alarms": 10,
                 "correct_no_rain": 6
               }
             },
@@ -1279,13 +1279,13 @@
               "lead_day": 3,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 6.29,
-                "rmse_mm": 12.0845,
-                "bias_mm": 3.4056,
+                "mae_mm": 6.2922,
+                "rmse_mm": 12.0846,
+                "bias_mm": 3.4011,
                 "rain_accuracy_percent": 81.11,
                 "hits": 66,
-                "misses": 7,
-                "false_alarms": 10,
+                "misses": 8,
+                "false_alarms": 9,
                 "correct_no_rain": 7
               }
             },
@@ -1293,13 +1293,13 @@
               "lead_day": 4,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 7.4422,
-                "rmse_mm": 13.4832,
-                "bias_mm": 4.5933,
-                "rain_accuracy_percent": 81.11,
-                "hits": 66,
+                "mae_mm": 7.4844,
+                "rmse_mm": 13.4941,
+                "bias_mm": 4.6356,
+                "rain_accuracy_percent": 82.22,
+                "hits": 67,
                 "misses": 7,
-                "false_alarms": 10,
+                "false_alarms": 9,
                 "correct_no_rain": 7
               }
             },
@@ -1307,13 +1307,13 @@
               "lead_day": 5,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 6.6611,
-                "rmse_mm": 14.7376,
-                "bias_mm": 3.5656,
-                "rain_accuracy_percent": 77.78,
-                "hits": 63,
+                "mae_mm": 6.6767,
+                "rmse_mm": 14.7412,
+                "bias_mm": 3.5811,
+                "rain_accuracy_percent": 78.89,
+                "hits": 64,
                 "misses": 10,
-                "false_alarms": 10,
+                "false_alarms": 9,
                 "correct_no_rain": 7
               }
             },
@@ -1321,13 +1321,13 @@
               "lead_day": 6,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 6.7411,
-                "rmse_mm": 11.5817,
-                "bias_mm": 3.2122,
-                "rain_accuracy_percent": 77.78,
-                "hits": 62,
+                "mae_mm": 6.7667,
+                "rmse_mm": 11.586,
+                "bias_mm": 3.2378,
+                "rain_accuracy_percent": 78.89,
+                "hits": 63,
                 "misses": 11,
-                "false_alarms": 9,
+                "false_alarms": 8,
                 "correct_no_rain": 8
               }
             },
@@ -1348,7 +1348,17 @@
           ]
         }
       ],
-      "updated_at": "2026-09-18T19:06:16.515199+00:00"
+      "updated_at": "2026-09-19T02:08:25.278012+00:00",
+      "collector_version": "V4",
+      "collection_status": {
+        "complete": true,
+        "successful_models": [
+          "ECMWF",
+          "GFS",
+          "ICON"
+        ],
+        "missing_models": []
+      }
     },
     {
       "location": {
@@ -2367,8 +2377,8 @@
         "longitude": 75.78824
       },
       "period": {
-        "start": "2026-06-13",
-        "end": "2026-09-10",
+        "start": "2026-06-14",
+        "end": "2026-09-11",
         "days": 90
       },
       "reference": {
@@ -2385,12 +2395,12 @@
               "lead_day": 1,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 2.7689,
-                "rmse_mm": 5.375,
-                "bias_mm": 0.2644,
-                "rain_accuracy_percent": 80.0,
-                "hits": 59,
-                "misses": 14,
+                "mae_mm": 2.7456,
+                "rmse_mm": 5.3691,
+                "bias_mm": 0.2344,
+                "rain_accuracy_percent": 78.89,
+                "hits": 58,
+                "misses": 15,
                 "false_alarms": 4,
                 "correct_no_rain": 13
               }
@@ -2399,9 +2409,9 @@
               "lead_day": 2,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 3.4822,
-                "rmse_mm": 6.8467,
-                "bias_mm": 1.4911,
+                "mae_mm": 3.4956,
+                "rmse_mm": 6.8484,
+                "bias_mm": 1.5111,
                 "rain_accuracy_percent": 81.11,
                 "hits": 60,
                 "misses": 13,
@@ -2413,9 +2423,9 @@
               "lead_day": 3,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 5.7367,
+                "mae_mm": 5.7333,
                 "rmse_mm": 10.8108,
-                "bias_mm": 2.3478,
+                "bias_mm": 2.3444,
                 "rain_accuracy_percent": 74.44,
                 "hits": 56,
                 "misses": 17,
@@ -2427,9 +2437,9 @@
               "lead_day": 4,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 5.5544,
-                "rmse_mm": 9.8599,
-                "bias_mm": 2.7344,
+                "mae_mm": 5.5511,
+                "rmse_mm": 9.8596,
+                "bias_mm": 2.7311,
                 "rain_accuracy_percent": 78.89,
                 "hits": 59,
                 "misses": 14,
@@ -2455,9 +2465,9 @@
               "lead_day": 6,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 6.5667,
-                "rmse_mm": 12.0341,
-                "bias_mm": 3.9844,
+                "mae_mm": 6.6567,
+                "rmse_mm": 12.0666,
+                "bias_mm": 4.0744,
                 "rain_accuracy_percent": 75.56,
                 "hits": 55,
                 "misses": 18,
@@ -2469,12 +2479,12 @@
               "lead_day": 7,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 7.6922,
-                "rmse_mm": 13.8139,
-                "bias_mm": 4.2144,
-                "rain_accuracy_percent": 74.44,
-                "hits": 54,
-                "misses": 19,
+                "mae_mm": 7.7322,
+                "rmse_mm": 13.8208,
+                "bias_mm": 4.2678,
+                "rain_accuracy_percent": 75.56,
+                "hits": 55,
+                "misses": 18,
                 "false_alarms": 4,
                 "correct_no_rain": 13
               }
@@ -2490,9 +2500,9 @@
               "lead_day": 1,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 3.4178,
-                "rmse_mm": 6.907,
-                "bias_mm": -0.0578,
+                "mae_mm": 3.4144,
+                "rmse_mm": 6.9068,
+                "bias_mm": -0.0544,
                 "rain_accuracy_percent": 83.33,
                 "hits": 64,
                 "misses": 9,
@@ -2504,12 +2514,12 @@
               "lead_day": 2,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 3.9933,
-                "rmse_mm": 7.2688,
-                "bias_mm": -0.4044,
-                "rain_accuracy_percent": 84.44,
-                "hits": 64,
-                "misses": 9,
+                "mae_mm": 3.9911,
+                "rmse_mm": 7.2686,
+                "bias_mm": -0.4022,
+                "rain_accuracy_percent": 83.33,
+                "hits": 63,
+                "misses": 10,
                 "false_alarms": 5,
                 "correct_no_rain": 12
               }
@@ -2518,9 +2528,9 @@
               "lead_day": 3,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 5.5378,
-                "rmse_mm": 10.7417,
-                "bias_mm": 0.5889,
+                "mae_mm": 5.5344,
+                "rmse_mm": 10.7416,
+                "bias_mm": 0.5922,
                 "rain_accuracy_percent": 61.11,
                 "hits": 46,
                 "misses": 27,
@@ -2532,9 +2542,9 @@
               "lead_day": 4,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 6.26,
+                "mae_mm": 6.2567,
                 "rmse_mm": 19.5446,
-                "bias_mm": 1.8378,
+                "bias_mm": 1.8411,
                 "rain_accuracy_percent": 66.67,
                 "hits": 49,
                 "misses": 24,
@@ -2546,9 +2556,9 @@
               "lead_day": 5,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 3.8944,
-                "rmse_mm": 6.7975,
-                "bias_mm": -0.9389,
+                "mae_mm": 3.8911,
+                "rmse_mm": 6.7973,
+                "bias_mm": -0.9356,
                 "rain_accuracy_percent": 60.0,
                 "hits": 41,
                 "misses": 32,
@@ -2560,9 +2570,9 @@
               "lead_day": 6,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 4.4122,
-                "rmse_mm": 8.1305,
-                "bias_mm": -1.13,
+                "mae_mm": 4.4089,
+                "rmse_mm": 8.1303,
+                "bias_mm": -1.1267,
                 "rain_accuracy_percent": 53.33,
                 "hits": 35,
                 "misses": 38,
@@ -2574,9 +2584,9 @@
               "lead_day": 7,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 5.0356,
-                "rmse_mm": 13.4781,
-                "bias_mm": -1.1267,
+                "mae_mm": 5.0322,
+                "rmse_mm": 13.478,
+                "bias_mm": -1.1233,
                 "rain_accuracy_percent": 58.89,
                 "hits": 39,
                 "misses": 34,
@@ -2595,12 +2605,12 @@
               "lead_day": 1,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 4.9878,
-                "rmse_mm": 10.1365,
-                "bias_mm": 3.2433,
-                "rain_accuracy_percent": 78.89,
-                "hits": 59,
-                "misses": 14,
+                "mae_mm": 4.73,
+                "rmse_mm": 9.8292,
+                "bias_mm": 2.9789,
+                "rain_accuracy_percent": 77.78,
+                "hits": 58,
+                "misses": 15,
                 "false_alarms": 5,
                 "correct_no_rain": 12
               }
@@ -2609,12 +2619,12 @@
               "lead_day": 2,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 6.4722,
+                "mae_mm": 6.4733,
                 "rmse_mm": 11.6899,
-                "bias_mm": 4.5833,
-                "rain_accuracy_percent": 78.89,
-                "hits": 60,
-                "misses": 13,
+                "bias_mm": 4.5822,
+                "rain_accuracy_percent": 77.78,
+                "hits": 59,
+                "misses": 14,
                 "false_alarms": 6,
                 "correct_no_rain": 11
               }
@@ -2623,12 +2633,12 @@
               "lead_day": 3,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 7.0033,
-                "rmse_mm": 13.8987,
-                "bias_mm": 4.5989,
-                "rain_accuracy_percent": 76.67,
-                "hits": 61,
-                "misses": 12,
+                "mae_mm": 7.0,
+                "rmse_mm": 13.8986,
+                "bias_mm": 4.5889,
+                "rain_accuracy_percent": 75.56,
+                "hits": 60,
+                "misses": 13,
                 "false_alarms": 9,
                 "correct_no_rain": 8
               }
@@ -2637,12 +2647,12 @@
               "lead_day": 4,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 11.9267,
-                "rmse_mm": 32.709,
-                "bias_mm": 9.4622,
-                "rain_accuracy_percent": 73.33,
-                "hits": 58,
-                "misses": 15,
+                "mae_mm": 11.9178,
+                "rmse_mm": 32.7088,
+                "bias_mm": 9.4467,
+                "rain_accuracy_percent": 72.22,
+                "hits": 57,
+                "misses": 16,
                 "false_alarms": 9,
                 "correct_no_rain": 8
               }
@@ -2651,9 +2661,9 @@
               "lead_day": 5,
               "metrics": {
                 "samples": 90,
-                "mae_mm": 6.9322,
-                "rmse_mm": 11.5453,
-                "bias_mm": 4.2456,
+                "mae_mm": 6.9278,
+                "rmse_mm": 11.5445,
+                "bias_mm": 4.2411,
                 "rain_accuracy_percent": 78.89,
                 "hits": 63,
                 "misses": 10,
@@ -2667,7 +2677,7 @@
                 "samples": 90,
                 "mae_mm": 7.0011,
                 "rmse_mm": 11.9051,
-                "bias_mm": 3.7722,
+                "bias_mm": 3.7678,
                 "rain_accuracy_percent": 71.11,
                 "hits": 58,
                 "misses": 15,
@@ -2692,7 +2702,17 @@
           ]
         }
       ],
-      "updated_at": "2026-09-18T19:27:56.332079+00:00"
+      "updated_at": "2026-09-19T02:10:17.031728+00:00",
+      "collector_version": "V4",
+      "collection_status": {
+        "complete": true,
+        "successful_models": [
+          "ECMWF",
+          "GFS",
+          "ICON"
+        ],
+        "missing_models": []
+      }
     },
     {
       "location": {
@@ -3492,19 +3512,225 @@
         {
           "name": "GFS",
           "model_id": "gfs_seamless",
-          "success": false,
-          "error": "gfs_seamless previous runs 23.54109,74.4425 failed after 2 attempts: HTTPSConnectionPool(host='previous-runs-api.open-meteo.com', port=443): Read timed out. (read timeout=35)",
-          "leads": []
+          "success": true,
+          "leads": [
+            {
+              "lead_day": 1,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 3.8633,
+                "rmse_mm": 6.422,
+                "bias_mm": -1.2456,
+                "rain_accuracy_percent": 73.33,
+                "hits": 65,
+                "misses": 24,
+                "false_alarms": 0,
+                "correct_no_rain": 1
+              }
+            },
+            {
+              "lead_day": 2,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 4.8522,
+                "rmse_mm": 9.3669,
+                "bias_mm": -2.7833,
+                "rain_accuracy_percent": 70.0,
+                "hits": 62,
+                "misses": 27,
+                "false_alarms": 0,
+                "correct_no_rain": 1
+              }
+            },
+            {
+              "lead_day": 3,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 4.8389,
+                "rmse_mm": 8.9286,
+                "bias_mm": -2.5144,
+                "rain_accuracy_percent": 64.44,
+                "hits": 58,
+                "misses": 31,
+                "false_alarms": 1,
+                "correct_no_rain": 0
+              }
+            },
+            {
+              "lead_day": 4,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 5.3178,
+                "rmse_mm": 9.8882,
+                "bias_mm": -3.2711,
+                "rain_accuracy_percent": 72.22,
+                "hits": 64,
+                "misses": 25,
+                "false_alarms": 0,
+                "correct_no_rain": 1
+              }
+            },
+            {
+              "lead_day": 5,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 5.3156,
+                "rmse_mm": 10.2541,
+                "bias_mm": -3.9667,
+                "rain_accuracy_percent": 66.67,
+                "hits": 59,
+                "misses": 30,
+                "false_alarms": 0,
+                "correct_no_rain": 1
+              }
+            },
+            {
+              "lead_day": 6,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 6.1789,
+                "rmse_mm": 11.9577,
+                "bias_mm": -3.6056,
+                "rain_accuracy_percent": 60.0,
+                "hits": 53,
+                "misses": 36,
+                "false_alarms": 0,
+                "correct_no_rain": 1
+              }
+            },
+            {
+              "lead_day": 7,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 5.5778,
+                "rmse_mm": 10.2998,
+                "bias_mm": -4.6111,
+                "rain_accuracy_percent": 62.22,
+                "hits": 55,
+                "misses": 34,
+                "false_alarms": 0,
+                "correct_no_rain": 1
+              }
+            }
+          ]
         },
         {
           "name": "ICON",
           "model_id": "icon_seamless",
-          "success": false,
-          "error": "icon_seamless previous runs 23.54109,74.4425 failed after 2 attempts: HTTPSConnectionPool(host='previous-runs-api.open-meteo.com', port=443): Read timed out. (read timeout=35)",
-          "leads": []
+          "success": true,
+          "leads": [
+            {
+              "lead_day": 1,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 6.1656,
+                "rmse_mm": 14.6299,
+                "bias_mm": 2.4211,
+                "rain_accuracy_percent": 77.78,
+                "hits": 69,
+                "misses": 20,
+                "false_alarms": 0,
+                "correct_no_rain": 1
+              }
+            },
+            {
+              "lead_day": 2,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 7.9989,
+                "rmse_mm": 18.1614,
+                "bias_mm": 3.7033,
+                "rain_accuracy_percent": 75.56,
+                "hits": 67,
+                "misses": 22,
+                "false_alarms": 0,
+                "correct_no_rain": 1
+              }
+            },
+            {
+              "lead_day": 3,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 9.0289,
+                "rmse_mm": 22.3719,
+                "bias_mm": 5.3089,
+                "rain_accuracy_percent": 78.89,
+                "hits": 70,
+                "misses": 19,
+                "false_alarms": 0,
+                "correct_no_rain": 1
+              }
+            },
+            {
+              "lead_day": 4,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 9.5744,
+                "rmse_mm": 21.9236,
+                "bias_mm": 3.4056,
+                "rain_accuracy_percent": 77.78,
+                "hits": 69,
+                "misses": 20,
+                "false_alarms": 0,
+                "correct_no_rain": 1
+              }
+            },
+            {
+              "lead_day": 5,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 14.5889,
+                "rmse_mm": 50.7494,
+                "bias_mm": 7.3133,
+                "rain_accuracy_percent": 78.89,
+                "hits": 70,
+                "misses": 19,
+                "false_alarms": 0,
+                "correct_no_rain": 1
+              }
+            },
+            {
+              "lead_day": 6,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 14.7033,
+                "rmse_mm": 47.8894,
+                "bias_mm": 8.5656,
+                "rain_accuracy_percent": 81.11,
+                "hits": 72,
+                "misses": 17,
+                "false_alarms": 0,
+                "correct_no_rain": 1
+              }
+            },
+            {
+              "lead_day": 7,
+              "metrics": {
+                "samples": 0,
+                "mae_mm": null,
+                "rmse_mm": null,
+                "bias_mm": null,
+                "rain_accuracy_percent": null,
+                "hits": 0,
+                "misses": 0,
+                "false_alarms": 0,
+                "correct_no_rain": 0
+              }
+            }
+          ]
         }
       ],
-      "updated_at": "2026-09-19T00:58:32.006969+00:00"
+      "updated_at": "2026-09-19T02:08:08.685103+00:00",
+      "collector_version": "V4",
+      "collection_status": {
+        "complete": true,
+        "successful_models": [
+          "ECMWF",
+          "GFS",
+          "ICON"
+        ],
+        "missing_models": []
+      }
     },
     {
       "location": {
@@ -4976,19 +5202,225 @@
         {
           "name": "GFS",
           "model_id": "gfs_seamless",
-          "success": false,
-          "error": "gfs_seamless previous runs 28.30415,74.96718 failed after 2 attempts: HTTPSConnectionPool(host='previous-runs-api.open-meteo.com', port=443): Read timed out. (read timeout=35)",
-          "leads": []
+          "success": true,
+          "leads": [
+            {
+              "lead_day": 1,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.07,
+                "rmse_mm": 5.7682,
+                "bias_mm": -0.4033,
+                "rain_accuracy_percent": 70.0,
+                "hits": 43,
+                "misses": 21,
+                "false_alarms": 6,
+                "correct_no_rain": 20
+              }
+            },
+            {
+              "lead_day": 2,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 1.8256,
+                "rmse_mm": 4.7013,
+                "bias_mm": -0.5033,
+                "rain_accuracy_percent": 73.33,
+                "hits": 47,
+                "misses": 17,
+                "false_alarms": 7,
+                "correct_no_rain": 19
+              }
+            },
+            {
+              "lead_day": 3,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.2833,
+                "rmse_mm": 5.1966,
+                "bias_mm": -0.3411,
+                "rain_accuracy_percent": 63.33,
+                "hits": 37,
+                "misses": 27,
+                "false_alarms": 6,
+                "correct_no_rain": 20
+              }
+            },
+            {
+              "lead_day": 4,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.0989,
+                "rmse_mm": 4.9024,
+                "bias_mm": -0.1856,
+                "rain_accuracy_percent": 70.0,
+                "hits": 41,
+                "misses": 23,
+                "false_alarms": 4,
+                "correct_no_rain": 22
+              }
+            },
+            {
+              "lead_day": 5,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.0489,
+                "rmse_mm": 4.578,
+                "bias_mm": 0.3222,
+                "rain_accuracy_percent": 71.11,
+                "hits": 40,
+                "misses": 24,
+                "false_alarms": 2,
+                "correct_no_rain": 24
+              }
+            },
+            {
+              "lead_day": 6,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.2578,
+                "rmse_mm": 5.3323,
+                "bias_mm": -0.2311,
+                "rain_accuracy_percent": 63.33,
+                "hits": 36,
+                "misses": 28,
+                "false_alarms": 5,
+                "correct_no_rain": 21
+              }
+            },
+            {
+              "lead_day": 7,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.4611,
+                "rmse_mm": 6.6788,
+                "bias_mm": -0.3656,
+                "rain_accuracy_percent": 62.22,
+                "hits": 34,
+                "misses": 30,
+                "false_alarms": 4,
+                "correct_no_rain": 22
+              }
+            }
+          ]
         },
         {
           "name": "ICON",
           "model_id": "icon_seamless",
-          "success": false,
-          "error": "icon_seamless previous runs 28.30415,74.96718 failed after 2 attempts: HTTPSConnectionPool(host='previous-runs-api.open-meteo.com', port=443): Read timed out. (read timeout=35)",
-          "leads": []
+          "success": true,
+          "leads": [
+            {
+              "lead_day": 1,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.4956,
+                "rmse_mm": 5.5252,
+                "bias_mm": 0.78,
+                "rain_accuracy_percent": 81.11,
+                "hits": 55,
+                "misses": 9,
+                "false_alarms": 8,
+                "correct_no_rain": 18
+              }
+            },
+            {
+              "lead_day": 2,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.9622,
+                "rmse_mm": 6.1262,
+                "bias_mm": 1.6178,
+                "rain_accuracy_percent": 83.33,
+                "hits": 59,
+                "misses": 5,
+                "false_alarms": 10,
+                "correct_no_rain": 16
+              }
+            },
+            {
+              "lead_day": 3,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 3.3156,
+                "rmse_mm": 6.7928,
+                "bias_mm": 1.8311,
+                "rain_accuracy_percent": 75.56,
+                "hits": 54,
+                "misses": 10,
+                "false_alarms": 12,
+                "correct_no_rain": 14
+              }
+            },
+            {
+              "lead_day": 4,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 3.1678,
+                "rmse_mm": 6.114,
+                "bias_mm": 1.45,
+                "rain_accuracy_percent": 74.44,
+                "hits": 54,
+                "misses": 10,
+                "false_alarms": 13,
+                "correct_no_rain": 13
+              }
+            },
+            {
+              "lead_day": 5,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 5.5867,
+                "rmse_mm": 16.2573,
+                "bias_mm": 3.6289,
+                "rain_accuracy_percent": 71.11,
+                "hits": 51,
+                "misses": 13,
+                "false_alarms": 13,
+                "correct_no_rain": 13
+              }
+            },
+            {
+              "lead_day": 6,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.8878,
+                "rmse_mm": 5.4157,
+                "bias_mm": 1.3033,
+                "rain_accuracy_percent": 68.89,
+                "hits": 49,
+                "misses": 15,
+                "false_alarms": 13,
+                "correct_no_rain": 13
+              }
+            },
+            {
+              "lead_day": 7,
+              "metrics": {
+                "samples": 0,
+                "mae_mm": null,
+                "rmse_mm": null,
+                "bias_mm": null,
+                "rain_accuracy_percent": null,
+                "hits": 0,
+                "misses": 0,
+                "false_alarms": 0,
+                "correct_no_rain": 0
+              }
+            }
+          ]
         }
       ],
-      "updated_at": "2026-09-19T01:06:42.099837+00:00"
+      "updated_at": "2026-09-19T02:08:21.817038+00:00",
+      "collector_version": "V4",
+      "collection_status": {
+        "complete": true,
+        "successful_models": [
+          "ECMWF",
+          "GFS",
+          "ICON"
+        ],
+        "missing_models": []
+      }
     },
     {
       "location": {
@@ -5116,19 +5548,225 @@
         {
           "name": "GFS",
           "model_id": "gfs_seamless",
-          "success": false,
-          "error": "gfs_seamless previous runs 26.69286,77.87968 failed after 2 attempts: Expecting value: line 1 column 1 (char 0)",
-          "leads": []
+          "success": true,
+          "leads": [
+            {
+              "lead_day": 1,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 5.0556,
+                "rmse_mm": 10.2033,
+                "bias_mm": -1.5178,
+                "rain_accuracy_percent": 73.33,
+                "hits": 61,
+                "misses": 17,
+                "false_alarms": 7,
+                "correct_no_rain": 5
+              }
+            },
+            {
+              "lead_day": 2,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 6.5022,
+                "rmse_mm": 14.6985,
+                "bias_mm": -0.5556,
+                "rain_accuracy_percent": 74.44,
+                "hits": 62,
+                "misses": 16,
+                "false_alarms": 7,
+                "correct_no_rain": 5
+              }
+            },
+            {
+              "lead_day": 3,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 7.2444,
+                "rmse_mm": 12.9381,
+                "bias_mm": -0.0978,
+                "rain_accuracy_percent": 80.0,
+                "hits": 66,
+                "misses": 12,
+                "false_alarms": 6,
+                "correct_no_rain": 6
+              }
+            },
+            {
+              "lead_day": 4,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 8.0422,
+                "rmse_mm": 18.4541,
+                "bias_mm": -0.0244,
+                "rain_accuracy_percent": 74.44,
+                "hits": 59,
+                "misses": 19,
+                "false_alarms": 4,
+                "correct_no_rain": 8
+              }
+            },
+            {
+              "lead_day": 5,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 5.9689,
+                "rmse_mm": 10.6661,
+                "bias_mm": -1.9533,
+                "rain_accuracy_percent": 65.56,
+                "hits": 53,
+                "misses": 25,
+                "false_alarms": 6,
+                "correct_no_rain": 6
+              }
+            },
+            {
+              "lead_day": 6,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 6.0689,
+                "rmse_mm": 10.9371,
+                "bias_mm": -2.9889,
+                "rain_accuracy_percent": 70.0,
+                "hits": 56,
+                "misses": 22,
+                "false_alarms": 5,
+                "correct_no_rain": 7
+              }
+            },
+            {
+              "lead_day": 7,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 6.2344,
+                "rmse_mm": 11.8494,
+                "bias_mm": -3.2167,
+                "rain_accuracy_percent": 67.78,
+                "hits": 55,
+                "misses": 23,
+                "false_alarms": 6,
+                "correct_no_rain": 6
+              }
+            }
+          ]
         },
         {
           "name": "ICON",
           "model_id": "icon_seamless",
-          "success": false,
-          "error": "icon_seamless previous runs 26.69286,77.87968 failed after 2 attempts: HTTPSConnectionPool(host='previous-runs-api.open-meteo.com', port=443): Read timed out. (read timeout=35)",
-          "leads": []
+          "success": true,
+          "leads": [
+            {
+              "lead_day": 1,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 8.2956,
+                "rmse_mm": 17.4866,
+                "bias_mm": 5.0333,
+                "rain_accuracy_percent": 83.33,
+                "hits": 72,
+                "misses": 6,
+                "false_alarms": 9,
+                "correct_no_rain": 3
+              }
+            },
+            {
+              "lead_day": 2,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 9.3011,
+                "rmse_mm": 15.5883,
+                "bias_mm": 4.9056,
+                "rain_accuracy_percent": 85.56,
+                "hits": 73,
+                "misses": 5,
+                "false_alarms": 8,
+                "correct_no_rain": 4
+              }
+            },
+            {
+              "lead_day": 3,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 9.2922,
+                "rmse_mm": 17.0265,
+                "bias_mm": 4.6367,
+                "rain_accuracy_percent": 83.33,
+                "hits": 70,
+                "misses": 8,
+                "false_alarms": 7,
+                "correct_no_rain": 5
+              }
+            },
+            {
+              "lead_day": 4,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 7.6911,
+                "rmse_mm": 12.9267,
+                "bias_mm": 3.2,
+                "rain_accuracy_percent": 84.44,
+                "hits": 72,
+                "misses": 6,
+                "false_alarms": 8,
+                "correct_no_rain": 4
+              }
+            },
+            {
+              "lead_day": 5,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 8.8056,
+                "rmse_mm": 13.9159,
+                "bias_mm": 3.3144,
+                "rain_accuracy_percent": 85.56,
+                "hits": 72,
+                "misses": 6,
+                "false_alarms": 7,
+                "correct_no_rain": 5
+              }
+            },
+            {
+              "lead_day": 6,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 8.2522,
+                "rmse_mm": 15.3042,
+                "bias_mm": 2.6433,
+                "rain_accuracy_percent": 80.0,
+                "hits": 70,
+                "misses": 8,
+                "false_alarms": 10,
+                "correct_no_rain": 2
+              }
+            },
+            {
+              "lead_day": 7,
+              "metrics": {
+                "samples": 0,
+                "mae_mm": null,
+                "rmse_mm": null,
+                "bias_mm": null,
+                "rain_accuracy_percent": null,
+                "hits": 0,
+                "misses": 0,
+                "false_alarms": 0,
+                "correct_no_rain": 0
+              }
+            }
+          ]
         }
       ],
-      "updated_at": "2026-09-19T01:12:30.589984+00:00"
+      "updated_at": "2026-09-19T02:08:37.802535+00:00",
+      "collector_version": "V4",
+      "collection_status": {
+        "complete": true,
+        "successful_models": [
+          "ECMWF",
+          "GFS",
+          "ICON"
+        ],
+        "missing_models": []
+      }
     },
     {
       "location": {
@@ -5151,16 +5789,212 @@
         {
           "name": "ECMWF",
           "model_id": "ecmwf_ifs025",
-          "success": false,
-          "error": "ecmwf_ifs025 previous runs 29.58182,74.32938 failed after 2 attempts: HTTPSConnectionPool(host='previous-runs-api.open-meteo.com', port=443): Read timed out. (read timeout=35)",
-          "leads": []
+          "success": true,
+          "leads": [
+            {
+              "lead_day": 1,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 1.2978,
+                "rmse_mm": 2.3389,
+                "bias_mm": 0.1267,
+                "rain_accuracy_percent": 71.11,
+                "hits": 40,
+                "misses": 16,
+                "false_alarms": 10,
+                "correct_no_rain": 24
+              }
+            },
+            {
+              "lead_day": 2,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 1.4433,
+                "rmse_mm": 3.0434,
+                "bias_mm": 0.41,
+                "rain_accuracy_percent": 73.33,
+                "hits": 40,
+                "misses": 16,
+                "false_alarms": 8,
+                "correct_no_rain": 26
+              }
+            },
+            {
+              "lead_day": 3,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 1.4078,
+                "rmse_mm": 2.7673,
+                "bias_mm": 0.25,
+                "rain_accuracy_percent": 68.89,
+                "hits": 36,
+                "misses": 20,
+                "false_alarms": 8,
+                "correct_no_rain": 26
+              }
+            },
+            {
+              "lead_day": 4,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 1.6578,
+                "rmse_mm": 3.2246,
+                "bias_mm": 0.46,
+                "rain_accuracy_percent": 78.89,
+                "hits": 45,
+                "misses": 11,
+                "false_alarms": 8,
+                "correct_no_rain": 26
+              }
+            },
+            {
+              "lead_day": 5,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 1.5533,
+                "rmse_mm": 2.7571,
+                "bias_mm": 0.1533,
+                "rain_accuracy_percent": 66.67,
+                "hits": 38,
+                "misses": 18,
+                "false_alarms": 12,
+                "correct_no_rain": 22
+              }
+            },
+            {
+              "lead_day": 6,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 1.7067,
+                "rmse_mm": 3.7114,
+                "bias_mm": 0.88,
+                "rain_accuracy_percent": 70.0,
+                "hits": 39,
+                "misses": 17,
+                "false_alarms": 10,
+                "correct_no_rain": 24
+              }
+            },
+            {
+              "lead_day": 7,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 1.4089,
+                "rmse_mm": 2.4752,
+                "bias_mm": 0.5333,
+                "rain_accuracy_percent": 67.78,
+                "hits": 39,
+                "misses": 17,
+                "false_alarms": 12,
+                "correct_no_rain": 22
+              }
+            }
+          ]
         },
         {
           "name": "GFS",
           "model_id": "gfs_seamless",
-          "success": false,
-          "error": "gfs_seamless previous runs 29.58182,74.32938 failed after 2 attempts: HTTPSConnectionPool(host='previous-runs-api.open-meteo.com', port=443): Read timed out. (read timeout=35)",
-          "leads": []
+          "success": true,
+          "leads": [
+            {
+              "lead_day": 1,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 1.7622,
+                "rmse_mm": 3.3563,
+                "bias_mm": -0.1689,
+                "rain_accuracy_percent": 67.78,
+                "hits": 40,
+                "misses": 16,
+                "false_alarms": 13,
+                "correct_no_rain": 21
+              }
+            },
+            {
+              "lead_day": 2,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 1.3533,
+                "rmse_mm": 2.4234,
+                "bias_mm": -0.3311,
+                "rain_accuracy_percent": 74.44,
+                "hits": 46,
+                "misses": 10,
+                "false_alarms": 13,
+                "correct_no_rain": 21
+              }
+            },
+            {
+              "lead_day": 3,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 1.6944,
+                "rmse_mm": 3.1203,
+                "bias_mm": -0.1767,
+                "rain_accuracy_percent": 74.44,
+                "hits": 41,
+                "misses": 15,
+                "false_alarms": 8,
+                "correct_no_rain": 26
+              }
+            },
+            {
+              "lead_day": 4,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 1.6078,
+                "rmse_mm": 3.5854,
+                "bias_mm": -0.0544,
+                "rain_accuracy_percent": 67.78,
+                "hits": 34,
+                "misses": 22,
+                "false_alarms": 7,
+                "correct_no_rain": 27
+              }
+            },
+            {
+              "lead_day": 5,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 1.7133,
+                "rmse_mm": 3.173,
+                "bias_mm": 0.14,
+                "rain_accuracy_percent": 68.89,
+                "hits": 35,
+                "misses": 21,
+                "false_alarms": 7,
+                "correct_no_rain": 27
+              }
+            },
+            {
+              "lead_day": 6,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.61,
+                "rmse_mm": 7.1894,
+                "bias_mm": 0.7411,
+                "rain_accuracy_percent": 65.56,
+                "hits": 34,
+                "misses": 22,
+                "false_alarms": 9,
+                "correct_no_rain": 25
+              }
+            },
+            {
+              "lead_day": 7,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.4344,
+                "rmse_mm": 9.7525,
+                "bias_mm": 0.3678,
+                "rain_accuracy_percent": 64.44,
+                "hits": 31,
+                "misses": 25,
+                "false_alarms": 7,
+                "correct_no_rain": 27
+              }
+            }
+          ]
         },
         {
           "name": "ICON",
@@ -5268,7 +6102,17 @@
           ]
         }
       ],
-      "updated_at": "2026-09-19T01:18:43.734929+00:00"
+      "updated_at": "2026-09-19T02:09:56.712631+00:00",
+      "collector_version": "V4",
+      "collection_status": {
+        "complete": true,
+        "successful_models": [
+          "ECMWF",
+          "GFS",
+          "ICON"
+        ],
+        "missing_models": []
+      }
     },
     {
       "location": {
@@ -6068,9 +6912,107 @@
         {
           "name": "GFS",
           "model_id": "gfs_seamless",
-          "success": false,
-          "error": "gfs_seamless previous runs 28.12559,75.39797 failed after 2 attempts: Expecting value: line 1 column 1 (char 0)",
-          "leads": []
+          "success": true,
+          "leads": [
+            {
+              "lead_day": 1,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.0433,
+                "rmse_mm": 4.4642,
+                "bias_mm": -0.7544,
+                "rain_accuracy_percent": 70.0,
+                "hits": 48,
+                "misses": 19,
+                "false_alarms": 8,
+                "correct_no_rain": 15
+              }
+            },
+            {
+              "lead_day": 2,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.1178,
+                "rmse_mm": 4.1367,
+                "bias_mm": -0.6956,
+                "rain_accuracy_percent": 72.22,
+                "hits": 50,
+                "misses": 17,
+                "false_alarms": 8,
+                "correct_no_rain": 15
+              }
+            },
+            {
+              "lead_day": 3,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.5667,
+                "rmse_mm": 5.1925,
+                "bias_mm": -0.4556,
+                "rain_accuracy_percent": 71.11,
+                "hits": 47,
+                "misses": 20,
+                "false_alarms": 6,
+                "correct_no_rain": 17
+              }
+            },
+            {
+              "lead_day": 4,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.0189,
+                "rmse_mm": 3.838,
+                "bias_mm": -0.9544,
+                "rain_accuracy_percent": 71.11,
+                "hits": 43,
+                "misses": 24,
+                "false_alarms": 2,
+                "correct_no_rain": 21
+              }
+            },
+            {
+              "lead_day": 5,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.8056,
+                "rmse_mm": 5.3467,
+                "bias_mm": 0.0944,
+                "rain_accuracy_percent": 68.89,
+                "hits": 41,
+                "misses": 26,
+                "false_alarms": 2,
+                "correct_no_rain": 21
+              }
+            },
+            {
+              "lead_day": 6,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.6522,
+                "rmse_mm": 5.5032,
+                "bias_mm": -0.2589,
+                "rain_accuracy_percent": 65.56,
+                "hits": 41,
+                "misses": 26,
+                "false_alarms": 5,
+                "correct_no_rain": 18
+              }
+            },
+            {
+              "lead_day": 7,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.8033,
+                "rmse_mm": 6.2096,
+                "bias_mm": -0.69,
+                "rain_accuracy_percent": 64.44,
+                "hits": 37,
+                "misses": 30,
+                "false_alarms": 2,
+                "correct_no_rain": 21
+              }
+            }
+          ]
         },
         {
           "name": "ICON",
@@ -6178,7 +7120,17 @@
           ]
         }
       ],
-      "updated_at": "2026-09-19T01:21:00.363941+00:00"
+      "updated_at": "2026-09-19T02:09:59.874593+00:00",
+      "collector_version": "V4",
+      "collection_status": {
+        "complete": true,
+        "successful_models": [
+          "ECMWF",
+          "GFS",
+          "ICON"
+        ],
+        "missing_models": []
+      }
     },
     {
       "location": {
@@ -10338,9 +11290,107 @@
         {
           "name": "GFS",
           "model_id": "gfs_seamless",
-          "success": false,
-          "error": "gfs_seamless previous runs 29.92009,73.87496 failed after 2 attempts: Expecting value: line 1 column 1 (char 0)",
-          "leads": []
+          "success": true,
+          "leads": [
+            {
+              "lead_day": 1,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 1.8767,
+                "rmse_mm": 3.8835,
+                "bias_mm": -0.1544,
+                "rain_accuracy_percent": 62.22,
+                "hits": 35,
+                "misses": 22,
+                "false_alarms": 12,
+                "correct_no_rain": 21
+              }
+            },
+            {
+              "lead_day": 2,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 1.4789,
+                "rmse_mm": 3.0889,
+                "bias_mm": -0.0278,
+                "rain_accuracy_percent": 66.67,
+                "hits": 43,
+                "misses": 14,
+                "false_alarms": 16,
+                "correct_no_rain": 17
+              }
+            },
+            {
+              "lead_day": 3,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 1.82,
+                "rmse_mm": 4.0906,
+                "bias_mm": -0.1689,
+                "rain_accuracy_percent": 72.22,
+                "hits": 38,
+                "misses": 19,
+                "false_alarms": 6,
+                "correct_no_rain": 27
+              }
+            },
+            {
+              "lead_day": 4,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 1.57,
+                "rmse_mm": 3.6538,
+                "bias_mm": -0.3256,
+                "rain_accuracy_percent": 63.33,
+                "hits": 32,
+                "misses": 25,
+                "false_alarms": 8,
+                "correct_no_rain": 25
+              }
+            },
+            {
+              "lead_day": 5,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.4267,
+                "rmse_mm": 8.7359,
+                "bias_mm": 0.8667,
+                "rain_accuracy_percent": 65.56,
+                "hits": 34,
+                "misses": 23,
+                "false_alarms": 8,
+                "correct_no_rain": 25
+              }
+            },
+            {
+              "lead_day": 6,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.0878,
+                "rmse_mm": 7.0881,
+                "bias_mm": -0.0144,
+                "rain_accuracy_percent": 61.11,
+                "hits": 31,
+                "misses": 26,
+                "false_alarms": 9,
+                "correct_no_rain": 24
+              }
+            },
+            {
+              "lead_day": 7,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 1.7167,
+                "rmse_mm": 4.7404,
+                "bias_mm": -0.4967,
+                "rain_accuracy_percent": 61.11,
+                "hits": 31,
+                "misses": 26,
+                "false_alarms": 9,
+                "correct_no_rain": 24
+              }
+            }
+          ]
         },
         {
           "name": "ICON",
@@ -10448,7 +11498,2093 @@
           ]
         }
       ],
-      "updated_at": "2026-09-19T01:24:38.342238+00:00"
+      "updated_at": "2026-09-19T02:10:12.008718+00:00",
+      "collector_version": "V4",
+      "collection_status": {
+        "complete": true,
+        "successful_models": [
+          "ECMWF",
+          "GFS",
+          "ICON"
+        ],
+        "missing_models": []
+      }
+    },
+    {
+      "location": {
+        "id": "baran",
+        "name": "Baran",
+        "query": "Baran, Rajasthan, India",
+        "latitude": 25.1,
+        "longitude": 76.51667
+      },
+      "period": {
+        "start": "2026-06-14",
+        "end": "2026-09-11",
+        "days": 90
+      },
+      "reference": {
+        "name": "ERA5 / Open-Meteo reanalysis",
+        "type": "reanalysis"
+      },
+      "models": [
+        {
+          "name": "ECMWF",
+          "model_id": "ecmwf_ifs025",
+          "success": true,
+          "leads": [
+            {
+              "lead_day": 1,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 4.6689,
+                "rmse_mm": 7.5311,
+                "bias_mm": -0.0422,
+                "rain_accuracy_percent": 87.78,
+                "hits": 69,
+                "misses": 8,
+                "false_alarms": 3,
+                "correct_no_rain": 10
+              }
+            },
+            {
+              "lead_day": 2,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 6.3644,
+                "rmse_mm": 10.9126,
+                "bias_mm": 0.9644,
+                "rain_accuracy_percent": 84.44,
+                "hits": 67,
+                "misses": 10,
+                "false_alarms": 4,
+                "correct_no_rain": 9
+              }
+            },
+            {
+              "lead_day": 3,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 8.2333,
+                "rmse_mm": 14.9924,
+                "bias_mm": 2.2978,
+                "rain_accuracy_percent": 81.11,
+                "hits": 65,
+                "misses": 12,
+                "false_alarms": 5,
+                "correct_no_rain": 8
+              }
+            },
+            {
+              "lead_day": 4,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 8.3144,
+                "rmse_mm": 16.5066,
+                "bias_mm": 2.2478,
+                "rain_accuracy_percent": 75.56,
+                "hits": 60,
+                "misses": 17,
+                "false_alarms": 5,
+                "correct_no_rain": 8
+              }
+            },
+            {
+              "lead_day": 5,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 12.7844,
+                "rmse_mm": 30.8375,
+                "bias_mm": 6.0578,
+                "rain_accuracy_percent": 73.33,
+                "hits": 58,
+                "misses": 19,
+                "false_alarms": 5,
+                "correct_no_rain": 8
+              }
+            },
+            {
+              "lead_day": 6,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 12.4911,
+                "rmse_mm": 26.6213,
+                "bias_mm": 7.3311,
+                "rain_accuracy_percent": 73.33,
+                "hits": 59,
+                "misses": 18,
+                "false_alarms": 6,
+                "correct_no_rain": 7
+              }
+            },
+            {
+              "lead_day": 7,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 10.5633,
+                "rmse_mm": 19.2425,
+                "bias_mm": 3.4811,
+                "rain_accuracy_percent": 81.11,
+                "hits": 62,
+                "misses": 15,
+                "false_alarms": 2,
+                "correct_no_rain": 11
+              }
+            }
+          ]
+        },
+        {
+          "name": "GFS",
+          "model_id": "gfs_seamless",
+          "success": true,
+          "leads": [
+            {
+              "lead_day": 1,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 6.3822,
+                "rmse_mm": 10.9785,
+                "bias_mm": -0.8178,
+                "rain_accuracy_percent": 85.56,
+                "hits": 69,
+                "misses": 8,
+                "false_alarms": 5,
+                "correct_no_rain": 8
+              }
+            },
+            {
+              "lead_day": 2,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 9.53,
+                "rmse_mm": 25.621,
+                "bias_mm": 1.6144,
+                "rain_accuracy_percent": 80.0,
+                "hits": 67,
+                "misses": 10,
+                "false_alarms": 8,
+                "correct_no_rain": 5
+              }
+            },
+            {
+              "lead_day": 3,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 8.0911,
+                "rmse_mm": 14.0514,
+                "bias_mm": -2.06,
+                "rain_accuracy_percent": 73.33,
+                "hits": 59,
+                "misses": 18,
+                "false_alarms": 6,
+                "correct_no_rain": 7
+              }
+            },
+            {
+              "lead_day": 4,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 8.0133,
+                "rmse_mm": 14.2812,
+                "bias_mm": -2.36,
+                "rain_accuracy_percent": 70.0,
+                "hits": 56,
+                "misses": 21,
+                "false_alarms": 6,
+                "correct_no_rain": 7
+              }
+            },
+            {
+              "lead_day": 5,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 8.8078,
+                "rmse_mm": 15.1856,
+                "bias_mm": -2.5522,
+                "rain_accuracy_percent": 65.56,
+                "hits": 52,
+                "misses": 25,
+                "false_alarms": 6,
+                "correct_no_rain": 7
+              }
+            },
+            {
+              "lead_day": 6,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 8.0133,
+                "rmse_mm": 13.7264,
+                "bias_mm": -4.8556,
+                "rain_accuracy_percent": 56.67,
+                "hits": 44,
+                "misses": 33,
+                "false_alarms": 6,
+                "correct_no_rain": 7
+              }
+            },
+            {
+              "lead_day": 7,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 8.07,
+                "rmse_mm": 13.7855,
+                "bias_mm": -5.1678,
+                "rain_accuracy_percent": 57.78,
+                "hits": 45,
+                "misses": 32,
+                "false_alarms": 6,
+                "correct_no_rain": 7
+              }
+            }
+          ]
+        },
+        {
+          "name": "ICON",
+          "model_id": "icon_seamless",
+          "success": true,
+          "leads": [
+            {
+              "lead_day": 1,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 5.7956,
+                "rmse_mm": 11.3981,
+                "bias_mm": 0.4689,
+                "rain_accuracy_percent": 82.22,
+                "hits": 65,
+                "misses": 12,
+                "false_alarms": 4,
+                "correct_no_rain": 9
+              }
+            },
+            {
+              "lead_day": 2,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 8.4733,
+                "rmse_mm": 17.0873,
+                "bias_mm": 3.5378,
+                "rain_accuracy_percent": 80.0,
+                "hits": 64,
+                "misses": 13,
+                "false_alarms": 5,
+                "correct_no_rain": 8
+              }
+            },
+            {
+              "lead_day": 3,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 10.6833,
+                "rmse_mm": 17.3661,
+                "bias_mm": 4.5122,
+                "rain_accuracy_percent": 80.0,
+                "hits": 66,
+                "misses": 11,
+                "false_alarms": 7,
+                "correct_no_rain": 6
+              }
+            },
+            {
+              "lead_day": 4,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 12.4878,
+                "rmse_mm": 19.9239,
+                "bias_mm": 3.9611,
+                "rain_accuracy_percent": 76.67,
+                "hits": 64,
+                "misses": 13,
+                "false_alarms": 8,
+                "correct_no_rain": 5
+              }
+            },
+            {
+              "lead_day": 5,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 12.8233,
+                "rmse_mm": 18.7134,
+                "bias_mm": 4.1789,
+                "rain_accuracy_percent": 71.11,
+                "hits": 61,
+                "misses": 16,
+                "false_alarms": 10,
+                "correct_no_rain": 3
+              }
+            },
+            {
+              "lead_day": 6,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 12.0144,
+                "rmse_mm": 18.7811,
+                "bias_mm": 3.5544,
+                "rain_accuracy_percent": 77.78,
+                "hits": 66,
+                "misses": 11,
+                "false_alarms": 9,
+                "correct_no_rain": 4
+              }
+            },
+            {
+              "lead_day": 7,
+              "metrics": {
+                "samples": 0,
+                "mae_mm": null,
+                "rmse_mm": null,
+                "bias_mm": null,
+                "rain_accuracy_percent": null,
+                "hits": 0,
+                "misses": 0,
+                "false_alarms": 0,
+                "correct_no_rain": 0
+              }
+            }
+          ]
+        }
+      ],
+      "updated_at": "2026-09-19T02:08:12.574097+00:00",
+      "collector_version": "V4",
+      "collection_status": {
+        "complete": true,
+        "successful_models": [
+          "ECMWF",
+          "GFS",
+          "ICON"
+        ],
+        "missing_models": []
+      }
+    },
+    {
+      "location": {
+        "id": "barmer",
+        "name": "Barmer",
+        "query": "Barmer, Rajasthan, India",
+        "latitude": 25.74572,
+        "longitude": 71.39211
+      },
+      "period": {
+        "start": "2026-06-14",
+        "end": "2026-09-11",
+        "days": 90
+      },
+      "reference": {
+        "name": "ERA5 / Open-Meteo reanalysis",
+        "type": "reanalysis"
+      },
+      "models": [
+        {
+          "name": "ECMWF",
+          "model_id": "ecmwf_ifs025",
+          "success": true,
+          "leads": [
+            {
+              "lead_day": 1,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 0.9744,
+                "rmse_mm": 3.5975,
+                "bias_mm": 0.6189,
+                "rain_accuracy_percent": 82.22,
+                "hits": 17,
+                "misses": 14,
+                "false_alarms": 2,
+                "correct_no_rain": 57
+              }
+            },
+            {
+              "lead_day": 2,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.1711,
+                "rmse_mm": 6.6199,
+                "bias_mm": 1.3889,
+                "rain_accuracy_percent": 80.0,
+                "hits": 18,
+                "misses": 13,
+                "false_alarms": 5,
+                "correct_no_rain": 54
+              }
+            },
+            {
+              "lead_day": 3,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 3.2156,
+                "rmse_mm": 9.9772,
+                "bias_mm": 2.1489,
+                "rain_accuracy_percent": 80.0,
+                "hits": 18,
+                "misses": 13,
+                "false_alarms": 5,
+                "correct_no_rain": 54
+              }
+            },
+            {
+              "lead_day": 4,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.0444,
+                "rmse_mm": 6.0753,
+                "bias_mm": 0.6089,
+                "rain_accuracy_percent": 76.67,
+                "hits": 16,
+                "misses": 15,
+                "false_alarms": 6,
+                "correct_no_rain": 53
+              }
+            },
+            {
+              "lead_day": 5,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 4.3233,
+                "rmse_mm": 16.4266,
+                "bias_mm": 2.6189,
+                "rain_accuracy_percent": 80.0,
+                "hits": 18,
+                "misses": 13,
+                "false_alarms": 5,
+                "correct_no_rain": 54
+              }
+            },
+            {
+              "lead_day": 6,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 4.2756,
+                "rmse_mm": 12.6412,
+                "bias_mm": 1.9156,
+                "rain_accuracy_percent": 72.22,
+                "hits": 12,
+                "misses": 19,
+                "false_alarms": 6,
+                "correct_no_rain": 53
+              }
+            },
+            {
+              "lead_day": 7,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 3.8567,
+                "rmse_mm": 10.7132,
+                "bias_mm": 1.8056,
+                "rain_accuracy_percent": 76.67,
+                "hits": 17,
+                "misses": 14,
+                "false_alarms": 7,
+                "correct_no_rain": 52
+              }
+            }
+          ]
+        },
+        {
+          "name": "GFS",
+          "model_id": "gfs_seamless",
+          "success": true,
+          "leads": [
+            {
+              "lead_day": 1,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 1.7956,
+                "rmse_mm": 7.4583,
+                "bias_mm": 1.1867,
+                "rain_accuracy_percent": 78.89,
+                "hits": 17,
+                "misses": 14,
+                "false_alarms": 5,
+                "correct_no_rain": 54
+              }
+            },
+            {
+              "lead_day": 2,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 1.2211,
+                "rmse_mm": 4.8668,
+                "bias_mm": -0.1411,
+                "rain_accuracy_percent": 76.67,
+                "hits": 13,
+                "misses": 18,
+                "false_alarms": 3,
+                "correct_no_rain": 56
+              }
+            },
+            {
+              "lead_day": 3,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 0.8778,
+                "rmse_mm": 2.6684,
+                "bias_mm": -0.7578,
+                "rain_accuracy_percent": 72.22,
+                "hits": 10,
+                "misses": 21,
+                "false_alarms": 4,
+                "correct_no_rain": 55
+              }
+            },
+            {
+              "lead_day": 4,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 1.4367,
+                "rmse_mm": 4.6613,
+                "bias_mm": -1.1411,
+                "rain_accuracy_percent": 75.56,
+                "hits": 10,
+                "misses": 21,
+                "false_alarms": 1,
+                "correct_no_rain": 58
+              }
+            },
+            {
+              "lead_day": 5,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 1.4756,
+                "rmse_mm": 4.9007,
+                "bias_mm": -1.3756,
+                "rain_accuracy_percent": 70.0,
+                "hits": 8,
+                "misses": 23,
+                "false_alarms": 4,
+                "correct_no_rain": 55
+              }
+            },
+            {
+              "lead_day": 6,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 1.3778,
+                "rmse_mm": 4.6365,
+                "bias_mm": -1.3711,
+                "rain_accuracy_percent": 76.67,
+                "hits": 10,
+                "misses": 21,
+                "false_alarms": 0,
+                "correct_no_rain": 59
+              }
+            },
+            {
+              "lead_day": 7,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 1.4389,
+                "rmse_mm": 4.7512,
+                "bias_mm": -1.3922,
+                "rain_accuracy_percent": 74.44,
+                "hits": 9,
+                "misses": 22,
+                "false_alarms": 1,
+                "correct_no_rain": 58
+              }
+            }
+          ]
+        },
+        {
+          "name": "ICON",
+          "model_id": "icon_seamless",
+          "success": true,
+          "leads": [
+            {
+              "lead_day": 1,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 1.8444,
+                "rmse_mm": 7.161,
+                "bias_mm": 1.3289,
+                "rain_accuracy_percent": 85.56,
+                "hits": 18,
+                "misses": 13,
+                "false_alarms": 0,
+                "correct_no_rain": 59
+              }
+            },
+            {
+              "lead_day": 2,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.2378,
+                "rmse_mm": 7.7305,
+                "bias_mm": 1.5978,
+                "rain_accuracy_percent": 82.22,
+                "hits": 17,
+                "misses": 14,
+                "false_alarms": 2,
+                "correct_no_rain": 57
+              }
+            },
+            {
+              "lead_day": 3,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 3.9267,
+                "rmse_mm": 16.3111,
+                "bias_mm": 2.9356,
+                "rain_accuracy_percent": 80.0,
+                "hits": 18,
+                "misses": 13,
+                "false_alarms": 5,
+                "correct_no_rain": 54
+              }
+            },
+            {
+              "lead_day": 4,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 3.4756,
+                "rmse_mm": 9.716,
+                "bias_mm": 2.16,
+                "rain_accuracy_percent": 76.67,
+                "hits": 18,
+                "misses": 13,
+                "false_alarms": 8,
+                "correct_no_rain": 51
+              }
+            },
+            {
+              "lead_day": 5,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.3578,
+                "rmse_mm": 5.4104,
+                "bias_mm": 0.48,
+                "rain_accuracy_percent": 76.67,
+                "hits": 18,
+                "misses": 13,
+                "false_alarms": 8,
+                "correct_no_rain": 51
+              }
+            },
+            {
+              "lead_day": 6,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.4422,
+                "rmse_mm": 7.1046,
+                "bias_mm": 0.8489,
+                "rain_accuracy_percent": 72.22,
+                "hits": 17,
+                "misses": 14,
+                "false_alarms": 11,
+                "correct_no_rain": 48
+              }
+            },
+            {
+              "lead_day": 7,
+              "metrics": {
+                "samples": 0,
+                "mae_mm": null,
+                "rmse_mm": null,
+                "bias_mm": null,
+                "rain_accuracy_percent": null,
+                "hits": 0,
+                "misses": 0,
+                "false_alarms": 0,
+                "correct_no_rain": 0
+              }
+            }
+          ]
+        }
+      ],
+      "updated_at": "2026-09-19T02:08:16.254577+00:00",
+      "collector_version": "V4",
+      "collection_status": {
+        "complete": true,
+        "successful_models": [
+          "ECMWF",
+          "GFS",
+          "ICON"
+        ],
+        "missing_models": []
+      }
+    },
+    {
+      "location": {
+        "id": "deeg",
+        "name": "Deeg",
+        "query": "Deeg, Rajasthan, India",
+        "latitude": 27.47188,
+        "longitude": 77.32564
+      },
+      "period": {
+        "start": "2026-06-14",
+        "end": "2026-09-11",
+        "days": 90
+      },
+      "reference": {
+        "name": "ERA5 / Open-Meteo reanalysis",
+        "type": "reanalysis"
+      },
+      "models": [
+        {
+          "name": "ECMWF",
+          "model_id": "ecmwf_ifs025",
+          "success": true,
+          "leads": [
+            {
+              "lead_day": 1,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 3.6567,
+                "rmse_mm": 7.0574,
+                "bias_mm": -0.7122,
+                "rain_accuracy_percent": 80.0,
+                "hits": 65,
+                "misses": 9,
+                "false_alarms": 9,
+                "correct_no_rain": 7
+              }
+            },
+            {
+              "lead_day": 2,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 4.5489,
+                "rmse_mm": 7.7861,
+                "bias_mm": 1.5044,
+                "rain_accuracy_percent": 77.78,
+                "hits": 62,
+                "misses": 12,
+                "false_alarms": 8,
+                "correct_no_rain": 8
+              }
+            },
+            {
+              "lead_day": 3,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 5.8044,
+                "rmse_mm": 9.7805,
+                "bias_mm": 1.7511,
+                "rain_accuracy_percent": 83.33,
+                "hits": 65,
+                "misses": 9,
+                "false_alarms": 6,
+                "correct_no_rain": 10
+              }
+            },
+            {
+              "lead_day": 4,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 7.1467,
+                "rmse_mm": 12.0465,
+                "bias_mm": 3.0644,
+                "rain_accuracy_percent": 83.33,
+                "hits": 72,
+                "misses": 2,
+                "false_alarms": 13,
+                "correct_no_rain": 3
+              }
+            },
+            {
+              "lead_day": 5,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 7.0267,
+                "rmse_mm": 10.8198,
+                "bias_mm": 3.3578,
+                "rain_accuracy_percent": 80.0,
+                "hits": 65,
+                "misses": 9,
+                "false_alarms": 9,
+                "correct_no_rain": 7
+              }
+            },
+            {
+              "lead_day": 6,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 8.0311,
+                "rmse_mm": 12.5493,
+                "bias_mm": 4.4844,
+                "rain_accuracy_percent": 83.33,
+                "hits": 68,
+                "misses": 6,
+                "false_alarms": 9,
+                "correct_no_rain": 7
+              }
+            },
+            {
+              "lead_day": 7,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 7.93,
+                "rmse_mm": 12.806,
+                "bias_mm": 3.2411,
+                "rain_accuracy_percent": 77.78,
+                "hits": 66,
+                "misses": 8,
+                "false_alarms": 12,
+                "correct_no_rain": 4
+              }
+            }
+          ]
+        },
+        {
+          "name": "GFS",
+          "model_id": "gfs_seamless",
+          "success": true,
+          "leads": [
+            {
+              "lead_day": 1,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 4.7067,
+                "rmse_mm": 10.3574,
+                "bias_mm": -2.1533,
+                "rain_accuracy_percent": 76.67,
+                "hits": 58,
+                "misses": 16,
+                "false_alarms": 5,
+                "correct_no_rain": 11
+              }
+            },
+            {
+              "lead_day": 2,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 5.2922,
+                "rmse_mm": 10.0781,
+                "bias_mm": -1.0011,
+                "rain_accuracy_percent": 73.33,
+                "hits": 58,
+                "misses": 16,
+                "false_alarms": 8,
+                "correct_no_rain": 8
+              }
+            },
+            {
+              "lead_day": 3,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 5.7944,
+                "rmse_mm": 9.9544,
+                "bias_mm": -0.6656,
+                "rain_accuracy_percent": 70.0,
+                "hits": 57,
+                "misses": 17,
+                "false_alarms": 10,
+                "correct_no_rain": 6
+              }
+            },
+            {
+              "lead_day": 4,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 6.15,
+                "rmse_mm": 12.9246,
+                "bias_mm": 0.9611,
+                "rain_accuracy_percent": 70.0,
+                "hits": 53,
+                "misses": 21,
+                "false_alarms": 6,
+                "correct_no_rain": 10
+              }
+            },
+            {
+              "lead_day": 5,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 5.9944,
+                "rmse_mm": 13.9905,
+                "bias_mm": -0.8389,
+                "rain_accuracy_percent": 76.67,
+                "hits": 55,
+                "misses": 19,
+                "false_alarms": 2,
+                "correct_no_rain": 14
+              }
+            },
+            {
+              "lead_day": 6,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 5.3367,
+                "rmse_mm": 10.1573,
+                "bias_mm": -1.2167,
+                "rain_accuracy_percent": 73.33,
+                "hits": 54,
+                "misses": 20,
+                "false_alarms": 4,
+                "correct_no_rain": 12
+              }
+            },
+            {
+              "lead_day": 7,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 5.44,
+                "rmse_mm": 10.4009,
+                "bias_mm": -1.9378,
+                "rain_accuracy_percent": 67.78,
+                "hits": 48,
+                "misses": 26,
+                "false_alarms": 3,
+                "correct_no_rain": 13
+              }
+            }
+          ]
+        },
+        {
+          "name": "ICON",
+          "model_id": "icon_seamless",
+          "success": true,
+          "leads": [
+            {
+              "lead_day": 1,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 7.9833,
+                "rmse_mm": 19.5459,
+                "bias_mm": 5.7367,
+                "rain_accuracy_percent": 83.33,
+                "hits": 67,
+                "misses": 7,
+                "false_alarms": 8,
+                "correct_no_rain": 8
+              }
+            },
+            {
+              "lead_day": 2,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 6.4956,
+                "rmse_mm": 11.7827,
+                "bias_mm": 2.8489,
+                "rain_accuracy_percent": 84.44,
+                "hits": 69,
+                "misses": 5,
+                "false_alarms": 9,
+                "correct_no_rain": 7
+              }
+            },
+            {
+              "lead_day": 3,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 7.1956,
+                "rmse_mm": 12.3221,
+                "bias_mm": 2.6511,
+                "rain_accuracy_percent": 80.0,
+                "hits": 67,
+                "misses": 7,
+                "false_alarms": 11,
+                "correct_no_rain": 5
+              }
+            },
+            {
+              "lead_day": 4,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 7.8533,
+                "rmse_mm": 14.046,
+                "bias_mm": 4.0622,
+                "rain_accuracy_percent": 83.33,
+                "hits": 70,
+                "misses": 4,
+                "false_alarms": 11,
+                "correct_no_rain": 5
+              }
+            },
+            {
+              "lead_day": 5,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 6.5389,
+                "rmse_mm": 11.1474,
+                "bias_mm": 1.8433,
+                "rain_accuracy_percent": 78.89,
+                "hits": 66,
+                "misses": 8,
+                "false_alarms": 11,
+                "correct_no_rain": 5
+              }
+            },
+            {
+              "lead_day": 6,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 6.9233,
+                "rmse_mm": 11.4478,
+                "bias_mm": 2.2456,
+                "rain_accuracy_percent": 82.22,
+                "hits": 65,
+                "misses": 9,
+                "false_alarms": 7,
+                "correct_no_rain": 9
+              }
+            },
+            {
+              "lead_day": 7,
+              "metrics": {
+                "samples": 0,
+                "mae_mm": null,
+                "rmse_mm": null,
+                "bias_mm": null,
+                "rain_accuracy_percent": null,
+                "hits": 0,
+                "misses": 0,
+                "false_alarms": 0,
+                "correct_no_rain": 0
+              }
+            }
+          ]
+        }
+      ],
+      "updated_at": "2026-09-19T02:08:31.927137+00:00",
+      "collector_version": "V4",
+      "collection_status": {
+        "complete": true,
+        "successful_models": [
+          "ECMWF",
+          "GFS",
+          "ICON"
+        ],
+        "missing_models": []
+      }
+    },
+    {
+      "location": {
+        "id": "didwana-kuchaman",
+        "name": "Didwana-Kuchaman",
+        "query": "Didwana, Rajasthan, India",
+        "latitude": 27.40096,
+        "longitude": 74.57537
+      },
+      "period": {
+        "start": "2026-06-14",
+        "end": "2026-09-11",
+        "days": 90
+      },
+      "reference": {
+        "name": "ERA5 / Open-Meteo reanalysis",
+        "type": "reanalysis"
+      },
+      "models": [
+        {
+          "name": "ECMWF",
+          "model_id": "ecmwf_ifs025",
+          "success": true,
+          "leads": [
+            {
+              "lead_day": 1,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 1.73,
+                "rmse_mm": 3.5235,
+                "bias_mm": -0.11,
+                "rain_accuracy_percent": 80.0,
+                "hits": 46,
+                "misses": 15,
+                "false_alarms": 3,
+                "correct_no_rain": 26
+              }
+            },
+            {
+              "lead_day": 2,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.5578,
+                "rmse_mm": 4.7503,
+                "bias_mm": 0.1667,
+                "rain_accuracy_percent": 76.67,
+                "hits": 45,
+                "misses": 16,
+                "false_alarms": 5,
+                "correct_no_rain": 24
+              }
+            },
+            {
+              "lead_day": 3,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.63,
+                "rmse_mm": 5.5381,
+                "bias_mm": 0.0833,
+                "rain_accuracy_percent": 74.44,
+                "hits": 42,
+                "misses": 19,
+                "false_alarms": 4,
+                "correct_no_rain": 25
+              }
+            },
+            {
+              "lead_day": 4,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.9844,
+                "rmse_mm": 6.4041,
+                "bias_mm": 0.4067,
+                "rain_accuracy_percent": 80.0,
+                "hits": 46,
+                "misses": 15,
+                "false_alarms": 3,
+                "correct_no_rain": 26
+              }
+            },
+            {
+              "lead_day": 5,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 3.1889,
+                "rmse_mm": 6.2615,
+                "bias_mm": 0.9067,
+                "rain_accuracy_percent": 74.44,
+                "hits": 45,
+                "misses": 16,
+                "false_alarms": 7,
+                "correct_no_rain": 22
+              }
+            },
+            {
+              "lead_day": 6,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 3.3033,
+                "rmse_mm": 5.9692,
+                "bias_mm": 0.8433,
+                "rain_accuracy_percent": 75.56,
+                "hits": 47,
+                "misses": 14,
+                "false_alarms": 8,
+                "correct_no_rain": 21
+              }
+            },
+            {
+              "lead_day": 7,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 3.3356,
+                "rmse_mm": 5.7999,
+                "bias_mm": 0.3333,
+                "rain_accuracy_percent": 67.78,
+                "hits": 40,
+                "misses": 21,
+                "false_alarms": 8,
+                "correct_no_rain": 21
+              }
+            }
+          ]
+        },
+        {
+          "name": "GFS",
+          "model_id": "gfs_seamless",
+          "success": true,
+          "leads": [
+            {
+              "lead_day": 1,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.2356,
+                "rmse_mm": 4.281,
+                "bias_mm": -0.8756,
+                "rain_accuracy_percent": 75.56,
+                "hits": 44,
+                "misses": 17,
+                "false_alarms": 5,
+                "correct_no_rain": 24
+              }
+            },
+            {
+              "lead_day": 2,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.5344,
+                "rmse_mm": 4.6824,
+                "bias_mm": -0.8344,
+                "rain_accuracy_percent": 67.78,
+                "hits": 38,
+                "misses": 23,
+                "false_alarms": 6,
+                "correct_no_rain": 23
+              }
+            },
+            {
+              "lead_day": 3,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 3.1989,
+                "rmse_mm": 6.2384,
+                "bias_mm": -0.1189,
+                "rain_accuracy_percent": 63.33,
+                "hits": 31,
+                "misses": 30,
+                "false_alarms": 3,
+                "correct_no_rain": 26
+              }
+            },
+            {
+              "lead_day": 4,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 3.0167,
+                "rmse_mm": 5.5578,
+                "bias_mm": -0.4344,
+                "rain_accuracy_percent": 71.11,
+                "hits": 38,
+                "misses": 23,
+                "false_alarms": 3,
+                "correct_no_rain": 26
+              }
+            },
+            {
+              "lead_day": 5,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.69,
+                "rmse_mm": 5.3673,
+                "bias_mm": -1.0278,
+                "rain_accuracy_percent": 70.0,
+                "hits": 36,
+                "misses": 25,
+                "false_alarms": 2,
+                "correct_no_rain": 27
+              }
+            },
+            {
+              "lead_day": 6,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.6822,
+                "rmse_mm": 5.2724,
+                "bias_mm": -0.9956,
+                "rain_accuracy_percent": 64.44,
+                "hits": 32,
+                "misses": 29,
+                "false_alarms": 3,
+                "correct_no_rain": 26
+              }
+            },
+            {
+              "lead_day": 7,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.94,
+                "rmse_mm": 5.9509,
+                "bias_mm": -0.8844,
+                "rain_accuracy_percent": 63.33,
+                "hits": 30,
+                "misses": 31,
+                "false_alarms": 2,
+                "correct_no_rain": 27
+              }
+            }
+          ]
+        },
+        {
+          "name": "ICON",
+          "model_id": "icon_seamless",
+          "success": true,
+          "leads": [
+            {
+              "lead_day": 1,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 2.5122,
+                "rmse_mm": 4.4619,
+                "bias_mm": 0.6411,
+                "rain_accuracy_percent": 78.89,
+                "hits": 49,
+                "misses": 12,
+                "false_alarms": 7,
+                "correct_no_rain": 22
+              }
+            },
+            {
+              "lead_day": 2,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 4.6933,
+                "rmse_mm": 13.0876,
+                "bias_mm": 2.7956,
+                "rain_accuracy_percent": 76.67,
+                "hits": 49,
+                "misses": 12,
+                "false_alarms": 9,
+                "correct_no_rain": 20
+              }
+            },
+            {
+              "lead_day": 3,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 5.0011,
+                "rmse_mm": 12.9522,
+                "bias_mm": 3.1322,
+                "rain_accuracy_percent": 75.56,
+                "hits": 51,
+                "misses": 10,
+                "false_alarms": 12,
+                "correct_no_rain": 17
+              }
+            },
+            {
+              "lead_day": 4,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 4.7478,
+                "rmse_mm": 9.2819,
+                "bias_mm": 2.6567,
+                "rain_accuracy_percent": 65.56,
+                "hits": 43,
+                "misses": 18,
+                "false_alarms": 13,
+                "correct_no_rain": 16
+              }
+            },
+            {
+              "lead_day": 5,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 9.8722,
+                "rmse_mm": 32.2252,
+                "bias_mm": 7.2433,
+                "rain_accuracy_percent": 70.0,
+                "hits": 47,
+                "misses": 14,
+                "false_alarms": 13,
+                "correct_no_rain": 16
+              }
+            },
+            {
+              "lead_day": 6,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 5.0533,
+                "rmse_mm": 10.6477,
+                "bias_mm": 2.4133,
+                "rain_accuracy_percent": 61.11,
+                "hits": 39,
+                "misses": 22,
+                "false_alarms": 13,
+                "correct_no_rain": 16
+              }
+            },
+            {
+              "lead_day": 7,
+              "metrics": {
+                "samples": 0,
+                "mae_mm": null,
+                "rmse_mm": null,
+                "bias_mm": null,
+                "rain_accuracy_percent": null,
+                "hits": 0,
+                "misses": 0,
+                "false_alarms": 0,
+                "correct_no_rain": 0
+              }
+            }
+          ]
+        }
+      ],
+      "updated_at": "2026-09-19T02:08:55.762617+00:00",
+      "collector_version": "V4",
+      "collection_status": {
+        "complete": true,
+        "successful_models": [
+          "ECMWF",
+          "GFS",
+          "ICON"
+        ],
+        "missing_models": []
+      }
+    },
+    {
+      "location": {
+        "id": "dungarpur",
+        "name": "Dungarpur",
+        "query": "Dungarpur, Rajasthan, India",
+        "latitude": 23.84306,
+        "longitude": 73.71466
+      },
+      "period": {
+        "start": "2026-06-14",
+        "end": "2026-09-11",
+        "days": 90
+      },
+      "reference": {
+        "name": "ERA5 / Open-Meteo reanalysis",
+        "type": "reanalysis"
+      },
+      "models": [
+        {
+          "name": "ECMWF",
+          "model_id": "ecmwf_ifs025",
+          "success": true,
+          "leads": [
+            {
+              "lead_day": 1,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 3.7611,
+                "rmse_mm": 8.465,
+                "bias_mm": 0.7144,
+                "rain_accuracy_percent": 77.78,
+                "hits": 59,
+                "misses": 14,
+                "false_alarms": 6,
+                "correct_no_rain": 11
+              }
+            },
+            {
+              "lead_day": 2,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 6.5367,
+                "rmse_mm": 20.4769,
+                "bias_mm": 3.0944,
+                "rain_accuracy_percent": 73.33,
+                "hits": 57,
+                "misses": 16,
+                "false_alarms": 8,
+                "correct_no_rain": 9
+              }
+            },
+            {
+              "lead_day": 3,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 6.6578,
+                "rmse_mm": 17.6851,
+                "bias_mm": 2.9111,
+                "rain_accuracy_percent": 67.78,
+                "hits": 52,
+                "misses": 21,
+                "false_alarms": 8,
+                "correct_no_rain": 9
+              }
+            },
+            {
+              "lead_day": 4,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 6.0711,
+                "rmse_mm": 13.9293,
+                "bias_mm": 0.9378,
+                "rain_accuracy_percent": 66.67,
+                "hits": 52,
+                "misses": 21,
+                "false_alarms": 9,
+                "correct_no_rain": 8
+              }
+            },
+            {
+              "lead_day": 5,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 5.9489,
+                "rmse_mm": 14.5356,
+                "bias_mm": 0.4978,
+                "rain_accuracy_percent": 75.56,
+                "hits": 57,
+                "misses": 16,
+                "false_alarms": 6,
+                "correct_no_rain": 11
+              }
+            },
+            {
+              "lead_day": 6,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 6.3756,
+                "rmse_mm": 12.477,
+                "bias_mm": 1.3778,
+                "rain_accuracy_percent": 72.22,
+                "hits": 55,
+                "misses": 18,
+                "false_alarms": 7,
+                "correct_no_rain": 10
+              }
+            },
+            {
+              "lead_day": 7,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 8.6622,
+                "rmse_mm": 19.6489,
+                "bias_mm": 3.1244,
+                "rain_accuracy_percent": 70.0,
+                "hits": 55,
+                "misses": 18,
+                "false_alarms": 9,
+                "correct_no_rain": 8
+              }
+            }
+          ]
+        },
+        {
+          "name": "GFS",
+          "model_id": "gfs_seamless",
+          "success": true,
+          "leads": [
+            {
+              "lead_day": 1,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 3.2344,
+                "rmse_mm": 6.8941,
+                "bias_mm": -0.3589,
+                "rain_accuracy_percent": 63.33,
+                "hits": 44,
+                "misses": 29,
+                "false_alarms": 4,
+                "correct_no_rain": 13
+              }
+            },
+            {
+              "lead_day": 2,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 4.2789,
+                "rmse_mm": 12.4874,
+                "bias_mm": -1.4056,
+                "rain_accuracy_percent": 60.0,
+                "hits": 41,
+                "misses": 32,
+                "false_alarms": 4,
+                "correct_no_rain": 13
+              }
+            },
+            {
+              "lead_day": 3,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 4.6,
+                "rmse_mm": 10.139,
+                "bias_mm": -0.6756,
+                "rain_accuracy_percent": 58.89,
+                "hits": 44,
+                "misses": 29,
+                "false_alarms": 8,
+                "correct_no_rain": 9
+              }
+            },
+            {
+              "lead_day": 4,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 4.5311,
+                "rmse_mm": 9.5018,
+                "bias_mm": -1.8044,
+                "rain_accuracy_percent": 62.22,
+                "hits": 46,
+                "misses": 27,
+                "false_alarms": 7,
+                "correct_no_rain": 10
+              }
+            },
+            {
+              "lead_day": 5,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 4.07,
+                "rmse_mm": 8.9675,
+                "bias_mm": -2.95,
+                "rain_accuracy_percent": 55.56,
+                "hits": 40,
+                "misses": 33,
+                "false_alarms": 7,
+                "correct_no_rain": 10
+              }
+            },
+            {
+              "lead_day": 6,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 4.1744,
+                "rmse_mm": 9.5646,
+                "bias_mm": -3.4989,
+                "rain_accuracy_percent": 53.33,
+                "hits": 36,
+                "misses": 37,
+                "false_alarms": 5,
+                "correct_no_rain": 12
+              }
+            },
+            {
+              "lead_day": 7,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 4.4678,
+                "rmse_mm": 9.7362,
+                "bias_mm": -3.2233,
+                "rain_accuracy_percent": 51.11,
+                "hits": 35,
+                "misses": 38,
+                "false_alarms": 6,
+                "correct_no_rain": 11
+              }
+            }
+          ]
+        },
+        {
+          "name": "ICON",
+          "model_id": "icon_seamless",
+          "success": true,
+          "leads": [
+            {
+              "lead_day": 1,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 4.0567,
+                "rmse_mm": 9.2095,
+                "bias_mm": 0.6233,
+                "rain_accuracy_percent": 64.44,
+                "hits": 43,
+                "misses": 30,
+                "false_alarms": 2,
+                "correct_no_rain": 15
+              }
+            },
+            {
+              "lead_day": 2,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 5.1089,
+                "rmse_mm": 12.8528,
+                "bias_mm": 1.7956,
+                "rain_accuracy_percent": 58.89,
+                "hits": 39,
+                "misses": 34,
+                "false_alarms": 3,
+                "correct_no_rain": 14
+              }
+            },
+            {
+              "lead_day": 3,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 6.4156,
+                "rmse_mm": 13.9565,
+                "bias_mm": 2.5422,
+                "rain_accuracy_percent": 52.22,
+                "hits": 39,
+                "misses": 34,
+                "false_alarms": 9,
+                "correct_no_rain": 8
+              }
+            },
+            {
+              "lead_day": 4,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 6.6567,
+                "rmse_mm": 14.9213,
+                "bias_mm": 2.4633,
+                "rain_accuracy_percent": 56.67,
+                "hits": 41,
+                "misses": 32,
+                "false_alarms": 7,
+                "correct_no_rain": 10
+              }
+            },
+            {
+              "lead_day": 5,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 11.1933,
+                "rmse_mm": 36.981,
+                "bias_mm": 6.1556,
+                "rain_accuracy_percent": 56.67,
+                "hits": 43,
+                "misses": 30,
+                "false_alarms": 9,
+                "correct_no_rain": 8
+              }
+            },
+            {
+              "lead_day": 6,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 11.4256,
+                "rmse_mm": 31.476,
+                "bias_mm": 6.1411,
+                "rain_accuracy_percent": 61.11,
+                "hits": 47,
+                "misses": 26,
+                "false_alarms": 9,
+                "correct_no_rain": 8
+              }
+            },
+            {
+              "lead_day": 7,
+              "metrics": {
+                "samples": 0,
+                "mae_mm": null,
+                "rmse_mm": null,
+                "bias_mm": null,
+                "rain_accuracy_percent": null,
+                "hits": 0,
+                "misses": 0,
+                "false_alarms": 0,
+                "correct_no_rain": 0
+              }
+            }
+          ]
+        }
+      ],
+      "updated_at": "2026-09-19T02:09:06.893007+00:00",
+      "collector_version": "V4",
+      "collection_status": {
+        "complete": true,
+        "successful_models": [
+          "ECMWF",
+          "GFS",
+          "ICON"
+        ],
+        "missing_models": []
+      }
+    },
+    {
+      "location": {
+        "id": "udaipur",
+        "name": "Udaipur",
+        "query": "Udaipur, Rajasthan, India",
+        "latitude": 24.58584,
+        "longitude": 73.71346
+      },
+      "period": {
+        "start": "2026-06-14",
+        "end": "2026-09-11",
+        "days": 90
+      },
+      "reference": {
+        "name": "ERA5 / Open-Meteo reanalysis",
+        "type": "reanalysis"
+      },
+      "models": [
+        {
+          "name": "ECMWF",
+          "model_id": "ecmwf_ifs025",
+          "success": true,
+          "leads": [
+            {
+              "lead_day": 1,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 3.1344,
+                "rmse_mm": 6.4511,
+                "bias_mm": 0.5767,
+                "rain_accuracy_percent": 84.44,
+                "hits": 51,
+                "misses": 11,
+                "false_alarms": 3,
+                "correct_no_rain": 25
+              }
+            },
+            {
+              "lead_day": 2,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 4.0222,
+                "rmse_mm": 9.6475,
+                "bias_mm": 1.0733,
+                "rain_accuracy_percent": 73.33,
+                "hits": 40,
+                "misses": 22,
+                "false_alarms": 2,
+                "correct_no_rain": 26
+              }
+            },
+            {
+              "lead_day": 3,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 4.8311,
+                "rmse_mm": 10.6315,
+                "bias_mm": 0.52,
+                "rain_accuracy_percent": 71.11,
+                "hits": 36,
+                "misses": 26,
+                "false_alarms": 0,
+                "correct_no_rain": 28
+              }
+            },
+            {
+              "lead_day": 4,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 4.8678,
+                "rmse_mm": 10.8937,
+                "bias_mm": -0.31,
+                "rain_accuracy_percent": 72.22,
+                "hits": 38,
+                "misses": 24,
+                "false_alarms": 1,
+                "correct_no_rain": 27
+              }
+            },
+            {
+              "lead_day": 5,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 5.4889,
+                "rmse_mm": 13.6546,
+                "bias_mm": -0.24,
+                "rain_accuracy_percent": 74.44,
+                "hits": 42,
+                "misses": 20,
+                "false_alarms": 3,
+                "correct_no_rain": 25
+              }
+            },
+            {
+              "lead_day": 6,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 6.2178,
+                "rmse_mm": 13.3958,
+                "bias_mm": 0.3267,
+                "rain_accuracy_percent": 70.0,
+                "hits": 39,
+                "misses": 23,
+                "false_alarms": 4,
+                "correct_no_rain": 24
+              }
+            },
+            {
+              "lead_day": 7,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 7.0489,
+                "rmse_mm": 14.9985,
+                "bias_mm": 0.92,
+                "rain_accuracy_percent": 63.33,
+                "hits": 36,
+                "misses": 26,
+                "false_alarms": 7,
+                "correct_no_rain": 21
+              }
+            }
+          ]
+        },
+        {
+          "name": "GFS",
+          "model_id": "gfs_seamless",
+          "success": true,
+          "leads": [
+            {
+              "lead_day": 1,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 3.9133,
+                "rmse_mm": 7.4286,
+                "bias_mm": 1.0867,
+                "rain_accuracy_percent": 77.78,
+                "hits": 48,
+                "misses": 14,
+                "false_alarms": 6,
+                "correct_no_rain": 22
+              }
+            },
+            {
+              "lead_day": 2,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 4.3567,
+                "rmse_mm": 12.9031,
+                "bias_mm": -0.3567,
+                "rain_accuracy_percent": 66.67,
+                "hits": 38,
+                "misses": 24,
+                "false_alarms": 6,
+                "correct_no_rain": 22
+              }
+            },
+            {
+              "lead_day": 3,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 5.7444,
+                "rmse_mm": 16.5627,
+                "bias_mm": 0.9511,
+                "rain_accuracy_percent": 65.56,
+                "hits": 40,
+                "misses": 22,
+                "false_alarms": 9,
+                "correct_no_rain": 19
+              }
+            },
+            {
+              "lead_day": 4,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 5.2878,
+                "rmse_mm": 10.9485,
+                "bias_mm": -0.5856,
+                "rain_accuracy_percent": 57.78,
+                "hits": 34,
+                "misses": 28,
+                "false_alarms": 10,
+                "correct_no_rain": 18
+              }
+            },
+            {
+              "lead_day": 5,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 4.6822,
+                "rmse_mm": 9.642,
+                "bias_mm": -2.0289,
+                "rain_accuracy_percent": 58.89,
+                "hits": 33,
+                "misses": 29,
+                "false_alarms": 8,
+                "correct_no_rain": 20
+              }
+            },
+            {
+              "lead_day": 6,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 4.1067,
+                "rmse_mm": 8.781,
+                "bias_mm": -2.9089,
+                "rain_accuracy_percent": 52.22,
+                "hits": 27,
+                "misses": 35,
+                "false_alarms": 8,
+                "correct_no_rain": 20
+              }
+            },
+            {
+              "lead_day": 7,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 4.0944,
+                "rmse_mm": 8.8198,
+                "bias_mm": -2.9833,
+                "rain_accuracy_percent": 57.78,
+                "hits": 32,
+                "misses": 30,
+                "false_alarms": 8,
+                "correct_no_rain": 20
+              }
+            }
+          ]
+        },
+        {
+          "name": "ICON",
+          "model_id": "icon_seamless",
+          "success": true,
+          "leads": [
+            {
+              "lead_day": 1,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 4.2856,
+                "rmse_mm": 10.188,
+                "bias_mm": 0.1722,
+                "rain_accuracy_percent": 75.56,
+                "hits": 40,
+                "misses": 22,
+                "false_alarms": 0,
+                "correct_no_rain": 28
+              }
+            },
+            {
+              "lead_day": 2,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 4.9522,
+                "rmse_mm": 11.6605,
+                "bias_mm": 0.9389,
+                "rain_accuracy_percent": 71.11,
+                "hits": 38,
+                "misses": 24,
+                "false_alarms": 2,
+                "correct_no_rain": 26
+              }
+            },
+            {
+              "lead_day": 3,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 3.8122,
+                "rmse_mm": 7.6959,
+                "bias_mm": -1.0456,
+                "rain_accuracy_percent": 64.44,
+                "hits": 37,
+                "misses": 25,
+                "false_alarms": 7,
+                "correct_no_rain": 21
+              }
+            },
+            {
+              "lead_day": 4,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 4.1578,
+                "rmse_mm": 8.9977,
+                "bias_mm": -0.2244,
+                "rain_accuracy_percent": 66.67,
+                "hits": 38,
+                "misses": 24,
+                "false_alarms": 6,
+                "correct_no_rain": 22
+              }
+            },
+            {
+              "lead_day": 5,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 4.6478,
+                "rmse_mm": 8.8668,
+                "bias_mm": -0.0322,
+                "rain_accuracy_percent": 58.89,
+                "hits": 36,
+                "misses": 26,
+                "false_alarms": 11,
+                "correct_no_rain": 17
+              }
+            },
+            {
+              "lead_day": 6,
+              "metrics": {
+                "samples": 90,
+                "mae_mm": 7.0644,
+                "rmse_mm": 21.8736,
+                "bias_mm": 1.9156,
+                "rain_accuracy_percent": 62.22,
+                "hits": 38,
+                "misses": 24,
+                "false_alarms": 10,
+                "correct_no_rain": 18
+              }
+            },
+            {
+              "lead_day": 7,
+              "metrics": {
+                "samples": 0,
+                "mae_mm": null,
+                "rmse_mm": null,
+                "bias_mm": null,
+                "rain_accuracy_percent": null,
+                "hits": 0,
+                "misses": 0,
+                "false_alarms": 0,
+                "correct_no_rain": 0
+              }
+            }
+          ]
+        }
+      ],
+      "updated_at": "2026-09-19T02:10:20.796868+00:00",
+      "collector_version": "V4",
+      "collection_status": {
+        "complete": true,
+        "successful_models": [
+          "ECMWF",
+          "GFS",
+          "ICON"
+        ],
+        "missing_models": []
+      }
     }
   ]
 }
