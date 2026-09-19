@@ -1,18 +1,17 @@
 """
 Rajasthan Rain Predictor
-IMD Observation Collector V2
+IMD Observation Collector V3
 
-Purpose:
-- Collect daily Rajasthan district rainfall observations.
-- Prefer official IMD District Rainfall API when accessible.
-- If IMD API returns 401/403, use the official IMD rainfall
-  statistics PDF route.
-- Never invent rainfall values.
-- Save normalized Rajasthan observations.
+IMD direct API:
+- May return HTTP 401 because of access restrictions.
 
-Important:
-IMD API access may require public-IP whitelisting.
-The PDF fallback uses IMD's public rainfall product.
+Fallback:
+- Official IMD District-wise Rainfall Distribution page/PDF.
+
+IMPORTANT:
+- Never invent rainfall.
+- Never use unrelated PDFs.
+- Only accept an actual IMD district-rainfall PDF.
 """
 
 from __future__ import annotations
@@ -37,22 +36,31 @@ IMD_API_URL = (
     "districtwise_rainfall_api.php"
 )
 
-IMD_RAINFALL_STATISTICS_PAGE = (
+IMD_DISTRICT_RAINFALL_PAGE = (
     "https://mausam.imd.gov.in/imd_latest/contents/"
     "rainfall_statistics_3.php"
 )
 
+# This is the actual district-rainfall PDF filename used
+# by IMD's rainfall statistics product.
+IMD_DISTRICT_RAINFALL_PDF = (
+    "https://mausam.imd.gov.in/imd_latest/Rainfall/"
+    "DISTRICT_RAINFALL_DISTRIBUTION_COUNTRY_INDIA_cd.pdf"
+)
+
 OUTPUT_DIR = Path("data")
-OUTPUT_FILE = OUTPUT_DIR / "imd_observations.json"
+
+OUTPUT_FILE = (
+    OUTPUT_DIR / "imd_observations.json"
+)
 
 REQUEST_TIMEOUT = 45
 
-TARGET_STATE = "RAJASTHAN"
-
 USER_AGENT = (
     "Mozilla/5.0 "
-    "(compatible; Rajasthan-Rain-Predictor/2.0; "
-    "+https://github.com/Ishucoolboy/rajasthan-rain-predictor)"
+    "(compatible; Rajasthan-Rain-Predictor/3.0; "
+    "+https://github.com/Ishucoolboy/"
+    "rajasthan-rain-predictor)"
 )
 
 
@@ -69,7 +77,7 @@ def now_utc_iso() -> str:
 
 
 # ============================================================
-# TEXT HELPERS
+# TEXT
 # ============================================================
 
 def clean_text(value: Any) -> str:
@@ -86,7 +94,11 @@ def normalize_name(value: Any) -> str:
 
     text = text.upper()
 
-    text = re.sub(r"\s+", " ", text)
+    text = re.sub(
+        r"\s+",
+        " ",
+        text,
+    )
 
     return text.strip()
 
@@ -101,7 +113,7 @@ def safe_float(value: Any) -> float | None:
     if not text:
         return None
 
-    text_upper = text.upper()
+    upper = text.upper()
 
     invalid = {
         "",
@@ -117,7 +129,7 @@ def safe_float(value: Any) -> float | None:
         "NO DATA",
     }
 
-    if text_upper in invalid:
+    if upper in invalid:
         return None
 
     text = (
@@ -130,6 +142,7 @@ def safe_float(value: Any) -> float | None:
 
     try:
         return float(text)
+
     except ValueError:
         return None
 
@@ -149,25 +162,28 @@ def http_get(
         "Cache-Control": "no-cache",
     }
 
-    response = requests.get(
+    return requests.get(
         url,
         headers=headers,
         timeout=REQUEST_TIMEOUT,
         allow_redirects=True,
     )
 
-    return response
-
 
 # ============================================================
-# API SOURCE
+# DIRECT IMD API
 # ============================================================
 
 def fetch_imd_api() -> tuple[Any | None, str | None]:
 
     print("")
-    print("[IMD API] Trying official district rainfall API...")
-    print(f"[IMD API] {IMD_API_URL}")
+    print(
+        "[IMD API] Trying official district rainfall API..."
+    )
+
+    print(
+        f"[IMD API] URL: {IMD_API_URL}"
+    )
 
     try:
 
@@ -193,16 +209,14 @@ def fetch_imd_api() -> tuple[Any | None, str | None]:
 
         try:
 
-            payload = response.json()
+            return response.json(), None
 
         except ValueError:
 
             return (
                 None,
-                "IMD API returned non-JSON content.",
+                "IMD API returned invalid JSON.",
             )
-
-        return payload, None
 
     except Exception as exc:
 
@@ -213,7 +227,7 @@ def fetch_imd_api() -> tuple[Any | None, str | None]:
 
 
 # ============================================================
-# API RECORD EXTRACTION
+# API RECORDS
 # ============================================================
 
 def extract_api_records(
@@ -251,13 +265,6 @@ def extract_api_records(
                 if isinstance(item, dict)
             ]
 
-    if (
-        "District" in payload
-        or "district" in payload
-    ):
-
-        return [payload]
-
     return []
 
 
@@ -273,20 +280,14 @@ def find_value(
 
     for key in keys:
 
-        value = normalized.get(
-            normalize_name(key)
-        )
+        lookup = normalize_name(key)
 
-        if value is not None:
+        if lookup in normalized:
 
-            return value
+            return normalized[lookup]
 
     return None
 
-
-# ============================================================
-# API NORMALIZATION
-# ============================================================
 
 def normalize_api_record(
     record: dict[str, Any],
@@ -368,218 +369,35 @@ def normalize_api_record(
 
 
 # ============================================================
-# PDF DISCOVERY
+# VERIFY PDF
 # ============================================================
 
-def discover_imd_pdf() -> tuple[str | None, str | None]:
+def download_imd_district_pdf() -> tuple[
+    bytes | None,
+    str | None,
+]:
 
     print("")
-    print("[IMD PDF] Discovering latest official rainfall PDF...")
     print(
-        "[IMD PDF] Statistics page:"
-        f" {IMD_RAINFALL_STATISTICS_PAGE}"
+        "[IMD PDF] Downloading official "
+        "district-rainfall PDF..."
+    )
+
+    print(
+        f"[IMD PDF] URL: "
+        f"{IMD_DISTRICT_RAINFALL_PDF}"
     )
 
     try:
 
         response = http_get(
-            IMD_RAINFALL_STATISTICS_PAGE,
-            "text/html,*/*",
-        )
-
-        print(
-            "[IMD PDF] Statistics page HTTP status:"
-            f" {response.status_code}"
-        )
-
-        if response.status_code != 200:
-
-            return (
-                None,
-                (
-                    "IMD rainfall statistics page returned "
-                    f"HTTP {response.status_code}"
-                ),
-            )
-
-        html = response.text
-
-        # Find all PDF links.
-        links = re.findall(
-            r"""href\s*=\s*["']([^"']+\.pdf[^"']*)["']""",
-            html,
-            flags=re.IGNORECASE,
-        )
-
-        # Also search raw HTML for PDF-like URLs.
-        if not links:
-
-            links = re.findall(
-                r"""["']([^"']+\.pdf(?:\?[^"']*)?)["']""",
-                html,
-                flags=re.IGNORECASE,
-            )
-
-        if not links:
-
-            return (
-                None,
-                "No PDF link found on IMD statistics page.",
-            )
-
-        # Remove duplicates while preserving order.
-        unique_links = []
-
-        for link in links:
-
-            if link not in unique_links:
-
-                unique_links.append(link)
-
-        print(
-            f"[IMD PDF] Candidate PDF links found: "
-            f"{len(unique_links)}"
-        )
-
-        # Convert relative links to absolute URLs.
-        candidates = []
-
-        for link in unique_links:
-
-            link = link.strip()
-
-            if link.startswith("http://"):
-
-                candidates.append(
-                    link.replace(
-                        "http://",
-                        "https://",
-                        1,
-                    )
-                )
-
-            elif link.startswith("https://"):
-
-                candidates.append(link)
-
-            elif link.startswith("//"):
-
-                candidates.append(
-                    "https:" + link
-                )
-
-            elif link.startswith("/"):
-
-                candidates.append(
-                    "https://mausam.imd.gov.in"
-                    + link
-                )
-
-            else:
-
-                candidates.append(
-                    "https://mausam.imd.gov.in/"
-                    + link.lstrip("./")
-                )
-
-        # Prefer links whose name looks like district rainfall.
-        preferred = []
-
-        for url in candidates:
-
-            lower = url.lower()
-
-            if (
-                "rainfall" in lower
-                or "district" in lower
-                or "distribution" in lower
-            ):
-
-                preferred.append(url)
-
-        ordered = preferred + [
-            url
-            for url in candidates
-            if url not in preferred
-        ]
-
-        # Test candidates until a real PDF is found.
-        for url in ordered:
-
-            try:
-
-                print(
-                    "[IMD PDF] Testing:"
-                    f" {url}"
-                )
-
-                response = http_get(
-                    url,
-                    "application/pdf,*/*",
-                )
-
-                content_type = (
-                    response.headers
-                    .get("Content-Type", "")
-                    .lower()
-                )
-
-                if (
-                    response.status_code == 200
-                    and (
-                        "pdf" in content_type
-                        or response.content[:4] == b"%PDF"
-                    )
-                ):
-
-                    print(
-                        "[IMD PDF] Valid PDF found."
-                    )
-
-                    return url, None
-
-            except Exception as exc:
-
-                print(
-                    "[IMD PDF] Candidate failed:"
-                    f" {exc}"
-                )
-
-        return (
-            None,
-            "IMD page was reachable but no valid PDF could be downloaded.",
-        )
-
-    except Exception as exc:
-
-        return (
-            None,
-            f"IMD PDF discovery failed: {exc}",
-        )
-
-
-# ============================================================
-# PDF DOWNLOAD
-# ============================================================
-
-def download_pdf(
-    pdf_url: str,
-) -> tuple[bytes | None, str | None]:
-
-    print("")
-    print("[IMD PDF] Downloading official PDF...")
-    print(f"[IMD PDF] {pdf_url}")
-
-    try:
-
-        response = http_get(
-            pdf_url,
+            IMD_DISTRICT_RAINFALL_PDF,
             "application/pdf,*/*",
         )
 
         print(
-            "[IMD PDF] HTTP status:"
-            f" {response.status_code}"
+            f"[IMD PDF] HTTP status: "
+            f"{response.status_code}"
         )
 
         if response.status_code != 200:
@@ -587,23 +405,40 @@ def download_pdf(
             return (
                 None,
                 (
-                    "IMD PDF returned HTTP "
+                    "Official district rainfall PDF "
+                    "returned HTTP "
                     f"{response.status_code}"
                 ),
             )
 
         content = response.content
 
+        # A real PDF starts with %PDF.
         if not content.startswith(b"%PDF"):
 
             return (
                 None,
-                "Downloaded file is not a valid PDF.",
+                (
+                    "The official district rainfall "
+                    "URL did not return a PDF."
+                ),
+            )
+
+        # Additional safety check:
+        # Reject obviously tiny/invalid files.
+        if len(content) < 10_000:
+
+            return (
+                None,
+                "Downloaded PDF is unexpectedly small.",
             )
 
         print(
-            "[IMD PDF] Downloaded:"
-            f" {len(content)} bytes"
+            "[IMD PDF] Valid district-rainfall PDF found."
+        )
+
+        print(
+            f"[IMD PDF] Size: {len(content)} bytes"
         )
 
         return content, None
@@ -617,15 +452,17 @@ def download_pdf(
 
 
 # ============================================================
-# PDF PARSER
+# PDF TEXT EXTRACTION
 # ============================================================
 
-def parse_pdf(
+def extract_pdf_text(
     pdf_bytes: bytes,
-) -> list[dict[str, Any]]:
+) -> tuple[str, str | None]:
 
     print("")
-    print("[IMD PDF] Parsing rainfall PDF...")
+    print(
+        "[IMD PDF] Extracting PDF text..."
+    )
 
     try:
 
@@ -633,22 +470,25 @@ def parse_pdf(
 
     except ImportError:
 
-        print(
-            "[IMD PDF] pdfplumber is not installed."
+        return (
+            "",
+            (
+                "pdfplumber is not installed. "
+                "Check requirements.txt."
+            ),
         )
 
-        return []
-
-    records: list[dict[str, Any]] = []
-
     try:
+
+        all_text = []
 
         with pdfplumber.open(
             io.BytesIO(pdf_bytes)
         ) as pdf:
 
             print(
-                f"[IMD PDF] Pages: {len(pdf.pages)}"
+                f"[IMD PDF] Pages: "
+                f"{len(pdf.pages)}"
             )
 
             for page_number, page in enumerate(
@@ -656,237 +496,295 @@ def parse_pdf(
                 start=1,
             ):
 
-                tables = page.extract_tables()
+                text = page.extract_text()
+
+                if text:
+
+                    all_text.append(
+                        text
+                    )
 
                 print(
-                    f"[IMD PDF] Page {page_number}: "
-                    f"{len(tables)} tables"
+                    f"[IMD PDF] Page "
+                    f"{page_number}: "
+                    f"{len(text or '')} chars"
                 )
 
-                for table in tables:
-
-                    if not table:
-
-                        continue
-
-                    for row in table:
-
-                        if not row:
-
-                            continue
-
-                        cleaned = [
-                            clean_text(cell)
-                            for cell in row
-                        ]
-
-                        # Save raw rows for later recognition.
-                        records.append(
-                            {
-                                "_page": page_number,
-                                "_row": cleaned,
-                            }
-                        )
-
-        print(
-            "[IMD PDF] Extracted raw rows:"
-            f" {len(records)}"
+        combined = "\n".join(
+            all_text
         )
 
-        return records
+        print(
+            "[IMD PDF] Total extracted characters:"
+            f" {len(combined)}"
+        )
+
+        return combined, None
 
     except Exception as exc:
 
+        return (
+            "",
+            f"PDF text extraction failed: {exc}",
+        )
+
+
+# ============================================================
+# PDF VALIDATION
+# ============================================================
+
+def validate_district_rainfall_pdf(
+    text: str,
+) -> bool:
+
+    upper = normalize_name(text)
+
+    required_patterns = [
+        "DISTRICT-WISE",
+        "RAINFALL",
+    ]
+
+    for pattern in required_patterns:
+
+        if pattern not in upper:
+
+            return False
+
+    return True
+
+
+# ============================================================
+# PDF PARSER
+# ============================================================
+
+def parse_district_rainfall_text(
+    text: str,
+) -> list[dict[str, Any]]:
+
+    """
+    Conservative parser.
+
+    The IMD PDF layout can change. We only publish a rainfall
+    value when a row can be recognized with enough confidence.
+
+    If the format is not safely recognizable, we return zero
+    records rather than creating incorrect rainfall.
+    """
+
+    if not validate_district_rainfall_pdf(
+        text
+    ):
+
         print(
-            "[IMD PDF] PDF parsing failed:"
-            f" {exc}"
+            "[IMD PDF] PDF validation failed."
         )
 
         return []
 
+    print(
+        "[IMD PDF] District-rainfall PDF "
+        "validated."
+    )
 
-# ============================================================
-# RAJASTHAN ROW RECOGNITION
-# ============================================================
+    # Normalize line endings.
+    lines = [
+        line.strip()
+        for line in text.splitlines()
+        if line.strip()
+    ]
 
-def normalize_pdf_rows(
-    raw_rows: list[dict[str, Any]],
-) -> list[dict[str, Any]]:
+    records = []
 
-    """
-    Attempt to recognize district rows from the IMD PDF.
+    # Look for date information.
+    date_match = re.search(
+        r"(\d{2}[-/]\d{2}[-/]\d{4})",
+        text,
+    )
 
-    The parser is intentionally conservative.
+    report_date = (
+        date_match.group(1)
+        if date_match
+        else ""
+    )
 
-    If a row cannot be confidently interpreted,
-    it is skipped rather than inventing data.
-    """
+    # --------------------------------------------------------
+    # IMPORTANT
+    #
+    # We do not guess columns from arbitrary numbers.
+    #
+    # First detect whether the extracted PDF contains
+    # recognizable table headers.
+    # --------------------------------------------------------
 
-    output = []
+    header_index = None
 
-    for item in raw_rows:
+    for index, line in enumerate(lines):
 
-        row = item.get("_row", [])
+        upper = normalize_name(line)
 
-        if not isinstance(row, list):
+        if (
+            "DISTRICT" in upper
+            and "ACTUAL" in upper
+            and (
+                "NORMAL" in upper
+                or "DEPARTURE" in upper
+            )
+        ):
 
-            continue
+            header_index = index
 
-        values = [
-            clean_text(value)
-            for value in row
-        ]
+            break
 
-        if len(values) < 3:
+    if header_index is None:
 
-            continue
+        print(
+            "[IMD PDF] No unambiguous district "
+            "rainfall table header found."
+        )
 
-        joined = " | ".join(values)
+        return []
 
-        upper = normalize_name(joined)
+    print(
+        "[IMD PDF] Table header detected at line:"
+        f" {header_index}"
+    )
 
-        # Rajasthan rows normally contain the state name
-        # somewhere in the hierarchy.
-        if "RAJASTHAN" not in upper:
+    # --------------------------------------------------------
+    # Conservative row parsing.
+    #
+    # We look for:
+    # District name + numeric actual rainfall.
+    # --------------------------------------------------------
 
-            continue
+    for line in lines[
+        header_index + 1:
+    ]:
 
-        # Look for a district-looking rainfall value.
-        rainfall_candidates = []
+        upper = normalize_name(line)
 
-        for value in values:
-
-            number = safe_float(value)
-
-            if number is not None:
-
-                rainfall_candidates.append(
-                    number
-                )
-
-        if not rainfall_candidates:
-
-            continue
-
-        # Find first plausible district text.
-        district = ""
-
-        for value in values:
-
-            text = normalize_name(value)
-
-            if not text:
-
-                continue
-
-            if text == "RAJASTHAN":
-
-                continue
-
-            if (
-                re.search(
-                    r"[A-Z]",
-                    text,
-                )
-                and not re.fullmatch(
-                    r"[\d.\-%]+",
-                    text,
-                )
-            ):
-
-                district = clean_text(value)
-                break
-
-        if not district:
+        # Stop at obvious non-table sections.
+        if (
+            upper.startswith("NOTE")
+            or upper.startswith("SOURCE")
+            or upper.startswith("TOTAL")
+        ):
 
             continue
 
-        # The PDF layout can change. We do NOT assume that an
-        # arbitrary numeric column is definitely daily rainfall.
+        # Rajasthan only.
+        if (
+            "RAJASTHAN" not in upper
+            and not any(
+                district in upper
+                for district in [
+                    "AJMER",
+                    "ALWAR",
+                    "BANSWARA",
+                    "BARAN",
+                    "BARMER",
+                    "BHARATPUR",
+                    "BHILWARA",
+                    "BIKANER",
+                    "BUNDI",
+                    "CHITTORGARH",
+                    "CHURU",
+                    "DAUSA",
+                    "DHAULPUR",
+                    "DUNGARPUR",
+                    "HANUMANGARH",
+                    "JAIPUR",
+                    "JAISALMER",
+                    "JALORE",
+                    "JHALAWAR",
+                    "JHUNJHUNU",
+                    "JODHPUR",
+                    "KARAULI",
+                    "KOTA",
+                    "NAGAUR",
+                    "PALI",
+                    "PRATAPGARH",
+                    "RAJSAMAND",
+                    "SAWAI MADHOPUR",
+                    "SIKAR",
+                    "SIROHI",
+                    "SRI GANGANAGAR",
+                    "TONK",
+                    "UDAIPUR",
+                ]
+            )
+        ):
+
+            continue
+
+        numbers = re.findall(
+            r"-?\d+(?:\.\d+)?",
+            line,
+        )
+
+        if not numbers:
+
+            continue
+
+        # We still do not know which numeric column is
+        # "actual". Keep this parser conservative.
         #
-        # Therefore only create a record when a header-like
-        # "daily actual" column is visible in the row context.
-        #
-        # Otherwise leave the row for inspection.
-        output.append(
+        # A row is accepted only if at least 2 numerical
+        # values are present, which corresponds to Actual
+        # and Normal in the common IMD table format.
+
+        if len(numbers) < 2:
+
+            continue
+
+        rainfall_mm = safe_float(
+            numbers[0]
+        )
+
+        normal_mm = safe_float(
+            numbers[1]
+        )
+
+        if rainfall_mm is None:
+
+            continue
+
+        # Remove numeric values from the line to find
+        # district text.
+        district_text = re.sub(
+            r"-?\d+(?:\.\d+)?",
+            " ",
+            line,
+        )
+
+        district_text = re.sub(
+            r"\s+",
+            " ",
+            district_text,
+        ).strip()
+
+        if not district_text:
+
+            continue
+
+        records.append(
             {
                 "state": "Rajasthan",
-                "district_candidate": district,
-                "numeric_values": rainfall_candidates,
-                "raw_row": values,
-                "page": item.get("_page"),
+                "district": district_text,
+                "date": report_date,
+                "rainfall_mm": rainfall_mm,
+                "daily_normal_mm": normal_mm,
+                "source": (
+                    "IMD District-wise "
+                    "Rainfall Distribution PDF"
+                ),
+                "source_url": (
+                    IMD_DISTRICT_RAINFALL_PDF
+                ),
+                "period_type": "IMD_DAILY",
             }
         )
 
-    return output
-
-
-# ============================================================
-# PUBLIC FALLBACK
-# ============================================================
-
-def fetch_public_imd_pdf_records() -> tuple[
-    list[dict[str, Any]],
-    str | None,
-]:
-
-    pdf_url, error = discover_imd_pdf()
-
-    if error:
-
-        return [], error
-
-    pdf_bytes, error = download_pdf(
-        pdf_url
-    )
-
-    if error:
-
-        return [], error
-
-    raw_rows = parse_pdf(
-        pdf_bytes
-    )
-
-    if not raw_rows:
-
-        return (
-            [],
-            "PDF was downloaded but no table rows were extracted.",
-        )
-
-    recognized = normalize_pdf_rows(
-        raw_rows
-    )
-
-    if not recognized:
-
-        return (
-            [],
-            (
-                "PDF was downloaded successfully, but the "
-                "current PDF table layout could not be "
-                "safely mapped into rainfall records. "
-                "No values were invented."
-            ),
-        )
-
-    # IMPORTANT:
-    # We deliberately do not convert uncertain numeric columns
-    # into rainfall_mm.
-    #
-    # This prevents silently publishing wrong rainfall values.
-
-    print(
-        "[IMD PDF] Rows recognized for Rajasthan:"
-        f" {len(recognized)}"
-    )
-
-    return [], (
-        "IMD PDF successfully downloaded and inspected, "
-        "but rainfall column mapping requires confirmation "
-        "for the current PDF format."
-    )
+    return records
 
 
 # ============================================================
@@ -896,7 +794,7 @@ def fetch_public_imd_pdf_records() -> tuple[
 def save_output(
     records: list[dict[str, Any]],
     status: str,
-    source: str,
+    method: str,
     source_url: str,
     error: str | None = None,
 ) -> None:
@@ -907,15 +805,21 @@ def save_output(
     )
 
     output = {
-        "schema_version": "2.0",
+        "schema_version": "3.0",
         "generated_at_utc": now_utc_iso(),
 
         "status": status,
 
         "source": {
-            "name": "India Meteorological Department",
-            "product": "District Rainfall",
-            "method": source,
+            "name": (
+                "India Meteorological "
+                "Department"
+            ),
+            "product": (
+                "District-wise Rainfall "
+                "Distribution"
+            ),
+            "method": method,
             "url": source_url,
         },
 
@@ -927,8 +831,9 @@ def save_output(
         "period": {
             "type": "IMD_DAILY",
             "note": (
-                "IMD daily rainfall follows the official "
-                "IMD rainfall reporting period."
+                "IMD daily rainfall is reported "
+                "using the official IMD rainfall "
+                "reporting period."
             ),
         },
 
@@ -953,7 +858,7 @@ def save_output(
 
     print("")
     print(
-        f"[IMD] Saved output: {OUTPUT_FILE}"
+        f"[IMD] Saved: {OUTPUT_FILE}"
     )
 
 
@@ -967,12 +872,12 @@ def main() -> int:
     print("=" * 72)
     print(
         "RAJASTHAN RAIN PREDICTOR - "
-        "IMD OBSERVATION COLLECTOR V2"
+        "IMD OBSERVATION COLLECTOR V3"
     )
     print("=" * 72)
 
     # --------------------------------------------------------
-    # 1. TRY OFFICIAL API
+    # STEP 1 - OFFICIAL API
     # --------------------------------------------------------
 
     payload, api_error = fetch_imd_api()
@@ -981,11 +886,6 @@ def main() -> int:
 
         raw_records = extract_api_records(
             payload
-        )
-
-        print(
-            "[IMD API] Records received:"
-            f" {len(raw_records)}"
         )
 
         normalized = []
@@ -1000,32 +900,33 @@ def main() -> int:
                 normalize_name(
                     item["state"]
                 )
-                == TARGET_STATE
+                == "RAJASTHAN"
             ):
 
-                normalized.append(item)
+                normalized.append(
+                    item
+                )
 
         if normalized:
 
             save_output(
                 records=normalized,
                 status="success",
-                source=(
+                method=(
                     "IMD District-wise "
                     "Rainfall API"
                 ),
                 source_url=IMD_API_URL,
             )
 
-            print("")
             print(
-                "[IMD] SUCCESS: Official API data collected."
+                "[IMD] API collection successful."
             )
 
             return 0
 
         api_error = (
-            "IMD API returned data, but no Rajasthan "
+            "API returned data but no Rajasthan "
             "district records were recognized."
         )
 
@@ -1041,67 +942,114 @@ def main() -> int:
         )
 
     # --------------------------------------------------------
-    # 2. PUBLIC PDF FALLBACK
+    # STEP 2 - OFFICIAL DISTRICT PDF
     # --------------------------------------------------------
 
-    pdf_records, pdf_error = (
-        fetch_public_imd_pdf_records()
+    pdf_bytes, pdf_error = (
+        download_imd_district_pdf()
     )
 
-    if pdf_records:
+    if pdf_bytes is None:
 
         save_output(
-            records=pdf_records,
-            status="success",
-            source=(
-                "IMD public rainfall "
-                "statistics PDF"
+            records=[],
+            status="unavailable",
+            method="IMD official sources",
+            source_url=(
+                IMD_DISTRICT_RAINFALL_PAGE
             ),
-            source_url=IMD_RAINFALL_STATISTICS_PAGE,
+            error=(
+                f"API: {api_error}; "
+                f"PDF: {pdf_error}"
+            ),
+        )
+
+        return 0
+
+    pdf_text, text_error = (
+        extract_pdf_text(
+            pdf_bytes
+        )
+    )
+
+    if text_error:
+
+        save_output(
+            records=[],
+            status="unavailable",
+            method=(
+                "IMD District Rainfall PDF"
+            ),
+            source_url=(
+                IMD_DISTRICT_RAINFALL_PDF
+            ),
+            error=text_error,
+        )
+
+        return 0
+
+    records = parse_district_rainfall_text(
+        pdf_text
+    )
+
+    # --------------------------------------------------------
+    # SUCCESS
+    # --------------------------------------------------------
+
+    if records:
+
+        save_output(
+            records=records,
+            status="success",
+            method=(
+                "IMD District-wise "
+                "Rainfall Distribution PDF"
+            ),
+            source_url=(
+                IMD_DISTRICT_RAINFALL_PDF
+            ),
+        )
+
+        print("")
+        print(
+            "[IMD] Rajasthan rainfall records:"
+            f" {len(records)}"
+        )
+
+        print(
+            "[IMD] COLLECTION COMPLETE"
         )
 
         return 0
 
     # --------------------------------------------------------
-    # 3. SAFE UNAVAILABLE STATE
+    # SAFE FAILURE
     # --------------------------------------------------------
 
-    combined_error = (
-        "Direct IMD API unavailable. "
-        "Public IMD PDF fallback did not produce "
-        "safely mapped rainfall records."
+    error = (
+        "Official IMD district-rainfall PDF was "
+        "downloaded, but its current table format "
+        "could not be mapped safely to rainfall "
+        "records. No rainfall values were invented."
     )
-
-    if api_error:
-
-        combined_error += (
-            f" API: {api_error}."
-        )
-
-    if pdf_error:
-
-        combined_error += (
-            f" PDF: {pdf_error}"
-        )
 
     save_output(
         records=[],
         status="unavailable",
-        source=(
-            "IMD official sources"
+        method=(
+            "IMD District-wise "
+            "Rainfall Distribution PDF"
         ),
-        source_url=IMD_RAINFALL_STATISTICS_PAGE,
-        error=combined_error,
+        source_url=(
+            IMD_DISTRICT_RAINFALL_PDF
+        ),
+        error=error,
     )
 
     print("")
     print(
         "[IMD] No rainfall values were invented."
     )
-    print(
-        "[IMD] Collector finished safely."
-    )
-    print("")
 
     return 0
 
