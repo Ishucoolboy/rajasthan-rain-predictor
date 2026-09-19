@@ -1,10 +1,10 @@
 {
-  "schema_version": "2.0",
-  "generated_at_utc": "2026-09-19T06:22:47+00:00",
+  "schema_version": "3.0",
+  "generated_at_utc": "2026-09-19T06:31:21+00:00",
   "status": "unavailable",
   "source": {
     "name": "India Meteorological Department",
-    "product": "District Rainfall",
+    "product": "District-wise Rainfall Distribution",
     "method": "IMD official sources",
     "url": "https://mausam.imd.gov.in/imd_latest/contents/rainfall_statistics_3.php"
   },
@@ -14,8 +14,8 @@
   },
   "period": {
     "type": "IMD_DAILY",
-    "note": "IMD daily rainfall follows the official IMD rainfall reporting period."
+    "note": "IMD daily rainfall is reported using the official IMD rainfall reporting period."
   },
   "records": [],
-  "error": "Direct IMD API unavailable. Public IMD PDF fallback did not produce safely mapped rainfall records. API: IMD API returned HTTP 401. PDF: PDF was downloaded but no table rows were extracted."
+  "error": "API: IMD API returned HTTP 401; PDF: Official district rainfall PDF returned HTTP 404"
 }
