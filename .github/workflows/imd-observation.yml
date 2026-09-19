@@ -3,7 +3,7 @@ name: IMD Observation Collector
 on:
   schedule:
     # 09:00 AM IST = 03:30 UTC
-    # Runs after IMD's daily rainfall reporting period.
+    # Daily IMD observation collection
     - cron: "30 3 * * *"
 
   workflow_dispatch:
@@ -15,6 +15,14 @@ jobs:
   collect-imd-observations:
 
     runs-on: ubuntu-latest
+
+    # ------------------------------------------------------
+    # IMPORTANT:
+    # Pass IMD API key from GitHub Repository Secret
+    # to the Python collector as an environment variable.
+    # ------------------------------------------------------
+    env:
+      IMD_API_KEY: ${{ secrets.IMD_API_KEY }}
 
     steps:
 
@@ -40,10 +48,27 @@ jobs:
       # INSTALL DEPENDENCIES
       # ----------------------------------------------------
 
-      - name: Install requests
+      - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install "requests>=2.32.0"
+
+      # ----------------------------------------------------
+      # CHECK SECRET AVAILABILITY
+      # ----------------------------------------------------
+      # We NEVER print the actual API key.
+      # Only show whether GitHub supplied one.
+      # ----------------------------------------------------
+
+      - name: Check IMD API configuration
+        shell: bash
+        run: |
+          if [ -n "$IMD_API_KEY" ]; then
+            echo "IMD_API_KEY is configured."
+          else
+            echo "IMD_API_KEY is NOT configured."
+            echo "Collector will report IMD API as unavailable."
+          fi
 
       # ----------------------------------------------------
       # RUN IMD COLLECTOR
@@ -54,26 +79,100 @@ jobs:
           python imd-observation-collector.py
 
       # ----------------------------------------------------
-      # SHOW RESULT
+      # VALIDATE GENERATED JSON
       # ----------------------------------------------------
 
-      - name: Show generated observation file
+      - name: Validate IMD observation JSON
+        shell: bash
         run: |
-          echo "=============================================="
-          echo "IMD OBSERVATION FILE"
-          echo "=============================================="
-
-          if [ -f data/imd_observations.json ]; then
-            cat data/imd_observations.json
-          else
-            echo "No observation file was generated."
+          if [ ! -f data/imd_observations.json ]; then
+            echo "ERROR: data/imd_observations.json was not created."
+            exit 1
           fi
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("data/imd_observations.json")
+
+          with path.open("r", encoding="utf-8") as f:
+              data = json.load(f)
+
+          if not isinstance(data, dict):
+              raise SystemExit("ERROR: IMD JSON root is not an object.")
+
+          status = data.get("status")
+          records = data.get("records", [])
+
+          if not isinstance(records, list):
+              raise SystemExit("ERROR: IMD records is not a list.")
+
+          print("IMD JSON validation: OK")
+          print(f"Status: {status}")
+          print(f"Records: {len(records)}")
+          PY
+
+      # ----------------------------------------------------
+      # SHOW SAFE RESULT
+      # ----------------------------------------------------
+      # Do NOT print the API key.
+      # Only print metadata and record count.
+      # ----------------------------------------------------
+
+      - name: Show IMD collection result
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+
+          with open(
+              "data/imd_observations.json",
+              "r",
+              encoding="utf-8"
+          ) as f:
+              data = json.load(f)
+
+          print("==============================================")
+          print("IMD OBSERVATION COLLECTION RESULT")
+          print("==============================================")
+          print("Status:", data.get("status"))
+          print("Generated:", data.get("generated_at_utc"))
+
+          coverage = data.get("coverage", {})
+
+          print(
+              "Rajasthan records:",
+              coverage.get("record_count", 0)
+          )
+
+          source = data.get("source", {})
+
+          print(
+              "Source:",
+              source.get("name")
+          )
+
+          print(
+              "Product:",
+              source.get("product")
+          )
+
+          if data.get("error"):
+              print(
+                  "Collector message:",
+                  data.get("error")
+              )
+
+          print("==============================================")
+          PY
 
       # ----------------------------------------------------
       # COMMIT UPDATED DATA
       # ----------------------------------------------------
 
       - name: Commit IMD observation data
+        shell: bash
         run: |
 
           git config user.name "Rajasthan Rain Predictor Bot"
@@ -82,7 +181,9 @@ jobs:
           git add data/imd_observations.json
 
           if git diff --cached --quiet; then
+
             echo "No IMD observation changes to commit."
+
           else
 
             git commit -m "Update IMD rainfall observations"
