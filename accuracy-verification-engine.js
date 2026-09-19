@@ -1,1814 +1,1543 @@
-/* =========================================================
-   Rajasthan Rain Predictor
-   Model-wise Actual Forecast Verification Engine
-   ---------------------------------------------------------
-   Purpose:
-   - Match saved forecast snapshots with actual rainfall
-   - Calculate ECMWF / GFS / ICON separately
-   - Calculate MAE / RMSE / Bias
-   - Calculate Rain / No-Rain accuracy
-   - Calculate Brier Score for rain probability
-   - Never invent accuracy
-   ========================================================= */
-
 (function () {
-  "use strict";
-
-  const OBSERVATION_KEY =
-    "rrp_actual_observations_v1";
-
-  const SNAPSHOT_KEY =
-    "rrp_forecast_snapshots_v1";
-
-  const RESULT_KEY =
-    "rrp_verified_accuracy_v2";
-
-  const RAIN_THRESHOLD = 0.1;
-
-
-  /* =======================================================
-     HELPERS
-     ======================================================= */
-
-  function number(value, fallback = null) {
-
-    const n = Number(value);
-
-    return Number.isFinite(n)
-      ? n
-      : fallback;
-  }
-
-
-  function round(value, digits = 2) {
-
-    if (!Number.isFinite(Number(value))) {
-      return null;
-    }
-
-    const multiplier =
-      Math.pow(10, digits);
-
-    return (
-      Math.round(
-        Number(value) * multiplier
-      ) / multiplier
-    );
-  }
-
-
-  function loadJSON(key) {
-
-    try {
-
-      const raw =
-        localStorage.getItem(key);
-
-      if (!raw) {
-        return [];
-      }
-
-      const data =
-        JSON.parse(raw);
-
-      return Array.isArray(data)
-        ? data
-        : [];
-
-    } catch (error) {
-
-      console.warn(
-        "Verification storage error:",
-        error
-      );
-
-      return [];
-    }
-  }
-
-
-  function saveJSON(key, data) {
-
-    try {
-
-      localStorage.setItem(
-        key,
-        JSON.stringify(data)
-      );
-
-    } catch (error) {
-
-      console.warn(
-        "Verification save error:",
-        error
-      );
-
-    }
-  }
-
-
-  function escapeHTML(value) {
-
-    return String(value ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-
-  }
-
-
-  /* =======================================================
-     LOCATION MATCH
-     ======================================================= */
-
-  function sameLocation(
-    forecast,
-    observation
-  ) {
-
-    const fLat =
-      number(
-        forecast.latitude
-      );
-
-    const fLon =
-      number(
-        forecast.longitude
-      );
-
-    const oLat =
-      number(
-        observation.latitude
-      );
-
-    const oLon =
-      number(
-        observation.longitude
-      );
-
-
-    if (
-      fLat === null ||
-      fLon === null ||
-      oLat === null ||
-      oLon === null
-    ) {
-
-      return false;
-
-    }
-
+    "use strict";
 
     /*
-      Approximately 1 km tolerance.
-    */
+     * Rajasthan Rain Predictor
+     * Accuracy Verification Engine V3
+     *
+     * Purpose:
+     * - Compare saved forecast snapshots with actual observations.
+     * - Calculate model-wise verification metrics.
+     * - Keep forecast consistency separate from measured accuracy.
+     *
+     * IMPORTANT:
+     * - Accuracy requires actual observations.
+     * - Model agreement is NOT accuracy.
+     * - A small sample should not be presented as a reliable long-term
+     *   accuracy percentage.
+     */
 
-    return (
-      Math.abs(
-        fLat - oLat
-      ) < 0.01 &&
+    const VERSION = "3.0";
 
-      Math.abs(
-        fLon - oLon
-      ) < 0.01
-    );
+    const OBSERVATION_KEY = "rrp_actual_observations_v1";
+    const SNAPSHOT_KEY = "rrp_forecast_snapshots_v1";
+    const RESULT_KEY = "rrp_verified_accuracy_v3";
 
-  }
-
-
-  /* =======================================================
-     FIND OBSERVATION
-     ======================================================= */
-
-  function findObservation(
-    forecast,
-    observations
-  ) {
-
-    const forecastDate =
-      forecast.validDate ||
-      forecast.date;
-
-
-    if (!forecastDate) {
-      return null;
-    }
-
-
-    /*
-      First:
-      exact date + coordinates
-    */
-
-    let matches =
-      observations.filter(
-        function (item) {
-
-          return (
-            item.date ===
-              forecastDate &&
-
-            sameLocation(
-              forecast,
-              item
-            )
-          );
-
+    const MODELS = [
+        {
+            id: "ecmwf_ifs025",
+            shortName: "ECMWF",
+            name: "ECMWF"
+        },
+        {
+            id: "gfs_seamless",
+            shortName: "GFS",
+            name: "GFS"
+        },
+        {
+            id: "icon_seamless",
+            shortName: "ICON",
+            name: "ICON"
         }
-      );
-
-
-    /*
-      Fallback:
-      date + location name
-    */
-
-    if (!matches.length) {
-
-      matches =
-        observations.filter(
-          function (item) {
-
-            return (
-              item.date ===
-                forecastDate &&
-
-              item.locationName ===
-                forecast.locationName
-            );
-
-          }
-        );
-
-    }
-
-
-    if (!matches.length) {
-      return null;
-    }
-
-
-    return matches[0];
-
-  }
-
-
-  /* =======================================================
-     GET MODEL NAME
-     ======================================================= */
-
-  function getModelName(
-    forecast
-  ) {
-
-    if (
-      forecast.model
-    ) {
-
-      return String(
-        forecast.model
-      ).toUpperCase();
-
-    }
-
-
-    if (
-      forecast.modelId
-    ) {
-
-      const id =
-        String(
-          forecast.modelId
-        ).toLowerCase();
-
-
-      if (
-        id.includes("ecmwf")
-      ) {
-        return "ECMWF";
-      }
-
-
-      if (
-        id.includes("gfs")
-      ) {
-        return "GFS";
-      }
-
-
-      if (
-        id.includes("icon")
-      ) {
-        return "ICON";
-      }
-
-    }
-
-
-    return "UNKNOWN";
-
-  }
-
-
-  /* =======================================================
-     FORECAST RAIN
-     ======================================================= */
-
-  function getForecastRain(
-    forecast
-  ) {
-
-    const candidates = [
-
-      forecast.forecastRainMm,
-
-      forecast.forecastRainOnlyMm,
-
-      forecast.predictedRainMm,
-
-      forecast.rainfall,
-
-      forecast.precipitation,
-
-      forecast.rain,
-
-      forecast.rain_mm
-
     ];
 
-
-    for (
-      const value of candidates
-    ) {
-
-      const n =
-        number(value);
-
-      if (n !== null) {
-
-        return Math.max(
-          0,
-          n
-        );
-
-      }
-
+    function log(...args) {
+        console.log("[RRP Accuracy Verification V3]", ...args);
     }
 
-
-    return null;
-
-  }
-
-
-  /* =======================================================
-     FORECAST PROBABILITY
-     ======================================================= */
-
-  function getProbability(
-    forecast
-  ) {
-
-    const candidates = [
-
-      forecast.rainProbability,
-
-      forecast.precipitationProbability,
-
-      forecast.probability
-
-    ];
-
-
-    for (
-      const value of candidates
-    ) {
-
-      const n =
-        number(value);
-
-      if (n !== null) {
-
-        return Math.min(
-          100,
-          Math.max(
-            0,
-            n
-          )
-        );
-
-      }
-
+    function warn(...args) {
+        console.warn("[RRP Accuracy Verification V3]", ...args);
     }
 
-
-    return null;
-
-  }
-
-
-  /* =======================================================
-     CREATE EMPTY MODEL METRICS
-     ======================================================= */
-
-  function emptyMetrics() {
-
-    return {
-
-      samples: 0,
-
-      mae: null,
-
-      rmse: null,
-
-      bias: null,
-
-      rainAccuracy: null,
-
-      brierScore: null,
-
-      hits: 0,
-
-      misses: 0,
-
-      falseAlarms: 0,
-
-      correctNoRain: 0
-
-    };
-
-  }
-
-
-  /* =======================================================
-     CALCULATE MODEL METRICS
-     ======================================================= */
-
-  function calculateMetrics(
-    records
-  ) {
-
-    if (
-      !records.length
-    ) {
-
-      return emptyMetrics();
-
+    function number(value, fallback = null) {
+        const n = Number(value);
+        return Number.isFinite(n) ? n : fallback;
     }
 
+    function round(value, decimals = 2) {
+        const n = Number(value);
 
-    const absoluteErrors = [];
-
-    const squaredErrors = [];
-
-    const signedErrors = [];
-
-    const brierErrors = [];
-
-
-    let hits = 0;
-
-    let misses = 0;
-
-    let falseAlarms = 0;
-
-    let correctNoRain = 0;
-
-
-    records.forEach(
-      function (item) {
-
-        const predicted =
-          number(
-            item.predictedRainMm
-          );
-
-        const actual =
-          number(
-            item.actualRainMm
-          );
-
-
-        if (
-          predicted !== null &&
-          actual !== null
-        ) {
-
-          const error =
-            predicted - actual;
-
-
-          absoluteErrors.push(
-            Math.abs(error)
-          );
-
-
-          squaredErrors.push(
-            error * error
-          );
-
-
-          signedErrors.push(
-            error
-          );
-
-
-          const predictedRain =
-            predicted >=
-            RAIN_THRESHOLD;
-
-
-          const actualRain =
-            actual >=
-            RAIN_THRESHOLD;
-
-
-          if (
-            predictedRain &&
-            actualRain
-          ) {
-
-            hits++;
-
-          } else if (
-            !predictedRain &&
-            actualRain
-          ) {
-
-            misses++;
-
-          } else if (
-            predictedRain &&
-            !actualRain
-          ) {
-
-            falseAlarms++;
-
-          } else {
-
-            correctNoRain++;
-
-          }
-
+        if (!Number.isFinite(n)) {
+            return null;
         }
 
+        const factor = Math.pow(10, decimals);
+
+        return Math.round(n * factor) / factor;
+    }
+
+    function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    function escapeHTML(value) {
+        return String(value ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    /*
+     * ---------------------------------------------------------
+     * STORAGE
+     * ---------------------------------------------------------
+     */
+
+    function loadJSON(key, fallback) {
+        try {
+            const raw = localStorage.getItem(key);
+
+            if (!raw) {
+                return fallback;
+            }
+
+            const parsed = JSON.parse(raw);
+
+            return parsed ?? fallback;
+        } catch (error) {
+            warn("Storage read failed:", key, error);
+
+            return fallback;
+        }
+    }
+
+    function saveJSON(key, value) {
+        try {
+            localStorage.setItem(key, JSON.stringify(value));
+
+            return true;
+        } catch (error) {
+            warn("Storage write failed:", key, error);
+
+            return false;
+        }
+    }
+
+    function getObservations() {
+        const data = loadJSON(OBSERVATION_KEY, []);
+
+        return Array.isArray(data) ? data : [];
+    }
+
+    function getSnapshots() {
+        const data = loadJSON(SNAPSHOT_KEY, []);
+
+        return Array.isArray(data) ? data : [];
+    }
+
+    /*
+     * ---------------------------------------------------------
+     * DATE HELPERS
+     * ---------------------------------------------------------
+     */
+
+    function normalizeDate(value) {
+        if (!value) {
+            return null;
+        }
 
         /*
-          Brier Score
+         * We primarily work with YYYY-MM-DD forecast valid dates.
+         * This avoids timezone shifting when parsing dates such as
+         * "2026-09-18".
+         */
 
-          Probability:
-          0 to 1
+        const text = String(value);
 
-          Observation:
-          1 = rain
-          0 = no rain
-        */
+        const match = text.match(/^(\d{4}-\d{2}-\d{2})/);
 
-        const probability =
-          number(
-            item.rainProbability
-          );
-
-
-        if (
-          probability !== null &&
-          actual !== null
-        ) {
-
-          const p =
-            probability / 100;
-
-          const observation =
-            actual >=
-            RAIN_THRESHOLD
-              ? 1
-              : 0;
-
-
-          const brier =
-            Math.pow(
-              p - observation,
-              2
-            );
-
-
-          brierErrors.push(
-            brier
-          );
-
+        if (match) {
+            return match[1];
         }
 
-      }
-    );
+        const parsed = new Date(value);
 
+        if (Number.isNaN(parsed.getTime())) {
+            return null;
+        }
 
-    const samples =
-      records.length;
+        const year = parsed.getFullYear();
+        const month = String(parsed.getMonth() + 1).padStart(2, "0");
+        const day = String(parsed.getDate()).padStart(2, "0");
 
+        return `${year}-${month}-${day}`;
+    }
 
-    const mae =
-      absoluteErrors.length
-        ? absoluteErrors.reduce(
-            (sum, value) =>
-              sum + value,
-            0
-          ) /
-          absoluteErrors.length
-        : null;
+    function dateDifferenceDays(dateA, dateB) {
+        const a = normalizeDate(dateA);
+        const b = normalizeDate(dateB);
 
+        if (!a || !b) {
+            return null;
+        }
 
-    const rmse =
-      squaredErrors.length
-        ? Math.sqrt(
-            squaredErrors.reduce(
-              (sum, value) =>
-                sum + value,
-              0
-            ) /
-            squaredErrors.length
-          )
-        : null;
+        const aTime = Date.parse(a + "T00:00:00Z");
+        const bTime = Date.parse(b + "T00:00:00Z");
 
+        if (!Number.isFinite(aTime) || !Number.isFinite(bTime)) {
+            return null;
+        }
 
-    const bias =
-      signedErrors.length
-        ? signedErrors.reduce(
-            (sum, value) =>
-              sum + value,
-            0
-          ) /
-          signedErrors.length
-        : null;
-
-
-    const classificationSamples =
-      hits +
-      misses +
-      falseAlarms +
-      correctNoRain;
-
-
-    const rainAccuracy =
-      classificationSamples
-        ? (
-            (
-              hits +
-              correctNoRain
-            ) /
-            classificationSamples
-          ) *
-          100
-        : null;
-
-
-    const brierScore =
-      brierErrors.length
-        ? brierErrors.reduce(
-            (sum, value) =>
-              sum + value,
-            0
-          ) /
-          brierErrors.length
-        : null;
-
-
-    return {
-
-      samples,
-
-      mae:
-        round(
-          mae,
-          3
-        ),
-
-      rmse:
-        round(
-          rmse,
-          3
-        ),
-
-      bias:
-        round(
-          bias,
-          3
-        ),
-
-      rainAccuracy:
-        round(
-          rainAccuracy,
-          1
-        ),
-
-      brierScore:
-        round(
-          brierScore,
-          4
-        ),
-
-      hits,
-
-      misses,
-
-      falseAlarms,
-
-      correctNoRain
-
-    };
-
-  }
-
-
-  /* =======================================================
-     CALCULATE VERIFICATION
-     ======================================================= */
-
-  function calculate() {
-
-    const snapshots =
-      loadJSON(
-        SNAPSHOT_KEY
-      );
-
-
-    const observations =
-      loadJSON(
-        OBSERVATION_KEY
-      );
-
-
-    const modelRecords = {};
-
-
-    const allMatched = [];
-
+        return Math.round(
+            Math.abs(aTime - bTime) / 86400000
+        );
+    }
 
     /*
-      Process every saved forecast.
-    */
+     * ---------------------------------------------------------
+     * MODEL NORMALIZATION
+     * ---------------------------------------------------------
+     */
 
-    snapshots.forEach(
-      function (forecast) {
-
-        const observation =
-          findObservation(
-            forecast,
-            observations
-          );
-
-
-        if (!observation) {
-          return;
+    function normalizeModel(value) {
+        if (!value) {
+            return null;
         }
 
-
-        const predicted =
-          getForecastRain(
-            forecast
-          );
-
-
-        const actual =
-          number(
-            observation.rainfall_mm
-          );
-
+        const text = String(value).toLowerCase();
 
         if (
-          predicted === null ||
-          actual === null
+            text.includes("ecmwf") ||
+            text.includes("ifs025")
         ) {
-
-          return;
-
+            return "ECMWF";
         }
 
+        if (
+            text.includes("gfs") ||
+            text.includes("gfs_seamless")
+        ) {
+            return "GFS";
+        }
+
+        if (
+            text.includes("icon") ||
+            text.includes("icon_seamless")
+        ) {
+            return "ICON";
+        }
+
+        return null;
+    }
+
+    function getModelId(snapshot) {
+        if (!snapshot) {
+            return null;
+        }
+
+        return (
+            snapshot.modelId ||
+            snapshot.model ||
+            snapshot.modelName ||
+            null
+        );
+    }
+
+    function getModelName(snapshot) {
+        return normalizeModel(
+            snapshot.model ||
+            snapshot.modelId ||
+            snapshot.modelName
+        );
+    }
+
+    /*
+     * ---------------------------------------------------------
+     * LOCATION MATCHING
+     * ---------------------------------------------------------
+     */
+
+    function normalizeLocationName(value) {
+        return String(value || "")
+            .trim()
+            .toLowerCase()
+            .replace(/\s+/g, " ");
+    }
+
+    function getCoordinate(value) {
+        const n = Number(value);
+
+        return Number.isFinite(n) ? n : null;
+    }
+
+    function coordinatesMatch(
+        snapshot,
+        observation,
+        tolerance = 0.08
+    ) {
+        const snapshotLat = getCoordinate(
+            snapshot.latitude
+        );
+
+        const snapshotLon = getCoordinate(
+            snapshot.longitude
+        );
+
+        const observationLat = getCoordinate(
+            observation.latitude
+        );
+
+        const observationLon = getCoordinate(
+            observation.longitude
+        );
+
+        if (
+            snapshotLat === null ||
+            snapshotLon === null ||
+            observationLat === null ||
+            observationLon === null
+        ) {
+            return false;
+        }
+
+        return (
+            Math.abs(snapshotLat - observationLat) <= tolerance &&
+            Math.abs(snapshotLon - observationLon) <= tolerance
+        );
+    }
+
+    function locationsMatch(snapshot, observation) {
+        if (
+            coordinatesMatch(
+                snapshot,
+                observation,
+                0.08
+            )
+        ) {
+            return true;
+        }
+
+        const snapshotName = normalizeLocationName(
+            snapshot.locationName ||
+            snapshot.name
+        );
+
+        const observationName = normalizeLocationName(
+            observation.locationName ||
+            observation.name
+        );
+
+        if (!snapshotName || !observationName) {
+            return false;
+        }
+
+        return snapshotName === observationName;
+    }
+
+    /*
+     * ---------------------------------------------------------
+     * FORECAST VALUE EXTRACTION
+     * ---------------------------------------------------------
+     */
+
+    function getForecastRain(snapshot) {
+        const candidates = [
+            snapshot.forecastRainOnlyMm,
+            snapshot.forecastRainMm,
+            snapshot.rainfallMm,
+            snapshot.precipitationMm
+        ];
+
+        for (const value of candidates) {
+            const n = number(value);
+
+            if (n !== null) {
+                return Math.max(0, n);
+            }
+        }
+
+        return null;
+    }
+
+    function getForecastProbability(snapshot) {
+        const candidates = [
+            snapshot.rainProbability,
+            snapshot.precipitationProbability,
+            snapshot.probability
+        ];
+
+        for (const value of candidates) {
+            const n = number(value);
+
+            if (n !== null) {
+                return clamp(n, 0, 100);
+            }
+        }
+
+        return null;
+    }
+
+    function getActualRain(observation) {
+        const candidates = [
+            observation.rainfall_mm,
+            observation.rainfallMm,
+            observation.precipitation_mm,
+            observation.precipitationMm,
+            observation.actualRainMm
+        ];
+
+        for (const value of candidates) {
+            const n = number(value);
+
+            if (n !== null) {
+                return Math.max(0, n);
+            }
+        }
+
+        return null;
+    }
+
+    /*
+     * ---------------------------------------------------------
+     * RAIN / NO-RAIN CLASSIFICATION
+     * ---------------------------------------------------------
+     *
+     * We use 0.1 mm as a practical threshold.
+     */
+
+    const RAIN_THRESHOLD_MM = 0.1;
+
+    function isRain(value) {
+        const n = number(value);
+
+        if (n === null) {
+            return false;
+        }
+
+        return n >= RAIN_THRESHOLD_MM;
+    }
+
+    /*
+     * ---------------------------------------------------------
+     * MATCH SNAPSHOTS TO OBSERVATIONS
+     * ---------------------------------------------------------
+     */
+
+    function findBestObservation(snapshot, observations) {
+        const validDate = normalizeDate(
+            snapshot.validDate ||
+            snapshot.date ||
+            snapshot.forecastDate
+        );
+
+        if (!validDate) {
+            return null;
+        }
+
+        const candidates = observations.filter(
+            function (observation) {
+                const observationDate = normalizeDate(
+                    observation.date ||
+                    observation.validDate ||
+                    observation.observationDate
+                );
+
+                if (observationDate !== validDate) {
+                    return false;
+                }
+
+                return locationsMatch(
+                    snapshot,
+                    observation
+                );
+            }
+        );
+
+        if (!candidates.length) {
+            return null;
+        }
+
+        /*
+         * If several observations exist for the same date/location,
+         * prefer the newest one.
+         */
+        candidates.sort(function (a, b) {
+            const aTime = Date.parse(
+                a.createdAt || a.timestamp || 0
+            );
+
+            const bTime = Date.parse(
+                b.createdAt || b.timestamp || 0
+            );
+
+            return bTime - aTime;
+        });
+
+        return candidates[0];
+    }
+
+    /*
+     * ---------------------------------------------------------
+     * CREATE VERIFICATION RECORDS
+     * ---------------------------------------------------------
+     */
+
+    function buildVerificationRecords() {
+        const observations = getObservations();
+        const snapshots = getSnapshots();
+
+        const records = [];
+        const seen = new Set();
+
+        snapshots.forEach(function (snapshot) {
+            const modelName = getModelName(snapshot);
+
+            if (!modelName) {
+                return;
+            }
+
+            const validDate = normalizeDate(
+                snapshot.validDate ||
+                snapshot.date ||
+                snapshot.forecastDate
+            );
+
+            if (!validDate) {
+                return;
+            }
+
+            const observation =
+                findBestObservation(
+                    snapshot,
+                    observations
+                );
+
+            if (!observation) {
+                return;
+            }
+
+            const actualRain =
+                getActualRain(observation);
+
+            const forecastRain =
+                getForecastRain(snapshot);
+
+            if (
+                actualRain === null ||
+                forecastRain === null
+            ) {
+                return;
+            }
+
+            const forecastProbability =
+                getForecastProbability(snapshot);
+
+            const locationName =
+                snapshot.locationName ||
+                observation.locationName ||
+                "Unknown location";
+
+            const key = [
+                modelName,
+                validDate,
+                normalizeLocationName(locationName),
+                number(snapshot.latitude, ""),
+                number(snapshot.longitude, "")
+            ].join("|");
+
+            if (seen.has(key)) {
+                return;
+            }
+
+            seen.add(key);
+
+            const absoluteError =
+                Math.abs(
+                    forecastRain - actualRain
+                );
+
+            const signedError =
+                forecastRain - actualRain;
+
+            const squaredError =
+                Math.pow(
+                    signedError,
+                    2
+                );
+
+            const forecastHadRain =
+                isRain(forecastRain);
+
+            const actualHadRain =
+                isRain(actualRain);
+
+            const hit =
+                forecastHadRain &&
+                actualHadRain;
+
+            const falseAlarm =
+                forecastHadRain &&
+                !actualHadRain;
+
+            const miss =
+                !forecastHadRain &&
+                actualHadRain;
+
+            const correctNoRain =
+                !forecastHadRain &&
+                !actualHadRain;
+
+            /*
+             * Brier score.
+             *
+             * Probability is converted from 0-100 to 0-1.
+             * If probability is unavailable, Brier is null.
+             */
+            let brierScore = null;
+
+            if (forecastProbability !== null) {
+                const probability =
+                    forecastProbability / 100;
+
+                const observed =
+                    actualHadRain ? 1 : 0;
+
+                brierScore =
+                    Math.pow(
+                        probability - observed,
+                        2
+                    );
+            }
+
+            records.push({
+                id:
+                    snapshot.id ||
+                    `${modelName}-${validDate}-${records.length}`,
+
+                model: modelName,
+
+                modelId: getModelId(snapshot),
+
+                locationName: locationName,
+
+                latitude:
+                    number(
+                        snapshot.latitude,
+                        number(
+                            observation.latitude
+                        )
+                    ),
+
+                longitude:
+                    number(
+                        snapshot.longitude,
+                        number(
+                            observation.longitude
+                        )
+                    ),
+
+                validDate: validDate,
+
+                forecastCreatedAt:
+                    snapshot.forecastCreatedAt ||
+                    snapshot.createdAt ||
+                    null,
+
+                forecastRainMm:
+                    round(forecastRain, 2),
+
+                actualRainMm:
+                    round(actualRain, 2),
+
+                forecastProbability:
+                    forecastProbability !== null
+                        ? round(
+                            forecastProbability,
+                            1
+                        )
+                        : null,
+
+                absoluteError:
+                    round(
+                        absoluteError,
+                        2
+                    ),
+
+                signedError:
+                    round(
+                        signedError,
+                        2
+                    ),
+
+                squaredError:
+                    round(
+                        squaredError,
+                        4
+                    ),
+
+                forecastHadRain:
+                    forecastHadRain,
+
+                actualHadRain:
+                    actualHadRain,
+
+                hit: hit,
+
+                falseAlarm: falseAlarm,
+
+                miss: miss,
+
+                correctNoRain:
+                    correctNoRain,
+
+                brierScore:
+                    brierScore !== null
+                        ? round(
+                            brierScore,
+                            4
+                        )
+                        : null,
+
+                observationSource:
+                    observation.source ||
+                    observation.observationSource ||
+                    "manual",
+
+                verifiedAt:
+                    new Date().toISOString(),
+
+                engineVersion: VERSION
+            });
+        });
+
+        return records;
+    }
+
+    /*
+     * ---------------------------------------------------------
+     * METRICS
+     * ---------------------------------------------------------
+     */
+
+    function calculateMetrics(records) {
+        if (!records.length) {
+            return {
+                samples: 0,
+                mae: null,
+                rmse: null,
+                bias: null,
+                rainAccuracy: null,
+                hits: 0,
+                falseAlarms: 0,
+                misses: 0,
+                correctNoRain: 0,
+                brierScore: null
+            };
+        }
+
+        const errors =
+            records.map(function (record) {
+                return number(
+                    record.absoluteError,
+                    0
+                );
+            });
+
+        const signedErrors =
+            records.map(function (record) {
+                return number(
+                    record.signedError,
+                    0
+                );
+            });
+
+        const squaredErrors =
+            records.map(function (record) {
+                return number(
+                    record.squaredError,
+                    0
+                );
+            });
+
+        const mae =
+            errors.reduce(
+                function (sum, value) {
+                    return sum + value;
+                },
+                0
+            ) / records.length;
+
+        const bias =
+            signedErrors.reduce(
+                function (sum, value) {
+                    return sum + value;
+                },
+                0
+            ) / records.length;
+
+        const meanSquaredError =
+            squaredErrors.reduce(
+                function (sum, value) {
+                    return sum + value;
+                },
+                0
+            ) / records.length;
+
+        const rmse =
+            Math.sqrt(meanSquaredError);
+
+        const hits =
+            records.filter(
+                function (record) {
+                    return record.hit;
+                }
+            ).length;
+
+        const falseAlarms =
+            records.filter(
+                function (record) {
+                    return record.falseAlarm;
+                }
+            ).length;
+
+        const misses =
+            records.filter(
+                function (record) {
+                    return record.miss;
+                }
+            ).length;
+
+        const correctNoRain =
+            records.filter(
+                function (record) {
+                    return record.correctNoRain;
+                }
+            ).length;
+
+        const correct =
+            hits + correctNoRain;
+
+        const rainAccuracy =
+            (correct / records.length) * 100;
+
+        const brierRecords =
+            records.filter(
+                function (record) {
+                    return (
+                        record.brierScore !== null &&
+                        Number.isFinite(
+                            Number(record.brierScore)
+                        )
+                    );
+                }
+            );
+
+        let brierScore = null;
+
+        if (brierRecords.length) {
+            brierScore =
+                brierRecords.reduce(
+                    function (sum, record) {
+                        return (
+                            sum +
+                            Number(
+                                record.brierScore
+                            )
+                        );
+                    },
+                    0
+                ) / brierRecords.length;
+        }
+
+        return {
+            samples: records.length,
+
+            mae: round(mae, 2),
+
+            rmse: round(rmse, 2),
+
+            bias: round(bias, 2),
+
+            rainAccuracy:
+                round(
+                    rainAccuracy,
+                    1
+                ),
+
+            hits: hits,
+
+            falseAlarms:
+                falseAlarms,
+
+            misses: misses,
+
+            correctNoRain:
+                correctNoRain,
+
+            brierSamples:
+                brierRecords.length,
+
+            brierScore:
+                brierScore !== null
+                    ? round(
+                        brierScore,
+                        4
+                    )
+                    : null
+        };
+    }
+
+    /*
+     * ---------------------------------------------------------
+     * MODEL-WISE RESULTS
+     * ---------------------------------------------------------
+     */
+
+    function buildModelResults(records) {
+        return MODELS.map(function (model) {
+            const modelRecords =
+                records.filter(
+                    function (record) {
+                        return (
+                            record.model ===
+                            model.shortName
+                        );
+                    }
+                );
+
+            return {
+                model:
+                    model.shortName,
+
+                modelId:
+                    model.id,
+
+                samples:
+                    modelRecords.length,
+
+                metrics:
+                    calculateMetrics(
+                        modelRecords
+                    )
+            };
+        });
+    }
+
+    /*
+     * ---------------------------------------------------------
+     * OVERALL RESULTS
+     * ---------------------------------------------------------
+     */
+
+    function buildOverallResult(records) {
+        const byModel =
+            buildModelResults(records);
+
+        const metrics =
+            calculateMetrics(records);
+
+        return {
+            version: VERSION,
+
+            generatedAt:
+                new Date().toISOString(),
+
+            rainThresholdMm:
+                RAIN_THRESHOLD_MM,
+
+            totalVerifiedRecords:
+                records.length,
+
+            overall:
+                metrics,
+
+            models:
+                byModel,
+
+            records:
+                records,
+
+            note:
+                "Verified accuracy depends on the quantity and quality of actual observations. These metrics should not be interpreted as a guaranteed future accuracy percentage."
+        };
+    }
+
+    /*
+     * ---------------------------------------------------------
+     * DATA QUALITY
+     * ---------------------------------------------------------
+     */
+
+    function getDataQuality(result) {
+        const samples =
+            result.totalVerifiedRecords;
+
+        if (samples === 0) {
+            return {
+                level: "No verified samples",
+                description:
+                    "No matching forecast and actual-observation pairs are available."
+            };
+        }
+
+        if (samples < 10) {
+            return {
+                level: "Very small sample",
+                description:
+                    "Accuracy numbers are highly preliminary because fewer than 10 verified samples are available."
+            };
+        }
+
+        if (samples < 30) {
+            return {
+                level: "Early sample",
+                description:
+                    "The dataset is growing, but accuracy metrics can still change substantially."
+            };
+        }
+
+        if (samples < 100) {
+            return {
+                level: "Developing sample",
+                description:
+                    "There is a useful verification dataset, but longer-term monitoring is still needed."
+            };
+        }
+
+        return {
+            level: "Large verification sample",
+            description:
+                "The verification dataset is substantially larger, although performance can still vary by season and location."
+        };
+    }
+
+    /*
+     * ---------------------------------------------------------
+     * RENDER
+     * ---------------------------------------------------------
+     */
+
+    function render() {
+        const container =
+            document.getElementById(
+                "accuracy"
+            );
+
+        if (!container) {
+            return;
+        }
+
+        const observations =
+            getObservations();
+
+        const snapshots =
+            getSnapshots();
+
+        const records =
+            buildVerificationRecords();
+
+        const result =
+            buildOverallResult(records);
+
+        const quality =
+            getDataQuality(result);
+
+        saveJSON(
+            RESULT_KEY,
+            result
+        );
+
+        const overall =
+            result.overall;
+
+        const modelCards =
+            result.models
+                .map(function (model) {
+                    const metrics =
+                        model.metrics;
+
+                    return `
+                        <div class="accuracy-model-card">
+
+                            <div class="accuracy-model-name">
+                                ${escapeHTML(
+                                    model.model
+                                )}
+                            </div>
+
+                            <div class="accuracy-model-samples">
+                                ${escapeHTML(
+                                    metrics.samples
+                                )} verified samples
+                            </div>
+
+                            <div class="accuracy-model-grid">
+
+                                <div>
+                                    <span>MAE</span>
+                                    <strong>
+                                        ${
+                                            metrics.mae !== null
+                                                ? escapeHTML(
+                                                    metrics.mae
+                                                ) + " mm"
+                                                : "N/A"
+                                        }
+                                    </strong>
+                                </div>
+
+                                <div>
+                                    <span>RMSE</span>
+                                    <strong>
+                                        ${
+                                            metrics.rmse !== null
+                                                ? escapeHTML(
+                                                    metrics.rmse
+                                                ) + " mm"
+                                                : "N/A"
+                                        }
+                                    </strong>
+                                </div>
+
+                                <div>
+                                    <span>Bias</span>
+                                    <strong>
+                                        ${
+                                            metrics.bias !== null
+                                                ? escapeHTML(
+                                                    metrics.bias
+                                                ) + " mm"
+                                                : "N/A"
+                                        }
+                                    </strong>
+                                </div>
+
+                                <div>
+                                    <span>Rain Accuracy</span>
+                                    <strong>
+                                        ${
+                                            metrics.rainAccuracy !== null
+                                                ? escapeHTML(
+                                                    metrics.rainAccuracy
+                                                ) + "%"
+                                                : "N/A"
+                                        }
+                                    </strong>
+                                </div>
+
+                            </div>
+
+                            <div class="accuracy-events">
+
+                                <span>
+                                    Hits:
+                                    ${escapeHTML(
+                                        metrics.hits
+                                    )}
+                                </span>
+
+                                <span>
+                                    False:
+                                    ${escapeHTML(
+                                        metrics.falseAlarms
+                                    )}
+                                </span>
+
+                                <span>
+                                    Misses:
+                                    ${escapeHTML(
+                                        metrics.misses
+                                    )}
+                                </span>
+
+                                <span>
+                                    No Rain:
+                                    ${escapeHTML(
+                                        metrics.correctNoRain
+                                    )}
+                                </span>
+
+                            </div>
+
+                        </div>
+                    `;
+                })
+                .join("");
+
+        container.innerHTML = `
+            <div class="accuracy-card">
+
+                <div class="accuracy-header">
+
+                    <div>
+                        <div class="accuracy-title">
+                            Forecast vs Actual Accuracy
+                        </div>
+
+                        <div class="accuracy-subtitle">
+                            Verified model performance
+                        </div>
+                    </div>
+
+                    <div class="accuracy-version">
+                        V${escapeHTML(
+                            VERSION
+                        )}
+                    </div>
+
+                </div>
+
+                <div class="accuracy-summary">
+
+                    <div class="accuracy-summary-item">
+                        <span>Forecast Snapshots</span>
+                        <strong>
+                            ${escapeHTML(
+                                snapshots.length
+                            )}
+                        </strong>
+                    </div>
+
+                    <div class="accuracy-summary-item">
+                        <span>Actual Observations</span>
+                        <strong>
+                            ${escapeHTML(
+                                observations.length
+                            )}
+                        </strong>
+                    </div>
+
+                    <div class="accuracy-summary-item">
+                        <span>Verified Pairs</span>
+                        <strong>
+                            ${escapeHTML(
+                                records.length
+                            )}
+                        </strong>
+                    </div>
+
+                    <div class="accuracy-summary-item">
+                        <span>Rain Accuracy</span>
+                        <strong>
+                            ${
+                                overall.rainAccuracy !== null
+                                    ? escapeHTML(
+                                        overall.rainAccuracy
+                                    ) + "%"
+                                    : "N/A"
+                            }
+                        </strong>
+                    </div>
+
+                </div>
+
+                <div class="accuracy-quality">
+
+                    <strong>
+                        ${escapeHTML(
+                            quality.level
+                        )}
+                    </strong>
+
+                    <span>
+                        ${escapeHTML(
+                            quality.description
+                        )}
+                    </span>
+
+                </div>
+
+                <div class="accuracy-models">
+                    ${modelCards}
+                </div>
+
+                <div class="accuracy-overall">
+
+                    <div class="accuracy-overall-title">
+                        Overall Verification
+                    </div>
+
+                    <div class="accuracy-overall-grid">
+
+                        <div>
+                            <span>MAE</span>
+                            <strong>
+                                ${
+                                    overall.mae !== null
+                                        ? escapeHTML(
+                                            overall.mae
+                                        ) + " mm"
+                                        : "N/A"
+                                }
+                            </strong>
+                        </div>
+
+                        <div>
+                            <span>RMSE</span>
+                            <strong>
+                                ${
+                                    overall.rmse !== null
+                                        ? escapeHTML(
+                                            overall.rmse
+                                        ) + " mm"
+                                        : "N/A"
+                                }
+                            </strong>
+                        </div>
+
+                        <div>
+                            <span>Bias</span>
+                            <strong>
+                                ${
+                                    overall.bias !== null
+                                        ? escapeHTML(
+                                            overall.bias
+                                        ) + " mm"
+                                        : "N/A"
+                                }
+                            </strong>
+                        </div>
+
+                        <div>
+                            <span>Brier Score</span>
+                            <strong>
+                                ${
+                                    overall.brierScore !== null
+                                        ? escapeHTML(
+                                            overall.brierScore
+                                        )
+                                        : "N/A"
+                                }
+                            </strong>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="accuracy-warning">
+
+                    <strong>
+                        Important:
+                    </strong>
+
+                    Accuracy is calculated only from matched
+                    forecast snapshots and actual observations.
+                    More independent observations are required
+                    before drawing long-term conclusions.
+
+                </div>
+
+                <div class="accuracy-footer">
+
+                    Verification engine:
+                    V${escapeHTML(
+                        VERSION
+                    )}
+
+                    •
+
+                    Rain threshold:
+                    ${escapeHTML(
+                        RAIN_THRESHOLD_MM
+                    )} mm
+
+                </div>
+
+            </div>
+        `;
+
+        log(
+            "Rendered",
+            {
+                snapshots:
+                    snapshots.length,
+
+                observations:
+                    observations.length,
+
+                verified:
+                    records.length,
+
+                overall:
+                    overall
+            }
+        );
+
+        return result;
+    }
+
+    /*
+     * ---------------------------------------------------------
+     * PUBLIC API
+     * ---------------------------------------------------------
+     */
+
+    function run() {
+        return render();
+    }
+
+    function getResults() {
+        return loadJSON(
+            RESULT_KEY,
+            null
+        );
+    }
+
+    function getVerifiedRecords() {
+        const result =
+            getResults();
+
+        if (
+            !result ||
+            !Array.isArray(
+                result.records
+            )
+        ) {
+            return [];
+        }
+
+        return result.records;
+    }
+
+    function getModelMetrics(modelName) {
+        const result =
+            getResults();
+
+        if (!result) {
+            return null;
+        }
+
+        const normalized =
+            normalizeModel(
+                modelName
+            );
+
+        if (!normalized) {
+            return null;
+        }
 
         const model =
-          getModelName(
-            forecast
-          );
-
-
-        const probability =
-          getProbability(
-            forecast
-          );
-
-
-        const error =
-          predicted -
-          actual;
-
-
-        const record = {
-
-          forecastId:
-            forecast.id ||
-            null,
-
-          forecastCreatedAt:
-            forecast.forecastCreatedAt ||
-            null,
-
-          validDate:
-            forecast.validDate ||
-            null,
-
-          model,
-
-          modelId:
-            forecast.modelId ||
-            null,
-
-          locationName:
-            forecast.locationName ||
-            observation.locationName ||
-            null,
-
-          latitude:
-            number(
-              forecast.latitude
-            ),
-
-          longitude:
-            number(
-              forecast.longitude
-            ),
-
-          predictedRainMm:
-            round(
-              predicted,
-              2
-            ),
-
-          actualRainMm:
-            round(
-              actual,
-              2
-            ),
-
-          rainProbability:
-            probability !== null
-              ? round(
-                  probability,
-                  1
-                )
-              : null,
-
-          errorMm:
-            round(
-              error,
-              2
-            ),
-
-          absoluteErrorMm:
-            round(
-              Math.abs(error),
-              2
-            ),
-
-          source:
-            observation.source ||
-            "Unknown",
-
-          verifiedAt:
-            new Date()
-              .toISOString()
-
-        };
-
-
-        allMatched.push(
-          record
-        );
-
-
-        if (
-          !modelRecords[model]
-        ) {
-
-          modelRecords[model] =
-            [];
-
-        }
-
-
-        modelRecords[model].push(
-          record
-        );
-
-      }
-    );
-
-
-    const models = {};
-
-
-    Object.keys(
-      modelRecords
-    ).forEach(
-      function (model) {
-
-        models[model] =
-          calculateMetrics(
-            modelRecords[model]
-          );
-
-      }
-    );
-
-
-    /*
-      Overall metrics
-    */
-
-    const overall =
-      calculateMetrics(
-        allMatched
-      );
-
-
-    const result = {
-
-      calculatedAt:
-        new Date()
-          .toISOString(),
-
-      totalSnapshots:
-        snapshots.length,
-
-      totalObservations:
-        observations.length,
-
-      matchedRecords:
-        allMatched.length,
-
-      models,
-
-      overall,
-
-      matched:
-        allMatched
-
-    };
-
-
-    saveJSON(
-      RESULT_KEY,
-      result
-    );
-
-
-    return result;
-
-  }
-
-
-  /* =======================================================
-     GET CONTAINER
-     ======================================================= */
-
-  function getContainer() {
-
-    let container =
-      document.getElementById(
-        "verifiedAccuracyDashboard"
-      );
-
-
-    if (container) {
-      return container;
-    }
-
-
-    const accuracy =
-      document.getElementById(
-        "accuracy"
-      );
-
-
-    if (!accuracy) {
-      return null;
-    }
-
-
-    container =
-      document.createElement(
-        "div"
-      );
-
-
-    container.id =
-      "verifiedAccuracyDashboard";
-
-
-    container.style.marginTop =
-      "20px";
-
-
-    accuracy.appendChild(
-      container
-    );
-
-
-    return container;
-
-  }
-
-
-  /* =======================================================
-     MODEL CARD
-     ======================================================= */
-
-  function modelCard(
-    name,
-    metrics
-  ) {
-
-    return `
-
-      <div style="
-        padding:18px;
-        border-radius:16px;
-        background:rgba(255,255,255,.06);
-        border:1px solid rgba(255,255,255,.12);
-      ">
-
-        <h4 style="
-          margin:0 0 12px;
-          font-size:18px;
-        ">
-          ${escapeHTML(name)}
-        </h4>
-
-
-        <div style="
-          display:grid;
-          grid-template-columns:
-          repeat(2,minmax(0,1fr));
-          gap:10px;
-        ">
-
-
-          <div style="
-            padding:11px;
-            border-radius:10px;
-            background:rgba(0,0,0,.18);
-          ">
-
-            <div style="
-              font-size:11px;
-              opacity:.65;
-            ">
-              Samples
-            </div>
-
-            <strong>
-              ${metrics.samples}
-            </strong>
-
-          </div>
-
-
-          <div style="
-            padding:11px;
-            border-radius:10px;
-            background:rgba(0,0,0,.18);
-          ">
-
-            <div style="
-              font-size:11px;
-              opacity:.65;
-            ">
-              Rain Accuracy
-            </div>
-
-            <strong>
-              ${
-                metrics.rainAccuracy === null
-                  ? "—"
-                  : metrics.rainAccuracy + "%"
-              }
-            </strong>
-
-          </div>
-
-
-          <div style="
-            padding:11px;
-            border-radius:10px;
-            background:rgba(0,0,0,.18);
-          ">
-
-            <div style="
-              font-size:11px;
-              opacity:.65;
-            ">
-              MAE
-            </div>
-
-            <strong>
-              ${
-                metrics.mae === null
-                  ? "—"
-                  : metrics.mae + " mm"
-              }
-            </strong>
-
-          </div>
-
-
-          <div style="
-            padding:11px;
-            border-radius:10px;
-            background:rgba(0,0,0,.18);
-          ">
-
-            <div style="
-              font-size:11px;
-              opacity:.65;
-            ">
-              RMSE
-            </div>
-
-            <strong>
-              ${
-                metrics.rmse === null
-                  ? "—"
-                  : metrics.rmse + " mm"
-              }
-            </strong>
-
-          </div>
-
-
-          <div style="
-            padding:11px;
-            border-radius:10px;
-            background:rgba(0,0,0,.18);
-          ">
-
-            <div style="
-              font-size:11px;
-              opacity:.65;
-            ">
-              Bias
-            </div>
-
-            <strong>
-              ${
-                metrics.bias === null
-                  ? "—"
-                  : metrics.bias + " mm"
-              }
-            </strong>
-
-          </div>
-
-
-          <div style="
-            padding:11px;
-            border-radius:10px;
-            background:rgba(0,0,0,.18);
-          ">
-
-            <div style="
-              font-size:11px;
-              opacity:.65;
-            ">
-              Brier Score
-            </div>
-
-            <strong>
-              ${
-                metrics.brierScore === null
-                  ? "—"
-                  : metrics.brierScore
-              }
-            </strong>
-
-          </div>
-
-        </div>
-
-
-        <div style="
-          margin-top:12px;
-          font-size:12px;
-          line-height:1.8;
-          opacity:.8;
-        ">
-
-          🌧️ Hits:
-          <strong>${metrics.hits}</strong>
-
-          &nbsp; · &nbsp;
-
-          ❌ Misses:
-          <strong>${metrics.misses}</strong>
-
-          &nbsp; · &nbsp;
-
-          ⚠️ False:
-          <strong>${metrics.falseAlarms}</strong>
-
-          &nbsp; · &nbsp;
-
-          ☀️ Correct:
-          <strong>${metrics.correctNoRain}</strong>
-
-        </div>
-
-      </div>
-
-    `;
-
-  }
-
-
-  /* =======================================================
-     RENDER
-     ======================================================= */
-
-  function render() {
-
-    const container =
-      getContainer();
-
-
-    if (!container) {
-      return;
-    }
-
-
-    const result =
-      calculate();
-
-
-    const models =
-      result.models || {};
-
-
-    if (
-      !result.matchedRecords
-    ) {
-
-      container.innerHTML = `
-
-        <div style="
-          padding:20px;
-          border-radius:18px;
-          background:rgba(255,255,255,.06);
-          border:1px solid rgba(255,255,255,.12);
-        ">
-
-          <h3 style="
-            margin:0 0 8px;
-          ">
-            🎯 Verified Model Accuracy
-          </h3>
-
-
-          <p style="
-            margin:0;
-            font-size:13px;
-            line-height:1.7;
-            opacity:.75;
-          ">
-
-            Abhi forecast aur actual rainfall
-            ke matching records available nahi hain.
-
-            <br><br>
-
-            Forecast snapshots already save ho rahe hain.
-
-            Actual rainfall observation available
-            hone ke baad ECMWF, GFS aur ICON ki
-            measured accuracy yahan calculate hogi.
-
-          </p>
-
-        </div>
-
-      `;
-
-      return;
-
-    }
-
-
-    const modelNames =
-      [
-        "ECMWF",
-        "GFS",
-        "ICON"
-      ];
-
-
-    const availableModels =
-      modelNames.filter(
-        name =>
-          models[name]
-      );
-
-
-    const cards =
-      availableModels
-        .map(
-          name =>
-            modelCard(
-              name,
-              models[name]
-            )
-        )
-        .join("");
-
-
-    container.innerHTML = `
-
-      <div style="
-        padding:20px;
-        border-radius:18px;
-        background:rgba(255,255,255,.06);
-        border:1px solid rgba(255,255,255,.12);
-      ">
-
-
-        <h3 style="
-          margin:0 0 6px;
-        ">
-          🎯 Verified Model Accuracy
-        </h3>
-
-
-        <p style="
-          margin:0 0 18px;
-          font-size:12px;
-          opacity:.7;
-        ">
-
-          ${result.matchedRecords}
-          forecast/observation matches
-
-        </p>
-
-
-        <div style="
-          display:grid;
-          grid-template-columns:
-          repeat(auto-fit,minmax(250px,1fr));
-          gap:12px;
-        ">
-
-          ${cards}
-
-        </div>
-
-
-        <div style="
-          margin-top:20px;
-          padding:16px;
-          border-radius:14px;
-          background:rgba(255,255,255,.04);
-        ">
-
-          <h4 style="
-            margin:0 0 12px;
-          ">
-            📊 Overall Verification
-          </h4>
-
-
-          <div style="
-            display:grid;
-            grid-template-columns:
-            repeat(auto-fit,minmax(130px,1fr));
-            gap:10px;
-          ">
-
-
-            <div>
-              Samples:
-              <strong>
-                ${result.overall.samples}
-              </strong>
-            </div>
-
-
-            <div>
-              Accuracy:
-              <strong>
-                ${
-                  result.overall.rainAccuracy === null
-                    ? "—"
-                    : result.overall.rainAccuracy + "%"
+            result.models.find(
+                function (item) {
+                    return (
+                        item.model ===
+                        normalized
+                    );
                 }
-              </strong>
-            </div>
-
-
-            <div>
-              MAE:
-              <strong>
-                ${
-                  result.overall.mae === null
-                    ? "—"
-                    : result.overall.mae + " mm"
-                }
-              </strong>
-            </div>
-
-
-            <div>
-              RMSE:
-              <strong>
-                ${
-                  result.overall.rmse === null
-                    ? "—"
-                    : result.overall.rmse + " mm"
-                }
-              </strong>
-            </div>
-
-
-            <div>
-              Bias:
-              <strong>
-                ${
-                  result.overall.bias === null
-                    ? "—"
-                    : result.overall.bias + " mm"
-                }
-              </strong>
-            </div>
-
-          </div>
-
-        </div>
-
-
-        <div style="
-          margin-top:18px;
-          overflow-x:auto;
-        ">
-
-          <h4 style="
-            margin:0 0 10px;
-          ">
-            📋 Matched Records
-          </h4>
-
-
-          <table style="
-            width:100%;
-            border-collapse:collapse;
-            font-size:12px;
-          ">
-
-            <thead>
-
-              <tr>
-
-                <th style="
-                  padding:8px;
-                  text-align:left;
-                ">
-                  Date
-                </th>
-
-                <th style="
-                  padding:8px;
-                  text-align:left;
-                ">
-                  Model
-                </th>
-
-                <th style="
-                  padding:8px;
-                  text-align:left;
-                ">
-                  Forecast
-                </th>
-
-                <th style="
-                  padding:8px;
-                  text-align:left;
-                ">
-                  Actual
-                </th>
-
-                <th style="
-                  padding:8px;
-                  text-align:left;
-                ">
-                  Probability
-                </th>
-
-                <th style="
-                  padding:8px;
-                  text-align:left;
-                ">
-                  Error
-                </th>
-
-              </tr>
-
-            </thead>
-
-
-            <tbody>
-
-              ${
-                result.matched
-                  .slice(0, 50)
-                  .map(
-                    function (item) {
-
-                      return `
-
-                        <tr>
-
-                          <td style="
-                            padding:8px;
-                            border-top:
-                            1px solid
-                            rgba(255,255,255,.08);
-                          ">
-                            ${escapeHTML(
-                              item.validDate
-                            )}
-                          </td>
-
-
-                          <td style="
-                            padding:8px;
-                            border-top:
-                            1px solid
-                            rgba(255,255,255,.08);
-                          ">
-                            ${escapeHTML(
-                              item.model
-                            )}
-                          </td>
-
-
-                          <td style="
-                            padding:8px;
-                            border-top:
-                            1px solid
-                            rgba(255,255,255,.08);
-                          ">
-                            ${item.predictedRainMm}
-                            mm
-                          </td>
-
-
-                          <td style="
-                            padding:8px;
-                            border-top:
-                            1px solid
-                            rgba(255,255,255,.08);
-                          ">
-                            ${item.actualRainMm}
-                            mm
-                          </td>
-
-
-                          <td style="
-                            padding:8px;
-                            border-top:
-                            1px solid
-                            rgba(255,255,255,.08);
-                          ">
-                            ${
-                              item.rainProbability === null
-                                ? "—"
-                                : item.rainProbability + "%"
-                            }
-                          </td>
-
-
-                          <td style="
-                            padding:8px;
-                            border-top:
-                            1px solid
-                            rgba(255,255,255,.08);
-                          ">
-                            ${item.errorMm}
-                            mm
-                          </td>
-
-                        </tr>
-
-                      `;
-
-                    }
-                  )
-                  .join("")
-              }
-
-            </tbody>
-
-          </table>
-
-        </div>
-
-
-        <div style="
-          margin-top:18px;
-          padding:13px;
-          border-radius:10px;
-          font-size:12px;
-          line-height:1.7;
-          opacity:.75;
-        ">
-
-          📌 Ye measured verification hai.
-
-          <br>
-
-          Accuracy tabhi calculate hogi jab
-          forecast ke corresponding date/location
-          ka actual rainfall observation available ho.
-
-          <br>
-
-          Website kisi fixed 95% accuracy ko
-          assume nahi karti.
-
-        </div>
-
-      </div>
-
-    `;
-
-
-    /*
-      Update main counters
-    */
-
-    const accuracyPercent =
-      document.getElementById(
-        "accuracyPercent"
-      );
-
-
-    const dataPoints =
-      document.getElementById(
-        "dataPoints"
-      );
-
-
-    const historicalRecords =
-      document.getElementById(
-        "historicalRecords"
-      );
-
-
-    if (accuracyPercent) {
-
-      accuracyPercent.textContent =
-        result.overall.rainAccuracy === null
-          ? "—"
-          : `${result.overall.rainAccuracy}%`;
-
-    }
-
-
-    if (dataPoints) {
-
-      dataPoints.textContent =
-        String(
-          result.matchedRecords
-        );
-
-    }
-
-
-    if (historicalRecords) {
-
-      historicalRecords.textContent =
-        String(
-          result.matchedRecords
-        );
-
-    }
-
-  }
-
-
-  /* =======================================================
-     PUBLIC API
-     ======================================================= */
-
-  window.RRP_VERIFICATION = {
-
-    calculate,
-
-    render,
-
-    getResults:
-      function () {
-
-        try {
-
-          const raw =
-            localStorage.getItem(
-              RESULT_KEY
             );
 
-          return raw
-            ? JSON.parse(raw)
+        return model
+            ? model.metrics
             : null;
+    }
 
+    function clear() {
+        try {
+            localStorage.removeItem(
+                RESULT_KEY
+            );
+
+            log(
+                "Verified accuracy results cleared."
+            );
+
+            render();
         } catch (error) {
-
-          return null;
-
+            warn(
+                "Could not clear results:",
+                error
+            );
         }
-
-      },
-
-    getObservations:
-      function () {
-
-        return loadJSON(
-          OBSERVATION_KEY
-        );
-
-      },
-
-    getForecastSnapshots:
-      function () {
-
-        return loadJSON(
-          SNAPSHOT_KEY
-        );
-
-      }
-
-  };
-
-
-  /* =======================================================
-     EVENTS
-     ======================================================= */
-
-  window.addEventListener(
-    "rrp:observation-saved",
-    function () {
-
-      setTimeout(
-        render,
-        100
-      );
-
     }
-  );
 
+    /*
+     * ---------------------------------------------------------
+     * EVENTS
+     * ---------------------------------------------------------
+     */
 
-  window.addEventListener(
-    "rrp:weather-updated",
-    function () {
-
-      setTimeout(
-        render,
-        300
-      );
-
-    }
-  );
-
-
-  /* =======================================================
-     INIT
-     ======================================================= */
-
-  function initialize() {
-
-    render();
-
-  }
-
-
-  if (
-    document.readyState ===
-    "loading"
-  ) {
-
-    document.addEventListener(
-      "DOMContentLoaded",
-      initialize
+    window.addEventListener(
+        "rrp:weather-updated",
+        function () {
+            setTimeout(
+                render,
+                300
+            );
+        }
     );
 
-  } else {
+    window.addEventListener(
+        "rrp:prediction-updated",
+        function () {
+            setTimeout(
+                render,
+                300
+            );
+        }
+    );
 
-    initialize();
+    window.addEventListener(
+        "rrp:location-selected",
+        function () {
+            setTimeout(
+                render,
+                400
+            );
+        }
+    );
 
-  }
+    /*
+     * ---------------------------------------------------------
+     * GLOBAL API
+     * ---------------------------------------------------------
+     */
 
+    window.RRP_VERIFICATION = {
+        version: VERSION,
+
+        run: run,
+
+        render: render,
+
+        getResults:
+            getResults,
+
+        getVerifiedRecords:
+            getVerifiedRecords,
+
+        getModelMetrics:
+            getModelMetrics,
+
+        clear:
+            clear
+    };
+
+    /*
+     * ---------------------------------------------------------
+     * STARTUP
+     * ---------------------------------------------------------
+     */
+
+    function init() {
+        render();
+
+        setTimeout(
+            render,
+            1000
+        );
+
+        setTimeout(
+            render,
+            2500
+        );
+    }
+
+    if (
+        document.readyState ===
+        "loading"
+    ) {
+        document.addEventListener(
+            "DOMContentLoaded",
+            init
+        );
+    } else {
+        init();
+    }
+
+    log(
+        "Accuracy Verification Engine V3 ready."
+    );
 })();
