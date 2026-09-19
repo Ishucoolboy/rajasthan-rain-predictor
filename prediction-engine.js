@@ -1,6 +1,6 @@
 /* =========================================================
    RAJASTHAN RAIN PREDICTOR
-   MULTI-MODEL PREDICTION ENGINE V3
+   MULTI-MODEL PREDICTION ENGINE V4
    ========================================================= */
 
 (() => {
@@ -8,9 +8,9 @@
     "use strict";
 
 
-    /* =====================================================
-       CONFIG
-       ===================================================== */
+    // =====================================================
+    // CONFIG
+    // =====================================================
 
     const API =
         "https://api.open-meteo.com/v1/forecast";
@@ -41,9 +41,9 @@
     let loading = false;
 
 
-    /* =====================================================
-       HELPERS
-       ===================================================== */
+    // =====================================================
+    // HELPERS
+    // =====================================================
 
     function number(value) {
 
@@ -58,16 +58,12 @@
 
     function escapeHTML(value) {
 
-        return String(
-            value == null
-                ? ""
-                : value
-        )
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+        return String(value ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
 
     }
 
@@ -75,11 +71,8 @@
     function average(values) {
 
         if (!values.length) {
-
             return 0;
-
         }
-
 
         return values.reduce(
             (sum, value) =>
@@ -116,14 +109,11 @@
             (time, index) => {
 
                 const parsed =
-                    new Date(time)
-                        .getTime();
+                    new Date(time).getTime();
 
 
                 if (
-                    !Number.isFinite(
-                        parsed
-                    )
+                    !Number.isFinite(parsed)
                 ) {
 
                     return;
@@ -159,9 +149,9 @@
     }
 
 
-    /* =====================================================
-       FETCH MODEL
-       ===================================================== */
+    // =====================================================
+    // FETCH MODEL
+    // =====================================================
 
     async function fetchModel(
         location,
@@ -232,15 +222,14 @@
             );
 
 
-        /* =================================================
-           CURRENT
-           ================================================= */
+        // =================================================
+        // CURRENT RAIN
+        // =================================================
 
         const currentRain =
             number(
                 (
-                    hourly
-                        .precipitation ||
+                    hourly.precipitation ||
                     []
                 )[currentIndex]
             );
@@ -249,21 +238,19 @@
         const currentProbability =
             number(
                 (
-                    hourly
-                        .precipitation_probability ||
+                    hourly.precipitation_probability ||
                     []
                 )[currentIndex]
             );
 
 
-        /* =================================================
-           NEXT 24 HOURS
-           ================================================= */
+        // =================================================
+        // NEXT 24 HOURS
+        // =================================================
 
         const next24Rain =
             (
-                hourly
-                    .precipitation ||
+                hourly.precipitation ||
                 []
             )
             .slice(
@@ -279,8 +266,7 @@
 
         const next24Probability =
             (
-                hourly
-                    .precipitation_probability ||
+                hourly.precipitation_probability ||
                 []
             )
             .slice(
@@ -298,14 +284,13 @@
                 : 0;
 
 
-        /* =================================================
-           NEXT 3 DAYS
-           ================================================= */
+        // =================================================
+        // NEXT 3 DAYS
+        // =================================================
 
         const next3DayRain =
             (
-                daily
-                    .precipitation_sum ||
+                daily.precipitation_sum ||
                 []
             )
             .slice(
@@ -319,14 +304,13 @@
             );
 
 
-        /* =================================================
-           THUNDERSTORM
-           ================================================= */
+        // =================================================
+        // THUNDERSTORM
+        // =================================================
 
         const codes =
             (
-                hourly
-                    .weather_code ||
+                hourly.weather_code ||
                 []
             )
             .slice(
@@ -373,9 +357,9 @@
     }
 
 
-    /* =====================================================
-       RAIN RISK
-       ===================================================== */
+    // =====================================================
+    // RAIN RISK
+    // =====================================================
 
     function getRainRisk(
         probability,
@@ -417,9 +401,9 @@
     }
 
 
-    /* =====================================================
-       MODEL AGREEMENT
-       ===================================================== */
+    // =====================================================
+    // MODEL AGREEMENT
+    // =====================================================
 
     function getModelAgreement(
         values
@@ -435,15 +419,11 @@
 
 
         const minimum =
-            Math.min(
-                ...values
-            );
+            Math.min(...values);
 
 
         const maximum =
-            Math.max(
-                ...values
-            );
+            Math.max(...values);
 
 
         const mean =
@@ -489,9 +469,9 @@
     }
 
 
-    /* =====================================================
-       GET CONTAINER
-       ===================================================== */
+    // =====================================================
+    // CONTAINER
+    // =====================================================
 
     function getContainer() {
 
@@ -565,9 +545,9 @@
     }
 
 
-    /* =====================================================
-       LOADING UI
-       ===================================================== */
+    // =====================================================
+    // LOADING
+    // =====================================================
 
     function showLoading() {
 
@@ -596,9 +576,9 @@
     }
 
 
-    /* =====================================================
-       REGIONAL ACCURACY CONTEXT
-       ===================================================== */
+    // =====================================================
+    // REGIONAL ACCURACY
+    // =====================================================
 
     function getRegionalContext() {
 
@@ -607,9 +587,9 @@
             if (
                 !window.RRP_REGIONAL_ACCURACY ||
                 typeof
-                    window.RRP_REGIONAL_ACCURACY
-                        .getSelectedMetrics !==
-                    "function"
+                window.RRP_REGIONAL_ACCURACY
+                    .getSelectedMetrics !==
+                "function"
             ) {
 
                 return null;
@@ -624,7 +604,7 @@
         } catch (error) {
 
             console.warn(
-                "[RRP Prediction V3] Regional accuracy context unavailable:",
+                "[RRP Prediction V4] Regional context unavailable:",
                 error
             );
 
@@ -636,9 +616,9 @@
     }
 
 
-    /* =====================================================
-       FORMAT REGIONAL METRIC
-       ===================================================== */
+    // =====================================================
+    // REGIONAL METRIC
+    // =====================================================
 
     function regionalMetric(
         value,
@@ -666,9 +646,9 @@
     }
 
 
-    /* =====================================================
-       RENDER REGIONAL CONTEXT
-       ===================================================== */
+    // =====================================================
+    // REGIONAL CONTEXT UI
+    // =====================================================
 
     function renderRegionalContext() {
 
@@ -733,17 +713,12 @@
             regional.matchType;
 
 
-        let title =
-            "📍 Regional Accuracy Context";
-
-
         let description =
             "";
 
 
         if (
-            matchType ===
-            "exact"
+            matchType === "exact"
         ) {
 
             description = `
@@ -762,20 +737,15 @@
                 </strong>
 
                 ${
-                    Number.isFinite(
-                        distance
-                    )
-                        ? `
-                            (${distance.toFixed(1)} km)
-                          `
+                    Number.isFinite(distance)
+                        ? `(${distance.toFixed(1)} km)`
                         : ""
                 }
 
             `;
 
         } else if (
-            matchType ===
-            "nearest"
+            matchType === "nearest"
         ) {
 
             description = `
@@ -797,12 +767,8 @@
                 </strong>
 
                 ${
-                    Number.isFinite(
-                        distance
-                    )
-                        ? `
-                            (${distance.toFixed(1)} km away)
-                          `
+                    Number.isFinite(distance)
+                        ? `(${distance.toFixed(1)} km away)`
                         : ""
                 }
 
@@ -826,12 +792,8 @@
                 </strong>
 
                 ${
-                    Number.isFinite(
-                        distance
-                    )
-                        ? `
-                            (${distance.toFixed(1)} km away)
-                          `
+                    Number.isFinite(distance)
+                        ? `(${distance.toFixed(1)} km away)`
                         : ""
                 }
 
@@ -846,8 +808,7 @@
         }
 
 
-        let cards =
-            "";
+        let cards = "";
 
 
         [
@@ -855,7 +816,7 @@
             "GFS",
             "ICON"
         ].forEach(
-            function (modelName) {
+            modelName => {
 
                 const model =
                     regional.models?.[
@@ -864,9 +825,7 @@
 
 
                 if (!model) {
-
                     return;
-
                 }
 
 
@@ -961,7 +920,7 @@
                     margin:0 0 8px;
                 ">
 
-                    ${title}
+                    📍 Regional Accuracy Context
 
                 </h3>
 
@@ -992,15 +951,7 @@
 
                             </div>
                           `
-                        : `
-                            <div style="
-                                margin-top:12px;
-                                font-size:12px;
-                            ">
-                                Model verification data
-                                unavailable.
-                            </div>
-                          `
+                        : ""
                 }
 
 
@@ -1018,8 +969,8 @@
                     current forecast probability ko
                     directly modify nahi karte.
 
-                    Ye forecast ko interpret karne ke
-                    liye historical context hain.
+                    Ye sirf forecast ko interpret
+                    karne ke liye historical context hain.
 
                 </div>
 
@@ -1030,9 +981,9 @@
     }
 
 
-    /* =====================================================
-       RENDER PREDICTION
-       ===================================================== */
+    // =====================================================
+    // RENDER PREDICTION
+    // =====================================================
 
     function renderPrediction(
         location,
@@ -1064,8 +1015,8 @@
                     color:#64748b;
                 ">
 
-                    Model data is
-                    temporarily unavailable.
+                    Model data is temporarily
+                    unavailable.
 
                 </p>
 
@@ -1076,34 +1027,74 @@
         }
 
 
-        /* =================================================
-           COMBINED VALUES
-           ================================================= */
+        // =================================================
+        // COMBINED VALUES
+        // =================================================
+
+        const rainValues =
+            validModels.map(
+                model =>
+                    model.next24Rain
+            );
+
+
+        const probabilityValues =
+            validModels.map(
+                model =>
+                    model.peakProbability
+            );
+
+
+        const threeDayValues =
+            validModels.map(
+                model =>
+                    model.next3DayRain
+            );
+
 
         const combinedProbability =
             average(
-                validModels.map(
-                    model =>
-                        model.peakProbability
-                )
+                probabilityValues
             );
 
 
         const combinedRain =
             average(
-                validModels.map(
-                    model =>
-                        model.next24Rain
-                )
+                rainValues
             );
 
 
         const combined3DayRain =
             average(
-                validModels.map(
-                    model =>
-                        model.next3DayRain
-                )
+                threeDayValues
+            );
+
+
+        // =================================================
+        // NEW RAINFALL RANGE
+        // =================================================
+
+        const minimumRain =
+            Math.min(
+                ...rainValues
+            );
+
+
+        const maximumRain =
+            Math.max(
+                ...rainValues
+            );
+
+
+        const minimum3DayRain =
+            Math.min(
+                ...threeDayValues
+            );
+
+
+        const maximum3DayRain =
+            Math.max(
+                ...threeDayValues
             );
 
 
@@ -1116,10 +1107,7 @@
 
         const modelAgreement =
             getModelAgreement(
-                validModels.map(
-                    model =>
-                        model.next24Rain
-                )
+                rainValues
             );
 
 
@@ -1130,66 +1118,67 @@
             );
 
 
-        /* =================================================
-           MODEL ROWS
-           ================================================= */
+        // =================================================
+        // MODEL ROWS
+        // =================================================
 
         const rows =
-            validModels.map(
-                model => `
+            validModels
+                .map(
+                    model => `
 
-                    <div style="
-                        display:grid;
-                        grid-template-columns:
-                            90px 1fr 1fr 1fr;
-                        gap:8px;
-                        padding:9px 0;
-                        border-bottom:
-                            1px solid #e2e8f0;
-                        font-size:13px;
-                        align-items:center;
-                    ">
+                        <div style="
+                            display:grid;
+                            grid-template-columns:
+                                90px 1fr 1fr 1fr;
+                            gap:8px;
+                            padding:9px 0;
+                            border-bottom:
+                                1px solid #e2e8f0;
+                            font-size:13px;
+                            align-items:center;
+                        ">
 
-                        <strong>
-                            ${escapeHTML(
-                                model.name
-                            )}
-                        </strong>
+                            <strong>
+                                ${escapeHTML(
+                                    model.name
+                                )}
+                            </strong>
 
-                        <span>
-                            ${model.next24Rain.toFixed(1)}
-                            mm
-                        </span>
+                            <span>
+                                ${model.next24Rain.toFixed(1)}
+                                mm
+                            </span>
 
-                        <span>
-                            ${Math.round(
-                                model.peakProbability
-                            )}%
-                        </span>
+                            <span>
+                                ${Math.round(
+                                    model.peakProbability
+                                )}%
+                            </span>
 
-                        <span>
-                            ${model.next3DayRain.toFixed(1)}
-                            mm
-                        </span>
+                            <span>
+                                ${model.next3DayRain.toFixed(1)}
+                                mm
+                            </span>
 
-                    </div>
+                        </div>
 
-                `
-            )
-            .join("");
+                    `
+                )
+                .join("");
 
 
-        /* =================================================
-           REGIONAL CONTEXT
-           ================================================= */
+        // =================================================
+        // REGIONAL
+        // =================================================
 
         const regionalContext =
             renderRegionalContext();
 
 
-        /* =================================================
-           MAIN UI
-           ================================================= */
+        // =================================================
+        // UI
+        // =================================================
 
         container.innerHTML = `
 
@@ -1215,10 +1204,14 @@
             </p>
 
 
+            <!-- =========================================
+                 MAIN METRICS
+                 ========================================= -->
+
             <div style="
                 display:grid;
                 grid-template-columns:
-                    repeat(4,minmax(0,1fr));
+                    repeat(auto-fit,minmax(150px,1fr));
                 gap:12px;
                 margin-bottom:18px;
             ">
@@ -1237,6 +1230,7 @@
                     <div style="
                         font-size:25px;
                         font-weight:700;
+                        margin-top:5px;
                     ">
 
                         ${Math.round(
@@ -1255,12 +1249,13 @@
                 ">
 
                     <small>
-                        Next 24h Rain
+                        Average 24h Rain
                     </small>
 
                     <div style="
                         font-size:25px;
                         font-weight:700;
+                        margin-top:5px;
                     ">
 
                         ${combinedRain.toFixed(1)}
@@ -1274,16 +1269,53 @@
                 <div style="
                     padding:16px;
                     border-radius:14px;
+                    background:#fefce8;
+                ">
+
+                    <small>
+                        Model Rain Range
+                    </small>
+
+                    <div style="
+                        font-size:22px;
+                        font-weight:700;
+                        margin-top:5px;
+                    ">
+
+                        ${minimumRain.toFixed(1)}
+                        –
+                        ${maximumRain.toFixed(1)}
+                        mm
+
+                    </div>
+
+                    <div style="
+                        font-size:10px;
+                        margin-top:4px;
+                        color:#64748b;
+                    ">
+
+                        Next 24 hours
+
+                    </div>
+
+                </div>
+
+
+                <div style="
+                    padding:16px;
+                    border-radius:14px;
                     background:#fff7ed;
                 ">
 
                     <small>
-                        Next 3 Days
+                        3-Day Average
                     </small>
 
                     <div style="
                         font-size:25px;
                         font-weight:700;
+                        margin-top:5px;
                     ">
 
                         ${combined3DayRain.toFixed(1)}
@@ -1294,38 +1326,58 @@
                 </div>
 
 
-                <div style="
-                    padding:16px;
-                    border-radius:14px;
-                    background:#f8fafc;
+            </div>
+
+
+            <!-- =========================================
+                 3 DAY RANGE
+                 ========================================= -->
+
+            <div style="
+                padding:14px;
+                border-radius:13px;
+                background:#f8fafc;
+                border:1px solid #e2e8f0;
+                margin-bottom:16px;
+                font-size:13px;
+                line-height:1.6;
+            ">
+
+                📊
+
+                <strong>
+                    3-Day Model Range:
+                </strong>
+
+                ${minimum3DayRain.toFixed(1)}
+                –
+                ${maximum3DayRain.toFixed(1)}
+                mm
+
+                <br>
+
+                <span style="
+                    font-size:11px;
+                    color:#64748b;
                 ">
 
-                    <small>
-                        Rain Signal
-                    </small>
+                    Range ECMWF, GFS aur ICON
+                    ke rainfall forecasts ke beech
+                    ka difference show karta hai.
 
-                    <div style="
-                        font-size:18px;
-                        font-weight:700;
-                        margin-top:4px;
-                    ">
-
-                        ${escapeHTML(
-                            rainRisk
-                        )}
-
-                    </div>
-
-                </div>
-
+                </span>
 
             </div>
 
 
+            <!-- =========================================
+                 SIGNALS
+                 ========================================= -->
+
             <div style="
                 display:grid;
                 grid-template-columns:
-                    repeat(2,minmax(0,1fr));
+                    repeat(auto-fit,minmax(190px,1fr));
                 gap:12px;
                 margin-bottom:18px;
             ">
@@ -1343,8 +1395,31 @@
                         Model Agreement:
                     </strong>
 
+                    <br>
+
                     ${escapeHTML(
                         modelAgreement
+                    )}
+
+                </div>
+
+
+                <div style="
+                    padding:14px;
+                    border-radius:12px;
+                    background:#f8fafc;
+                ">
+
+                    🌧️
+
+                    <strong>
+                        Rain Signal:
+                    </strong>
+
+                    <br>
+
+                    ${escapeHTML(
+                        rainRisk
                     )}
 
                 </div>
@@ -1362,6 +1437,8 @@
                         Thunderstorm:
                     </strong>
 
+                    <br>
+
                     ${
                         thunderstorm
                             ? "Possible"
@@ -1373,6 +1450,10 @@
 
             </div>
 
+
+            <!-- =========================================
+                 MODEL TABLE
+                 ========================================= -->
 
             <div style="
                 overflow-x:auto;
@@ -1420,28 +1501,67 @@
             </div>
 
 
+            <!-- =========================================
+                 REGIONAL ACCURACY
+                 ========================================= -->
+
             ${regionalContext}
 
 
-            <p style="
+            <!-- =========================================
+                 EXPLANATION
+                 ========================================= -->
+
+            <div style="
                 margin-top:14px;
+                padding:13px;
+                border-radius:12px;
+                background:#f8fafc;
+                font-size:11px;
                 color:#64748b;
-                font-size:12px;
-                line-height:1.5;
+                line-height:1.7;
             ">
 
-                Model-consensus probability is a
-                forecast signal from ECMWF, GFS and ICON.
-                It is not a measured accuracy percentage.
+                ℹ️
 
-                Historical accuracy requires comparison
-                with independent observations or an
-                explicitly defined reference dataset.
+                <strong>
+                    Model Range:
+                </strong>
 
-            </p>
+                ECMWF, GFS aur ICON ke
+                individual rainfall forecasts
+                ka minimum–maximum range.
+
+                <br>
+
+                <strong>
+                    Average:
+                </strong>
+
+                Available models ke rainfall
+                forecasts ka arithmetic mean.
+
+                <br>
+
+                <strong>
+                    Accuracy:
+                </strong>
+
+                Model consensus ya range ko
+                measured accuracy nahi maana jaata.
+
+                Historical accuracy ke liye
+                independent observations/reference
+                dataset required hai.
+
+            </div>
 
         `;
 
+
+        // =================================================
+        // SAVE LATEST RESULT
+        // =================================================
 
         latestPrediction = {
 
@@ -1453,8 +1573,20 @@
             rainfall:
                 combinedRain,
 
+            rainfallMin:
+                minimumRain,
+
+            rainfallMax:
+                maximumRain,
+
             threeDayRain:
                 combined3DayRain,
+
+            threeDayRainMin:
+                minimum3DayRain,
+
+            threeDayRainMax:
+                maximum3DayRain,
 
             modelAgreement,
 
@@ -1470,9 +1602,9 @@
     }
 
 
-    /* =====================================================
-       RUN ENGINE
-       ===================================================== */
+    // =====================================================
+    // RUN
+    // =====================================================
 
     async function run(
         location
@@ -1506,7 +1638,8 @@
         }
 
 
-        loading = true;
+        loading =
+            true;
 
 
         showLoading();
@@ -1529,7 +1662,7 @@
                                 error => {
 
                                     console.warn(
-                                        "[RRP Prediction V3]",
+                                        "[RRP Prediction V4]",
                                         model.name +
                                         " prediction failed:",
                                         error
@@ -1573,23 +1706,24 @@
     }
 
 
-    /* =====================================================
-       PUBLIC API
-       ===================================================== */
+    // =====================================================
+    // PUBLIC API
+    // =====================================================
 
     window.RRP_PREDICTION_ENGINE = {
 
         run,
 
-        getLatest: () =>
-            latestPrediction
+        getLatest:
+            () =>
+                latestPrediction
 
     };
 
 
-    /* =====================================================
-       WEATHER UPDATE EVENT
-       ===================================================== */
+    // =====================================================
+    // WEATHER EVENT
+    // =====================================================
 
     window.addEventListener(
         "rrp:weather-updated",
@@ -1613,18 +1747,9 @@
     );
 
 
-    /* =====================================================
-       REGIONAL ACCURACY MAY LOAD AFTER PREDICTION
-       ===================================================== */
-
-    /*
-      Regional Accuracy Engine index.html me
-      prediction engine ke baad load hota hai.
-
-      Isliye prediction complete hone ke baad
-      thoda wait karke UI ko regional context ke
-      saath refresh karte hain.
-    */
+    // =====================================================
+    // REFRESH AFTER REGIONAL ENGINE LOAD
+    // =====================================================
 
     window.addEventListener(
         "load",
@@ -1645,7 +1770,7 @@
                     }
 
                 },
-                4000
+                4500
             );
 
         }
