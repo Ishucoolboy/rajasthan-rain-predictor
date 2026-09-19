@@ -1,6 +1,6 @@
 /* =========================================================
    RAJASTHAN RAIN PREDICTOR
-   MULTI-MODEL PREDICTION ENGINE
+   MULTI-MODEL PREDICTION ENGINE V3
    ========================================================= */
 
 (() => {
@@ -10,7 +10,7 @@
 
     /* =====================================================
        CONFIG
-    ===================================================== */
+       ===================================================== */
 
     const API =
         "https://api.open-meteo.com/v1/forecast";
@@ -43,7 +43,7 @@
 
     /* =====================================================
        HELPERS
-    ===================================================== */
+       ===================================================== */
 
     function number(value) {
 
@@ -66,7 +66,8 @@
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 
     }
 
@@ -114,10 +115,25 @@
         times.forEach(
             (time, index) => {
 
+                const parsed =
+                    new Date(time)
+                        .getTime();
+
+
+                if (
+                    !Number.isFinite(
+                        parsed
+                    )
+                ) {
+
+                    return;
+
+                }
+
+
                 const difference =
                     Math.abs(
-                        new Date(time).getTime() -
-                        now
+                        parsed - now
                     );
 
 
@@ -191,7 +207,8 @@
 
             throw new Error(
                 model.name +
-                " model request failed"
+                " model request failed: HTTP " +
+                response.status
             );
 
         }
@@ -215,7 +232,9 @@
             );
 
 
-        /* ---------- CURRENT ---------- */
+        /* =================================================
+           CURRENT
+           ================================================= */
 
         const currentRain =
             number(
@@ -237,7 +256,9 @@
             );
 
 
-        /* ---------- NEXT 24 HOURS ---------- */
+        /* =================================================
+           NEXT 24 HOURS
+           ================================================= */
 
         const next24Rain =
             (
@@ -277,7 +298,9 @@
                 : 0;
 
 
-        /* ---------- NEXT 3 DAYS ---------- */
+        /* =================================================
+           NEXT 3 DAYS
+           ================================================= */
 
         const next3DayRain =
             (
@@ -285,7 +308,10 @@
                     .precipitation_sum ||
                 []
             )
-            .slice(0, 3)
+            .slice(
+                0,
+                3
+            )
             .reduce(
                 (sum, value) =>
                     sum + number(value),
@@ -293,7 +319,9 @@
             );
 
 
-        /* ---------- THUNDERSTORM ---------- */
+        /* =================================================
+           THUNDERSTORM
+           ================================================= */
 
         const codes =
             (
@@ -321,6 +349,9 @@
 
             name:
                 model.name,
+
+            modelId:
+                model.id,
 
             currentRain,
 
@@ -459,7 +490,7 @@
 
 
     /* =====================================================
-       CREATE UI
+       GET CONTAINER
        ===================================================== */
 
     function getContainer() {
@@ -566,6 +597,440 @@
 
 
     /* =====================================================
+       REGIONAL ACCURACY CONTEXT
+       ===================================================== */
+
+    function getRegionalContext() {
+
+        try {
+
+            if (
+                !window.RRP_REGIONAL_ACCURACY ||
+                typeof
+                    window.RRP_REGIONAL_ACCURACY
+                        .getSelectedMetrics !==
+                    "function"
+            ) {
+
+                return null;
+
+            }
+
+
+            return window
+                .RRP_REGIONAL_ACCURACY
+                .getSelectedMetrics();
+
+        } catch (error) {
+
+            console.warn(
+                "[RRP Prediction V3] Regional accuracy context unavailable:",
+                error
+            );
+
+
+            return null;
+
+        }
+
+    }
+
+
+    /* =====================================================
+       FORMAT REGIONAL METRIC
+       ===================================================== */
+
+    function regionalMetric(
+        value,
+        suffix = ""
+    ) {
+
+        const n =
+            Number(value);
+
+
+        if (
+            !Number.isFinite(n)
+        ) {
+
+            return "—";
+
+        }
+
+
+        return (
+            n.toFixed(2) +
+            suffix
+        );
+
+    }
+
+
+    /* =====================================================
+       RENDER REGIONAL CONTEXT
+       ===================================================== */
+
+    function renderRegionalContext() {
+
+        const regional =
+            getRegionalContext();
+
+
+        if (!regional) {
+
+            return `
+
+                <div style="
+                    margin-top:18px;
+                    padding:15px;
+                    border-radius:14px;
+                    background:#f8fafc;
+                    border:1px solid #e2e8f0;
+                    font-size:12px;
+                    line-height:1.6;
+                ">
+
+                    📍
+
+                    <strong>
+                        Regional Accuracy Context
+                    </strong>
+
+                    <br>
+
+                    Regional historical data
+                    is currently unavailable
+                    for this selected location.
+
+                </div>
+
+            `;
+
+        }
+
+
+        const selectedName =
+            regional
+                .selectedLocation
+                ?.name ||
+            "Selected Location";
+
+
+        const regionalName =
+            regional
+                .regionalLocation
+                ?.name ||
+            "Regional Location";
+
+
+        const distance =
+            Number(
+                regional.distanceKm
+            );
+
+
+        const matchType =
+            regional.matchType;
+
+
+        let title =
+            "📍 Regional Accuracy Context";
+
+
+        let description =
+            "";
+
+
+        if (
+            matchType ===
+            "exact"
+        ) {
+
+            description = `
+
+                Historical verification is
+                available for the selected
+                monitoring location.
+
+                <br>
+
+                Monitoring point:
+                <strong>
+                    ${escapeHTML(
+                        regionalName
+                    )}
+                </strong>
+
+                ${
+                    Number.isFinite(
+                        distance
+                    )
+                        ? `
+                            (${distance.toFixed(1)} km)
+                          `
+                        : ""
+                }
+
+            `;
+
+        } else if (
+            matchType ===
+            "nearest"
+        ) {
+
+            description = `
+
+                Selected location:
+                <strong>
+                    ${escapeHTML(
+                        selectedName
+                    )}
+                </strong>
+
+                <br>
+
+                Nearest monitoring point:
+                <strong>
+                    ${escapeHTML(
+                        regionalName
+                    )}
+                </strong>
+
+                ${
+                    Number.isFinite(
+                        distance
+                    )
+                        ? `
+                            (${distance.toFixed(1)} km away)
+                          `
+                        : ""
+                }
+
+                <br><br>
+
+                Ye metrics searched location ke
+                liye <strong>regional proxy</strong>
+                hain, exact village accuracy nahi.
+
+            `;
+
+        } else {
+
+            description = `
+
+                Nearest monitoring location:
+                <strong>
+                    ${escapeHTML(
+                        regionalName
+                    )}
+                </strong>
+
+                ${
+                    Number.isFinite(
+                        distance
+                    )
+                        ? `
+                            (${distance.toFixed(1)} km away)
+                          `
+                        : ""
+                }
+
+                <br><br>
+
+                Distance zyada hone ke karan
+                is historical data ko exact
+                local accuracy nahi maana jana chahiye.
+
+            `;
+
+        }
+
+
+        let cards =
+            "";
+
+
+        [
+            "ECMWF",
+            "GFS",
+            "ICON"
+        ].forEach(
+            function (modelName) {
+
+                const model =
+                    regional.models?.[
+                        modelName
+                    ];
+
+
+                if (!model) {
+
+                    return;
+
+                }
+
+
+                cards += `
+
+                    <div style="
+                        padding:14px;
+                        border-radius:12px;
+                        background:white;
+                        border:1px solid #e2e8f0;
+                    ">
+
+                        <strong>
+                            🛰️ ${modelName}
+                        </strong>
+
+                        <div style="
+                            margin-top:9px;
+                            font-size:12px;
+                            line-height:1.8;
+                        ">
+
+                            Samples:
+                            <strong>
+                                ${
+                                    model.samples ??
+                                    "—"
+                                }
+                            </strong>
+
+                            <br>
+
+                            MAE:
+                            <strong>
+                                ${regionalMetric(
+                                    model.mae,
+                                    " mm"
+                                )}
+                            </strong>
+
+                            <br>
+
+                            RMSE:
+                            <strong>
+                                ${regionalMetric(
+                                    model.rmse,
+                                    " mm"
+                                )}
+                            </strong>
+
+                            <br>
+
+                            Bias:
+                            <strong>
+                                ${regionalMetric(
+                                    model.bias,
+                                    " mm"
+                                )}
+                            </strong>
+
+                            <br>
+
+                            Rain Accuracy:
+                            <strong>
+                                ${regionalMetric(
+                                    model.rainAccuracy,
+                                    "%"
+                                )}
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                `;
+
+            }
+        );
+
+
+        return `
+
+            <div style="
+                margin-top:18px;
+                padding:16px;
+                border-radius:15px;
+                background:#f8fafc;
+                border:1px solid #e2e8f0;
+            ">
+
+                <h3 style="
+                    margin:0 0 8px;
+                ">
+
+                    ${title}
+
+                </h3>
+
+
+                <div style="
+                    font-size:12px;
+                    color:#475569;
+                    line-height:1.7;
+                ">
+
+                    ${description}
+
+                </div>
+
+
+                ${
+                    cards
+                        ? `
+                            <div style="
+                                display:grid;
+                                grid-template-columns:
+                                repeat(auto-fit,minmax(170px,1fr));
+                                gap:10px;
+                                margin-top:14px;
+                            ">
+
+                                ${cards}
+
+                            </div>
+                          `
+                        : `
+                            <div style="
+                                margin-top:12px;
+                                font-size:12px;
+                            ">
+                                Model verification data
+                                unavailable.
+                            </div>
+                          `
+                }
+
+
+                <div style="
+                    margin-top:14px;
+                    padding:10px 12px;
+                    border-radius:10px;
+                    background:#fff7ed;
+                    border:1px solid #fed7aa;
+                    font-size:11px;
+                    line-height:1.6;
+                ">
+
+                    ⚠️ Historical regional metrics
+                    current forecast probability ko
+                    directly modify nahi karte.
+
+                    Ye forecast ko interpret karne ke
+                    liye historical context hain.
+
+                </div>
+
+            </div>
+
+        `;
+
+    }
+
+
+    /* =====================================================
        RENDER PREDICTION
        ===================================================== */
 
@@ -611,7 +1076,9 @@
         }
 
 
-        /* ---------- COMBINED VALUES ---------- */
+        /* =================================================
+           COMBINED VALUES
+           ================================================= */
 
         const combinedProbability =
             average(
@@ -663,7 +1130,9 @@
             );
 
 
-        /* ---------- MODEL ROWS ---------- */
+        /* =================================================
+           MODEL ROWS
+           ================================================= */
 
         const rows =
             validModels.map(
@@ -710,7 +1179,17 @@
             .join("");
 
 
-        /* ---------- MAIN UI ---------- */
+        /* =================================================
+           REGIONAL CONTEXT
+           ================================================= */
+
+        const regionalContext =
+            renderRegionalContext();
+
+
+        /* =================================================
+           MAIN UI
+           ================================================= */
 
         container.innerHTML = `
 
@@ -941,6 +1420,9 @@
             </div>
 
 
+            ${regionalContext}
+
+
             <p style="
                 margin-top:14px;
                 color:#64748b;
@@ -948,10 +1430,13 @@
                 line-height:1.5;
             ">
 
-                This is a model-consensus signal,
-                not a measured accuracy percentage.
-                Verified rainfall observations are
-                required to measure real forecast accuracy.
+                Model-consensus probability is a
+                forecast signal from ECMWF, GFS and ICON.
+                It is not a measured accuracy percentage.
+
+                Historical accuracy requires comparison
+                with independent observations or an
+                explicitly defined reference dataset.
 
             </p>
 
@@ -1044,6 +1529,7 @@
                                 error => {
 
                                     console.warn(
+                                        "[RRP Prediction V3]",
                                         model.name +
                                         " prediction failed:",
                                         error
@@ -1054,6 +1540,9 @@
 
                                         name:
                                             model.name,
+
+                                        modelId:
+                                            model.id,
 
                                         success:
                                             false
@@ -1099,7 +1588,7 @@
 
 
     /* =====================================================
-       RECEIVE WEATHER UPDATE
+       WEATHER UPDATE EVENT
        ===================================================== */
 
     window.addEventListener(
@@ -1111,8 +1600,7 @@
 
 
             if (
-                detail.location &&
-                detail.weatherData
+                detail.location
             ) {
 
                 run(
@@ -1120,6 +1608,45 @@
                 );
 
             }
+
+        }
+    );
+
+
+    /* =====================================================
+       REGIONAL ACCURACY MAY LOAD AFTER PREDICTION
+       ===================================================== */
+
+    /*
+      Regional Accuracy Engine index.html me
+      prediction engine ke baad load hota hai.
+
+      Isliye prediction complete hone ke baad
+      thoda wait karke UI ko regional context ke
+      saath refresh karte hain.
+    */
+
+    window.addEventListener(
+        "load",
+        function () {
+
+            setTimeout(
+                function () {
+
+                    if (
+                        latestPrediction
+                    ) {
+
+                        renderPrediction(
+                            latestPrediction.location,
+                            latestPrediction.models
+                        );
+
+                    }
+
+                },
+                4000
+            );
 
         }
     );
