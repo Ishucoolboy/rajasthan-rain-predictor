@@ -2,30 +2,47 @@
   "use strict";
 
   /*
-    Rajasthan Rain Predictor
-    Regional Accuracy Engine V3
+    ==========================================================
+    RAJASTHAN RAIN PREDICTOR
+    REGIONAL ACCURACY ENGINE V4
+    ==========================================================
 
-    Reads:
-    regional-accuracy-database.json
+    Features:
 
-    Shows:
-    - Rajasthan monitoring locations
+    - Rajasthan regional accuracy database
     - ECMWF / GFS / ICON
     - Day 1-7 historical metrics
-    - Selected location metrics
-    - Number of monitored locations
-
-    Reference:
-    ERA5 / Open-Meteo reanalysis
+    - Exact monitoring-location matching
+    - Nearest monitoring-location fallback
+    - Distance calculation
+    - Selected village/city support
+    - 41 Rajasthan monitoring locations
+    - Automatic refresh after location search
 
     IMPORTANT:
-    This is not independent IMD/rain-gauge accuracy.
+
+    Regional accuracy is calculated against
+    ERA5 / Open-Meteo reanalysis.
+
+    It is NOT independent IMD/rain-gauge accuracy.
+
+    If the searched village is not itself a monitoring
+    location, the nearest monitoring location is shown
+    as a regional proxy.
   */
 
+
+  // ==========================================================
+  // DATABASE
+  // ==========================================================
 
   const DATABASE_URL =
     "regional-accuracy-database.json";
 
+
+  // ==========================================================
+  // MODELS
+  // ==========================================================
 
   const MODEL_NAMES = [
     "ECMWF",
@@ -33,6 +50,41 @@
     "ICON"
   ];
 
+
+  // ==========================================================
+  // MATCH SETTINGS
+  // ==========================================================
+
+  /*
+    Exact coordinate matching tolerance.
+
+    If searched location is within this distance
+    from a monitoring location, it can be treated
+    as an exact regional match.
+
+    Otherwise nearest-location proxy is used.
+  */
+
+  const EXACT_MATCH_DISTANCE_KM = 5;
+
+
+  /*
+    Maximum distance for nearest regional proxy.
+
+    Rajasthan-wide project ke liye 200 km tak
+    nearest monitoring location useful regional
+    reference ho sakti hai.
+
+    Agar isse zyada distance ho to system
+    regional proxy ko unavailable batayega.
+  */
+
+  const MAX_PROXY_DISTANCE_KM = 200;
+
+
+  // ==========================================================
+  // STATE
+  // ==========================================================
 
   let database = null;
 
@@ -46,7 +98,7 @@
   function log(...args) {
 
     console.log(
-      "[RRP Regional Accuracy V3]",
+      "[RRP Regional Accuracy V4]",
       ...args
     );
 
@@ -56,7 +108,7 @@
   function warn(...args) {
 
     console.warn(
-      "[RRP Regional Accuracy V3]",
+      "[RRP Regional Accuracy V4]",
       ...args
     );
 
@@ -64,12 +116,13 @@
 
 
   // ==========================================================
-  // HELPERS
+  // NUMBER HELPER
   // ==========================================================
 
   function number(value) {
 
-    const n = Number(value);
+    const n =
+      Number(value);
 
     return Number.isFinite(n)
       ? n
@@ -77,6 +130,10 @@
 
   }
 
+
+  // ==========================================================
+  // HTML ESCAPE
+  // ==========================================================
 
   function escapeHTML(value) {
 
@@ -107,6 +164,10 @@
   }
 
 
+  // ==========================================================
+  // FORMAT METRIC
+  // ==========================================================
+
   function formatMetric(
     value,
     decimals = 2,
@@ -131,6 +192,121 @@
         decimals
       ) +
       suffix
+    );
+
+  }
+
+
+  // ==========================================================
+  // HAVERSINE DISTANCE
+  // ==========================================================
+
+  function distanceKm(
+    lat1,
+    lon1,
+    lat2,
+    lon2
+  ) {
+
+    const aLat =
+      number(lat1);
+
+    const aLon =
+      number(lon1);
+
+    const bLat =
+      number(lat2);
+
+    const bLon =
+      number(lon2);
+
+
+    if (
+      aLat === null ||
+      aLon === null ||
+      bLat === null ||
+      bLon === null
+    ) {
+
+      return null;
+
+    }
+
+
+    const earthRadiusKm =
+      6371;
+
+
+    const toRadians =
+      function (degrees) {
+
+        return (
+          degrees *
+          Math.PI /
+          180
+        );
+
+      };
+
+
+    const dLat =
+      toRadians(
+        bLat - aLat
+      );
+
+
+    const dLon =
+      toRadians(
+        bLon - aLon
+      );
+
+
+    const lat1Rad =
+      toRadians(
+        aLat
+      );
+
+
+    const lat2Rad =
+      toRadians(
+        bLat
+      );
+
+
+    const a =
+      Math.sin(
+        dLat / 2
+      ) *
+      Math.sin(
+        dLat / 2
+      ) +
+      Math.cos(
+        lat1Rad
+      ) *
+      Math.cos(
+        lat2Rad
+      ) *
+      Math.sin(
+        dLon / 2
+      ) *
+      Math.sin(
+        dLon / 2
+      );
+
+
+    const c =
+      2 *
+      Math.atan2(
+        Math.sqrt(a),
+        Math.sqrt(
+          1 - a
+        )
+      );
+
+
+    return (
+      earthRadiusKm *
+      c
     );
 
   }
@@ -210,7 +386,8 @@
       }
 
 
-      database = data;
+      database =
+        data;
 
 
       log(
@@ -230,14 +407,16 @@
       );
 
 
-      database = null;
+      database =
+        null;
 
 
       return null;
 
     } finally {
 
-      loading = false;
+      loading =
+        false;
 
     }
 
@@ -245,7 +424,7 @@
 
 
   // ==========================================================
-  // SELECTED LOCATION
+  // SELECTED LOCATION FROM APP
   // ==========================================================
 
   function getSelectedLocation() {
@@ -313,10 +492,10 @@
 
 
   // ==========================================================
-  // FIND SELECTED LOCATION
+  // FIND EXACT LOCATION
   // ==========================================================
 
-  function findSelectedLocation(
+  function findExactLocation(
     locations,
     selected
   ) {
@@ -356,59 +535,94 @@
 
 
     /*
-      First try coordinate matching.
+      First coordinate-based matching.
     */
 
-    let match =
-      locations.find(
-        function (location) {
+    let bestMatch =
+      null;
 
-          const lat =
-            number(
-              location.location?.latitude
-            );
+    let bestDistance =
+      Infinity;
 
 
-          const lon =
-            number(
-              location.location?.longitude
-            );
+    locations.forEach(
+      function (location) {
 
-
-          if (
-            lat === null ||
-            lon === null
-          ) {
-
-            return false;
-
-          }
-
-
-          return (
-            Math.abs(
-              lat -
-              selectedLat
-            ) < 0.05 &&
-            Math.abs(
-              lon -
-              selectedLon
-            ) < 0.05
+        const lat =
+          number(
+            location.location?.latitude
           );
 
+
+        const lon =
+          number(
+            location.location?.longitude
+          );
+
+
+        if (
+          lat === null ||
+          lon === null
+        ) {
+
+          return;
+
         }
-      );
 
 
-    if (match) {
+        const distance =
+          distanceKm(
+            selectedLat,
+            selectedLon,
+            lat,
+            lon
+          );
 
-      return match;
+
+        if (
+          distance !== null &&
+          distance < bestDistance
+        ) {
+
+          bestDistance =
+            distance;
+
+          bestMatch =
+            location;
+
+        }
+
+      }
+    );
+
+
+    if (
+      bestMatch &&
+      bestDistance <=
+        EXACT_MATCH_DISTANCE_KM
+    ) {
+
+      return {
+
+        location:
+          bestMatch,
+
+        distanceKm:
+          bestDistance,
+
+        matchType:
+          "exact"
+
+      };
 
     }
 
 
     /*
-      Then try name matching.
+      Name-based matching.
+
+      This is useful if coordinates have
+      slight differences but names are identical.
     */
 
     const selectedName =
@@ -420,42 +634,309 @@
         .toLowerCase();
 
 
-    if (!selectedName) {
+    if (selectedName) {
+
+      const nameMatch =
+        locations.find(
+          function (location) {
+
+            const name =
+              String(
+                location.location?.name ||
+                ""
+              )
+                .trim()
+                .toLowerCase();
+
+
+            return (
+              name ===
+              selectedName
+            );
+
+          }
+        );
+
+
+      if (nameMatch) {
+
+        const lat =
+          number(
+            nameMatch.location?.latitude
+          );
+
+
+        const lon =
+          number(
+            nameMatch.location?.longitude
+          );
+
+
+        const distance =
+          distanceKm(
+            selectedLat,
+            selectedLon,
+            lat,
+            lon
+          );
+
+
+        return {
+
+          location:
+            nameMatch,
+
+          distanceKm:
+            distance,
+
+          matchType:
+            "exact"
+
+        };
+
+      }
+
+    }
+
+
+    return null;
+
+  }
+
+
+  // ==========================================================
+  // FIND NEAREST LOCATION
+  // ==========================================================
+
+  function findNearestLocation(
+    locations,
+    selected
+  ) {
+
+    if (
+      !selected ||
+      !Array.isArray(
+        locations
+      ) ||
+      !locations.length
+    ) {
 
       return null;
 
     }
 
 
-    match =
-      locations.find(
-        function (location) {
-
-          const name =
-            String(
-              location.location?.name ||
-              ""
-            )
-              .trim()
-              .toLowerCase();
-
-
-          return (
-            name ===
-            selectedName
-          );
-
-        }
+    const selectedLat =
+      number(
+        selected.latitude
       );
 
 
-    return match || null;
+    const selectedLon =
+      number(
+        selected.longitude
+      );
+
+
+    if (
+      selectedLat === null ||
+      selectedLon === null
+    ) {
+
+      return null;
+
+    }
+
+
+    let nearest =
+      null;
+
+    let nearestDistance =
+      Infinity;
+
+
+    locations.forEach(
+      function (location) {
+
+        const lat =
+          number(
+            location.location?.latitude
+          );
+
+
+        const lon =
+          number(
+            location.location?.longitude
+          );
+
+
+        if (
+          lat === null ||
+          lon === null
+        ) {
+
+          return;
+
+        }
+
+
+        const distance =
+          distanceKm(
+            selectedLat,
+            selectedLon,
+            lat,
+            lon
+          );
+
+
+        if (
+          distance !== null &&
+          distance <
+            nearestDistance
+        ) {
+
+          nearestDistance =
+            distance;
+
+          nearest =
+            location;
+
+        }
+
+      }
+    );
+
+
+    if (!nearest) {
+
+      return null;
+
+    }
+
+
+    return {
+
+      location:
+        nearest,
+
+      distanceKm:
+        nearestDistance,
+
+      matchType:
+        "nearest"
+
+    };
 
   }
 
 
   // ==========================================================
-  // MODEL HELPERS
+  // RESOLVE REGIONAL LOCATION
+  // ==========================================================
+
+  function resolveRegionalLocation(
+    locations,
+    selected
+  ) {
+
+    if (
+      !selected ||
+      !Array.isArray(
+        locations
+      )
+    ) {
+
+      return null;
+
+    }
+
+
+    /*
+      1. Exact match.
+    */
+
+    const exact =
+      findExactLocation(
+        locations,
+        selected
+      );
+
+
+    if (exact) {
+
+      log(
+        "Exact regional match:",
+        exact.location.location?.name,
+        "|",
+        exact.distanceKm?.toFixed(1),
+        "km"
+      );
+
+
+      return exact;
+
+    }
+
+
+    /*
+      2. Nearest monitoring location.
+    */
+
+    const nearest =
+      findNearestLocation(
+        locations,
+        selected
+      );
+
+
+    if (!nearest) {
+
+      return null;
+
+    }
+
+
+    if (
+      nearest.distanceKm >
+      MAX_PROXY_DISTANCE_KM
+    ) {
+
+      warn(
+        "Nearest monitoring location is too far:",
+        nearest.location.location?.name,
+        nearest.distanceKm?.toFixed(1),
+        "km"
+      );
+
+
+      return {
+
+        ...nearest,
+
+        matchType:
+          "too_far"
+
+      };
+
+    }
+
+
+    log(
+      "Nearest regional proxy:",
+      nearest.location.location?.name,
+      "|",
+      nearest.distanceKm?.toFixed(1),
+      "km"
+    );
+
+
+    return nearest;
+
+  }
+
+
+  // ==========================================================
+  // MODEL FINDER
   // ==========================================================
 
   function getModel(
@@ -494,6 +975,10 @@
 
   }
 
+
+  // ==========================================================
+  // GET LEADS
+  // ==========================================================
 
   function getLeads(
     model
@@ -565,15 +1050,24 @@
     }
 
 
-    let totalSamples = 0;
+    let totalSamples =
+      0;
 
-    let maeWeighted = 0;
 
-    let rmseWeighted = 0;
+    let maeWeighted =
+      0;
 
-    let biasWeighted = 0;
 
-    let accuracyWeighted = 0;
+    let rmseWeighted =
+      0;
+
+
+    let biasWeighted =
+      0;
+
+
+    let accuracyWeighted =
+      0;
 
 
     valid.forEach(
@@ -736,6 +1230,7 @@
 
 
           <div>
+
             <strong>
               ${summary.samples}
             </strong>
@@ -745,10 +1240,12 @@
             <small>
               Samples
             </small>
+
           </div>
 
 
           <div>
+
             <strong>
               ${formatMetric(
                 summary.rainAccuracy,
@@ -762,10 +1259,12 @@
             <small>
               Rain Accuracy
             </small>
+
           </div>
 
 
           <div>
+
             <strong>
               ${formatMetric(
                 summary.mae,
@@ -779,10 +1278,12 @@
             <small>
               MAE
             </small>
+
           </div>
 
 
           <div>
+
             <strong>
               ${formatMetric(
                 summary.rmse,
@@ -796,10 +1297,12 @@
             <small>
               RMSE
             </small>
+
           </div>
 
 
           <div>
+
             <strong>
               ${formatMetric(
                 summary.bias,
@@ -813,6 +1316,7 @@
             <small>
               Bias
             </small>
+
           </div>
 
 
@@ -826,7 +1330,7 @@
 
 
   // ==========================================================
-  // LEAD-TIME TABLE
+  // LEAD TABLE
   // ==========================================================
 
   function renderLeadTable(
@@ -842,19 +1346,24 @@
     if (!leads.length) {
 
       return `
+
         <p style="
           font-size:13px;
           color:#666;
         ">
+
           Historical lead-time data
           available nahi hai.
+
         </p>
+
       `;
 
     }
 
 
-    let rows = "";
+    let rows =
+      "";
 
 
     leads.forEach(
@@ -869,15 +1378,23 @@
 
           <tr>
 
-            <td style="padding:9px;">
+            <td style="
+              padding:9px;
+            ">
               Day ${lead.lead_day}
             </td>
 
-            <td style="padding:9px;">
+
+            <td style="
+              padding:9px;
+            ">
               ${metrics.samples ?? "—"}
             </td>
 
-            <td style="padding:9px;">
+
+            <td style="
+              padding:9px;
+            ">
               ${formatMetric(
                 metrics.mae_mm,
                 3,
@@ -885,7 +1402,10 @@
               )}
             </td>
 
-            <td style="padding:9px;">
+
+            <td style="
+              padding:9px;
+            ">
               ${formatMetric(
                 metrics.rmse_mm,
                 3,
@@ -893,7 +1413,10 @@
               )}
             </td>
 
-            <td style="padding:9px;">
+
+            <td style="
+              padding:9px;
+            ">
               ${formatMetric(
                 metrics.bias_mm,
                 3,
@@ -901,7 +1424,10 @@
               )}
             </td>
 
-            <td style="padding:9px;">
+
+            <td style="
+              padding:9px;
+            ">
               ${formatMetric(
                 metrics.rain_accuracy_percent,
                 1,
@@ -934,33 +1460,51 @@
 
             <tr>
 
-              <th style="padding:9px;">
+              <th style="
+                padding:9px;
+              ">
                 Lead
               </th>
 
-              <th style="padding:9px;">
+
+              <th style="
+                padding:9px;
+              ">
                 Samples
               </th>
 
-              <th style="padding:9px;">
+
+              <th style="
+                padding:9px;
+              ">
                 MAE
               </th>
 
-              <th style="padding:9px;">
+
+              <th style="
+                padding:9px;
+              ">
                 RMSE
               </th>
 
-              <th style="padding:9px;">
+
+              <th style="
+                padding:9px;
+              ">
                 Bias
               </th>
 
-              <th style="padding:9px;">
+
+              <th style="
+                padding:9px;
+              ">
                 Rain Accuracy
               </th>
 
             </tr>
 
           </thead>
+
 
           <tbody>
 
@@ -969,6 +1513,275 @@
           </tbody>
 
         </table>
+
+      </div>
+
+    `;
+
+  }
+
+
+  // ==========================================================
+  // SELECTED LOCATION HEADER
+  // ==========================================================
+
+  function renderSelectedLocationHeader(
+    selected,
+    resolved
+  ) {
+
+    if (
+      !selected ||
+      !resolved
+    ) {
+
+      return "";
+
+    }
+
+
+    const regional =
+      resolved.location;
+
+
+    const regionalName =
+      regional.location?.name ||
+      "Regional Location";
+
+
+    const distance =
+      number(
+        resolved.distanceKm
+      );
+
+
+    /*
+      Exact match.
+    */
+
+    if (
+      resolved.matchType ===
+      "exact"
+    ) {
+
+      return `
+
+        <div style="
+          margin-top:18px;
+          padding:16px;
+          background:white;
+          border-radius:14px;
+          border:1px solid #e5e7eb;
+        ">
+
+          <div style="
+            font-size:12px;
+            color:#16a34a;
+            font-weight:700;
+            margin-bottom:7px;
+          ">
+
+            ✅ Exact Regional Monitoring Match
+
+          </div>
+
+
+          <h3 style="
+            margin:0 0 7px;
+          ">
+
+            📍 ${escapeHTML(
+              selected.name
+            )}
+
+          </h3>
+
+
+          <p style="
+            margin:0;
+            font-size:12px;
+            color:#666;
+          ">
+
+            Historical accuracy data:
+            <strong>
+              ${escapeHTML(
+                regionalName
+              )}
+            </strong>
+
+            ${
+              distance !== null
+                ? " (" +
+                  distance.toFixed(1) +
+                  " km)"
+                : ""
+            }
+
+          </p>
+
+        </div>
+
+      `;
+
+    }
+
+
+    /*
+      Too far.
+    */
+
+    if (
+      resolved.matchType ===
+      "too_far"
+    ) {
+
+      return `
+
+        <div style="
+          margin-top:18px;
+          padding:16px;
+          background:white;
+          border-radius:14px;
+          border:1px solid #e5e7eb;
+        ">
+
+          <div style="
+            font-size:12px;
+            color:#b45309;
+            font-weight:700;
+            margin-bottom:7px;
+          ">
+
+            ⚠️ Regional Data Distance Warning
+
+          </div>
+
+
+          <h3 style="
+            margin:0 0 7px;
+          ">
+
+            📍 ${escapeHTML(
+              selected.name
+            )}
+
+          </h3>
+
+
+          <p style="
+            margin:0;
+            font-size:12px;
+            color:#666;
+            line-height:1.6;
+          ">
+
+            Nearest monitoring location:
+
+            <strong>
+              ${escapeHTML(
+                regionalName
+              )}
+            </strong>
+
+            ${
+              distance !== null
+                ? " — " +
+                  distance.toFixed(1) +
+                  " km away."
+                : ""
+            }
+
+            <br><br>
+
+            Ye distance regional proxy ke liye
+            kaafi zyada hai, isliye is location ke
+            liye regional accuracy ko exact village
+            accuracy nahi maana jana chahiye.
+
+          </p>
+
+        </div>
+
+      `;
+
+    }
+
+
+    /*
+      Nearest proxy.
+    */
+
+    return `
+
+      <div style="
+        margin-top:18px;
+        padding:16px;
+        background:white;
+        border-radius:14px;
+        border:1px solid #e5e7eb;
+      ">
+
+        <div style="
+          font-size:12px;
+          color:#2563eb;
+          font-weight:700;
+          margin-bottom:7px;
+        ">
+
+          📌 Nearest Regional Monitoring Location
+
+        </div>
+
+
+        <h3 style="
+          margin:0 0 7px;
+        ">
+
+          📍 ${escapeHTML(
+            selected.name
+          )}
+
+        </h3>
+
+
+        <p style="
+          margin:0;
+          font-size:12px;
+          color:#666;
+          line-height:1.6;
+        ">
+
+          Is searched location ke liye nearest
+          monitoring location:
+
+          <strong>
+            ${escapeHTML(
+              regionalName
+            )}
+          </strong>
+
+          ${
+            distance !== null
+              ? " — " +
+                distance.toFixed(1) +
+                " km away."
+              : ""
+          }
+
+          <br><br>
+
+          Neeche dikhaye gaye historical metrics
+          <strong>
+            ${escapeHTML(
+              regionalName
+            )}
+          </strong>
+          ke hain aur searched village/city ke
+          liye <strong>regional proxy</strong> ke
+          roop me use ho rahe hain.
+
+        </p>
 
       </div>
 
@@ -989,14 +1802,35 @@
       getSelectedLocation();
 
 
-    const location =
-      findSelectedLocation(
+    if (!selected) {
+
+      return `
+
+        <div style="
+          margin-top:18px;
+          padding:16px;
+          background:white;
+          border-radius:14px;
+          border:1px solid #e5e7eb;
+        ">
+
+          📍 Selected location available nahi hai.
+
+        </div>
+
+      `;
+
+    }
+
+
+    const resolved =
+      resolveRegionalLocation(
         locations,
         selected
       );
 
 
-    if (!location) {
+    if (!resolved) {
 
       return `
 
@@ -1009,8 +1843,7 @@
         ">
 
           📍 Selected location ke liye
-          regional historical data abhi
-          available nahi hai.
+          regional historical data available nahi hai.
 
         </div>
 
@@ -1019,7 +1852,25 @@
     }
 
 
-    let cards = "";
+    const regionalLocation =
+      resolved.location;
+
+
+    /*
+      If nearest is too far,
+      show warning but do not present
+      the data as exact.
+    */
+
+    const header =
+      renderSelectedLocationHeader(
+        selected,
+        resolved
+      );
+
+
+    let cards =
+      "";
 
 
     MODEL_NAMES.forEach(
@@ -1027,7 +1878,7 @@
 
         const model =
           getModel(
-            location,
+            regionalLocation,
             modelName
           );
 
@@ -1042,7 +1893,8 @@
     );
 
 
-    let tables = "";
+    let tables =
+      "";
 
 
     MODEL_NAMES.forEach(
@@ -1050,13 +1902,15 @@
 
         const model =
           getModel(
-            location,
+            regionalLocation,
             modelName
           );
 
 
         if (!model) {
+
           return;
+
         }
 
 
@@ -1073,8 +1927,11 @@
             <h4 style="
               margin:0 0 10px;
             ">
+
               🛰️ ${modelName} — Day 1–7
+
             </h4>
+
 
             ${renderLeadTable(
               model
@@ -1090,8 +1947,11 @@
 
     return `
 
+      ${header}
+
+
       <div style="
-        margin-top:18px;
+        margin-top:16px;
       ">
 
         <div style="
@@ -1102,25 +1962,12 @@
         ">
 
           <h3 style="
-            margin:0 0 8px;
+            margin:0 0 14px;
           ">
-            📍 ${escapeHTML(
-              location.location?.name ||
-              "Selected Location"
-            )}
+
+            📊 Historical Regional Accuracy
+
           </h3>
-
-
-          <p style="
-            margin:0 0 16px;
-            font-size:12px;
-            color:#666;
-          ">
-
-            Historical regional
-            verification data
-
-          </p>
 
 
           <div style="
@@ -1157,17 +2004,21 @@
     if (!locations.length) {
 
       return `
+
         <p>
           Monitoring locations ka data
           abhi available nahi hai.
         </p>
+
       `;
 
     }
 
 
     const sorted =
-      [...locations].sort(
+      [
+        ...locations
+      ].sort(
         function (a, b) {
 
           return String(
@@ -1248,7 +2099,9 @@
             ">
 
               <strong>
-                📍 ${escapeHTML(name)}
+                📍 ${escapeHTML(
+                  name
+                )}
               </strong>
 
 
@@ -1342,13 +2195,17 @@
           <h2 style="
             margin-top:0;
           ">
+
             📍 Rajasthan Regional Accuracy
+
           </h2>
 
 
           <p>
+
             Regional accuracy database
             abhi load nahi hui.
+
           </p>
 
 
@@ -1357,9 +2214,9 @@
             color:#666;
           ">
 
-            GitHub Actions ka first
-            regional collection complete
-            hone ke baad yahan data appear hoga.
+            GitHub Actions ka regional
+            collection complete hone ke baad
+            yahan data appear hoga.
 
           </p>
 
@@ -1385,6 +2242,82 @@
       "Not available";
 
 
+    const selected =
+      getSelectedLocation();
+
+
+    const resolved =
+      selected
+        ? resolveRegionalLocation(
+            locations,
+            selected
+          )
+        : null;
+
+
+    let matchInfo =
+      "";
+
+
+    if (
+      resolved &&
+      resolved.distanceKm !== null
+    ) {
+
+      if (
+        resolved.matchType ===
+        "exact"
+      ) {
+
+        matchInfo = `
+
+          <div style="
+            margin-top:10px;
+            font-size:12px;
+            color:#16a34a;
+          ">
+
+            ✅ Selected location has
+            regional monitoring data.
+
+          </div>
+
+        `;
+
+      } else if (
+        resolved.matchType ===
+        "nearest"
+      ) {
+
+        matchInfo = `
+
+          <div style="
+            margin-top:10px;
+            font-size:12px;
+            color:#2563eb;
+          ">
+
+            📌 Nearest monitoring location:
+            <strong>
+              ${escapeHTML(
+                resolved.location.location?.name ||
+                "Unknown"
+              )}
+            </strong>
+
+            —
+            ${resolved.distanceKm.toFixed(1)}
+            km
+
+          </div>
+
+        `;
+
+      }
+
+    }
+
+
     container.innerHTML = `
 
       <div style="
@@ -1397,7 +2330,9 @@
         <h2 style="
           margin-top:0;
         ">
+
           📍 Rajasthan Regional Accuracy
+
         </h2>
 
 
@@ -1408,6 +2343,9 @@
           forecast verification database.
 
         </p>
+
+
+        ${matchInfo}
 
 
         <div style="
@@ -1518,6 +2456,7 @@
         ">
 
           ⚠️ Reference:
+
           <strong>
             ERA5 / Open-Meteo reanalysis
           </strong>.
@@ -1530,7 +2469,16 @@
 
           <br><br>
 
+          Agar searched village/city
+          monitoring list me nahi hai,
+          to nearest monitoring location
+          ka data regional proxy ke roop me
+          use kiya jaata hai.
+
+          <br><br>
+
           Last database update:
+
           <strong>
             ${escapeHTML(
               generatedAt
@@ -1562,12 +2510,20 @@
   }
 
 
+  // ==========================================================
+  // GET DATABASE
+  // ==========================================================
+
   function getDatabase() {
 
     return database;
 
   }
 
+
+  // ==========================================================
+  // GET SELECTED METRICS
+  // ==========================================================
 
   function getSelectedMetrics() {
 
@@ -1578,21 +2534,37 @@
     }
 
 
-    const location =
-      findSelectedLocation(
-        database.locations || [],
-        getSelectedLocation()
-      );
+    const selected =
+      getSelectedLocation();
 
 
-    if (!location) {
+    if (!selected) {
 
       return null;
 
     }
 
 
-    const result = {};
+    const resolved =
+      resolveRegionalLocation(
+        database.locations || [],
+        selected
+      );
+
+
+    if (!resolved) {
+
+      return null;
+
+    }
+
+
+    const location =
+      resolved.location;
+
+
+    const result =
+      {};
 
 
     MODEL_NAMES.forEach(
@@ -1612,8 +2584,17 @@
 
     return {
 
-      location:
+      selectedLocation:
+        selected,
+
+      regionalLocation:
         location.location,
+
+      distanceKm:
+        resolved.distanceKm,
+
+      matchType:
+        resolved.matchType,
 
       models:
         result
@@ -1630,7 +2611,7 @@
   async function init() {
 
     log(
-      "Regional Accuracy Engine V3 loading..."
+      "Regional Accuracy Engine V4 loading..."
     );
 
 
@@ -1638,11 +2619,15 @@
 
 
     log(
-      "Regional Accuracy Engine V3 ready."
+      "Regional Accuracy Engine V4 ready."
     );
 
   }
 
+
+  // ==========================================================
+  // PUBLIC GLOBAL OBJECT
+  // ==========================================================
 
   window.RRP_REGIONAL_ACCURACY = {
 
@@ -1650,10 +2635,32 @@
 
     getDatabase,
 
-    getSelectedMetrics
+    getSelectedMetrics,
+
+    findNearestLocation:
+
+      function () {
+
+        if (!database) {
+
+          return null;
+
+        }
+
+
+        return findNearestLocation(
+          database.locations || [],
+          getSelectedLocation()
+        );
+
+      }
 
   };
 
+
+  // ==========================================================
+  // DOM READY
+  // ==========================================================
 
   document.addEventListener(
     "DOMContentLoaded",
@@ -1667,6 +2674,10 @@
     }
   );
 
+
+  // ==========================================================
+  // WEATHER UPDATE
+  // ==========================================================
 
   window.addEventListener(
     "rrp:weather-updated",
