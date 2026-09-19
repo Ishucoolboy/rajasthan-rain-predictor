@@ -23,9 +23,7 @@
   <title>Rajasthan Rain Predictor</title>
 
 
-  <!-- =====================================================
-       LEAFLET CSS
-       ===================================================== -->
+  <!-- LEAFLET CSS -->
 
   <link
     rel="stylesheet"
@@ -33,9 +31,7 @@
   >
 
 
-  <!-- =====================================================
-       MAIN CSS
-       ===================================================== -->
+  <!-- MAIN CSS -->
 
   <link
     rel="stylesheet"
@@ -106,9 +102,7 @@
   <main class="container">
 
 
-    <!-- ===================================================
-         SEARCH
-         =================================================== -->
+    <!-- SEARCH -->
 
     <section class="search-section">
 
@@ -169,9 +163,7 @@
 
 
 
-    <!-- ===================================================
-         LOCATION
-         =================================================== -->
+    <!-- LOCATION -->
 
     <section
       id="locationCard"
@@ -209,9 +201,7 @@
 
 
 
-    <!-- ===================================================
-         CURRENT WEATHER
-         =================================================== -->
+    <!-- CURRENT WEATHER -->
 
     <section class="weather-section">
 
@@ -247,7 +237,6 @@
         </div>
 
 
-
         <div class="weather-card">
 
           <div class="weather-card-icon">
@@ -266,7 +255,6 @@
           </div>
 
         </div>
-
 
 
         <div class="weather-card">
@@ -289,7 +277,6 @@
         </div>
 
 
-
         <div class="weather-card">
 
           <div class="weather-card-icon">
@@ -310,7 +297,6 @@
         </div>
 
 
-
         <div class="weather-card">
 
           <div class="weather-card-icon">
@@ -329,7 +315,6 @@
           </div>
 
         </div>
-
 
 
         <div class="weather-card">
@@ -358,9 +343,7 @@
 
 
 
-    <!-- ===================================================
-         HOURLY FORECAST
-         =================================================== -->
+    <!-- HOURLY FORECAST -->
 
     <section class="forecast-section">
 
@@ -386,9 +369,7 @@
 
 
 
-    <!-- ===================================================
-         DAILY FORECAST
-         =================================================== -->
+    <!-- DAILY FORECAST -->
 
     <section class="forecast-section">
 
@@ -410,9 +391,7 @@
 
 
 
-    <!-- ===================================================
-         MODEL COMPARISON
-         =================================================== -->
+    <!-- MODEL COMPARISON -->
 
     <section class="model-section">
 
@@ -452,7 +431,6 @@
         </div>
 
 
-
         <div class="model-card">
 
           <h3>
@@ -471,7 +449,6 @@
           </span>
 
         </div>
-
 
 
         <div class="model-card">
@@ -506,9 +483,7 @@
 
 
 
-    <!-- ===================================================
-         PREDICTION ENGINE
-         =================================================== -->
+    <!-- PREDICTION ENGINE -->
 
     <section
       id="predictionEngine"
@@ -517,9 +492,7 @@
 
 
 
-    <!-- ===================================================
-         FORECAST CONFIDENCE V3
-         =================================================== -->
+    <!-- FORECAST CONFIDENCE -->
 
     <section
       id="forecastConfidence"
@@ -528,9 +501,7 @@
 
 
 
-    <!-- ===================================================
-         HOURLY MODEL COMPARISON
-         =================================================== -->
+    <!-- HOURLY MODEL COMPARISON -->
 
     <section class="model-section">
 
@@ -556,9 +527,7 @@
 
 
 
-    <!-- ===================================================
-         SMART FORECAST
-         =================================================== -->
+    <!-- SMART FORECAST -->
 
     <section class="smart-section">
 
@@ -580,9 +549,7 @@
 
 
 
-    <!-- ===================================================
-         NEXT RAIN ALERT
-         =================================================== -->
+    <!-- NEXT RAIN ALERT -->
 
     <section class="alert-section">
 
@@ -604,9 +571,7 @@
 
 
 
-    <!-- ===================================================
-         MAP
-         =================================================== -->
+    <!-- MAP -->
 
     <section class="map-section">
 
@@ -632,9 +597,9 @@
 
 
 
-    <!-- ===================================================
+    <!-- =====================================================
          BASIC ACCURACY
-         =================================================== -->
+         ===================================================== -->
 
     <section
       id="accuracy"
@@ -673,7 +638,6 @@
         </div>
 
 
-
         <div class="accuracy-card">
 
           <div class="accuracy-card-label">
@@ -688,7 +652,6 @@
           </div>
 
         </div>
-
 
 
         <div class="accuracy-card">
@@ -732,9 +695,92 @@
 
 
 
-    <!-- ===================================================
+    <!-- =====================================================
+         IMD OBSERVATION ENGINE V1
+         ===================================================== -->
+
+    <section
+      id="imdObservation"
+      class="accuracy-section"
+    >
+
+      <div class="section-title">
+
+        <h2>
+          🇮🇳 IMD Actual Rainfall Observation
+        </h2>
+
+        <p>
+          Official IMD station observation se actual
+          rainfall verification.
+        </p>
+
+      </div>
+
+
+      <div
+        id="imdObservationContent"
+        style="
+          padding:18px;
+          border-radius:16px;
+          background:rgba(255,255,255,.06);
+          border:1px solid rgba(255,255,255,.12);
+          line-height:1.8;
+          font-size:13px;
+        "
+      >
+
+        <div>
+          ⏳ IMD observation engine initialise ho raha hai...
+        </div>
+
+      </div>
+
+
+      <button
+        id="fetchIMDObservation"
+        type="button"
+        style="
+          width:100%;
+          padding:14px 18px;
+          border:0;
+          border-radius:12px;
+          cursor:pointer;
+          font-size:15px;
+          font-weight:700;
+          margin-top:14px;
+        "
+      >
+        🇮🇳 Fetch IMD Observation
+      </button>
+
+
+      <div
+        style="
+          margin-top:12px;
+          padding:13px;
+          border-radius:12px;
+          background:rgba(255,193,7,.08);
+          border:1px solid rgba(255,193,7,.20);
+          font-size:12px;
+          line-height:1.7;
+        "
+      >
+
+        ⚠️ IMD Current Weather API access public-IP
+        whitelisting require kar sakta hai. Agar 403/Access
+        Denied aaye to iska matlab API access blocked hai;
+        fake rainfall value use nahi ki jayegi.
+
+      </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
          AUTOMATIC VERIFICATION V3
-         =================================================== -->
+         ===================================================== -->
 
     <section
       id="automaticAccuracy"
@@ -773,9 +819,9 @@
 
 
 
-    <!-- ===================================================
+    <!-- =====================================================
          REGIONAL ACCURACY
-         =================================================== -->
+         ===================================================== -->
 
     <section
       id="regionalAccuracy"
@@ -813,9 +859,9 @@
 
 
 
-    <!-- ===================================================
+    <!-- =====================================================
          HISTORICAL MODEL ACCURACY
-         =================================================== -->
+         ===================================================== -->
 
     <section
       id="historicalAccuracy"
@@ -893,9 +939,7 @@
 
 
 
-    <!-- ===================================================
-         FOOTER
-         =================================================== -->
+    <!-- FOOTER -->
 
     <footer class="site-footer">
 
@@ -945,9 +989,7 @@
 
 
 
-  <!-- =====================================================
-       PREDICTION ENGINE V6
-       ===================================================== -->
+  <!-- PREDICTION ENGINE -->
 
   <script
     src="prediction-engine.js?v=6"
@@ -955,9 +997,7 @@
 
 
 
-  <!-- =====================================================
-       BASIC ACCURACY
-       ===================================================== -->
+  <!-- BASIC ACCURACY -->
 
   <script
     src="accuracy-engine.js?v=1"
@@ -965,9 +1005,7 @@
 
 
 
-  <!-- =====================================================
-       BACKTEST
-       ===================================================== -->
+  <!-- BACKTEST -->
 
   <script
     src="backtest-engine.js?v=1"
@@ -979,9 +1017,7 @@
 
 
 
-  <!-- =====================================================
-       OBSERVATION
-       ===================================================== -->
+  <!-- OBSERVATION -->
 
   <script
     src="observation-engine.js?v=1"
@@ -989,9 +1025,15 @@
 
 
 
-  <!-- =====================================================
-       VERIFICATION V3
-       ===================================================== -->
+  <!-- IMD OBSERVATION ENGINE -->
+
+  <script
+    src="imd-observation-engine.js?v=1"
+  ></script>
+
+
+
+  <!-- VERIFICATION V3 -->
 
   <script
     src="accuracy-verification-engine.js?v=3"
@@ -999,9 +1041,7 @@
 
 
 
-  <!-- =====================================================
-       SNAPSHOT V2
-       ===================================================== -->
+  <!-- SNAPSHOT V2 -->
 
   <script
     src="forecast-snapshot-engine.js?v=2"
@@ -1009,9 +1049,7 @@
 
 
 
-  <!-- =====================================================
-       HISTORICAL ACCURACY V7
-       ===================================================== -->
+  <!-- HISTORICAL ACCURACY V7 -->
 
   <script
     src="historical-model-accuracy-engine.js?v=7"
@@ -1019,9 +1057,7 @@
 
 
 
-  <!-- =====================================================
-       AUTOMATIC VERIFICATION V3
-       ===================================================== -->
+  <!-- AUTOMATIC VERIFICATION V3 -->
 
   <script
     src="automatic-verification-engine.js?v=3"
@@ -1029,9 +1065,7 @@
 
 
 
-  <!-- =====================================================
-       REGIONAL ACCURACY V4
-       ===================================================== -->
+  <!-- REGIONAL ACCURACY V4 -->
 
   <script
     src="regional-accuracy-engine.js?v=4"
@@ -1039,13 +1073,405 @@
 
 
 
-  <!-- =====================================================
-       FORECAST CONFIDENCE V3
-       ===================================================== -->
+  <!-- FORECAST CONFIDENCE V3 -->
 
   <script
     src="confidence-engine.js?v=3"
   ></script>
+
+
+
+  <!-- =====================================================
+       IMD UI CONTROLLER
+       ===================================================== -->
+
+  <script>
+
+    (function () {
+
+      "use strict";
+
+
+      const button =
+        document.getElementById(
+          "fetchIMDObservation"
+        );
+
+
+      const content =
+        document.getElementById(
+          "imdObservationContent"
+        );
+
+
+      if (!button || !content) {
+        return;
+      }
+
+
+      function escapeHTML(
+        value
+      ) {
+
+        return String(
+          value ?? ""
+        )
+          .replace(
+            /&/g,
+            "&amp;"
+          )
+          .replace(
+            /</g,
+            "&lt;"
+          )
+          .replace(
+            />/g,
+            "&gt;"
+          )
+          .replace(
+            /"/g,
+            "&quot;"
+          )
+          .replace(
+            /'/g,
+            "&#039;"
+          );
+
+      }
+
+
+      function renderObservation(
+        record
+      ) {
+
+        if (!record) {
+
+          content.innerHTML = `
+
+            <div>
+              ℹ️ Abhi IMD actual rainfall
+              observation available nahi hai.
+            </div>
+
+          `;
+
+          return;
+
+        }
+
+
+        content.innerHTML = `
+
+          <div style="
+            display:grid;
+            gap:8px;
+          ">
+
+            <div>
+              <strong>
+                📍 Location:
+              </strong>
+
+              ${escapeHTML(
+                record.locationName ||
+                "Selected Location"
+              )}
+
+            </div>
+
+
+            <div>
+              <strong>
+                🛰️ IMD Station:
+              </strong>
+
+              ${escapeHTML(
+                record.stationName ||
+                "Unknown"
+              )}
+
+            </div>
+
+
+            <div>
+              <strong>
+                🌧️ Last 24 hrs Rainfall:
+              </strong>
+
+              ${escapeHTML(
+                record.rainfall_mm
+              )}
+
+              mm
+
+            </div>
+
+
+            <div>
+              <strong>
+                📅 Observation Date:
+              </strong>
+
+              ${escapeHTML(
+                record.date ||
+                "Unknown"
+              )}
+
+            </div>
+
+
+            <div>
+              <strong>
+                📏 Station Distance:
+              </strong>
+
+              ${
+                record.stationDistanceKm !== null &&
+                record.stationDistanceKm !== undefined
+                  ? escapeHTML(
+                      record.stationDistanceKm
+                    ) + " km"
+                  : "Unknown"
+              }
+
+            </div>
+
+
+            <div>
+              <strong>
+                🇮🇳 Source:
+              </strong>
+
+              Official IMD Current Weather API
+
+            </div>
+
+          </div>
+
+        `;
+
+      }
+
+
+      async function runIMD() {
+
+        if (
+          !window.RRP_IMD_OBSERVATION ||
+          typeof
+            window.RRP_IMD_OBSERVATION.run !==
+            "function"
+        ) {
+
+          content.innerHTML = `
+
+            ❌ IMD Observation Engine load nahi hua.
+
+          `;
+
+          return;
+
+        }
+
+
+        button.disabled = true;
+
+        button.style.opacity = "0.6";
+
+
+        content.innerHTML = `
+
+          <div>
+            ⏳ Official IMD observation fetch ho raha hai...
+          </div>
+
+          <div style="
+            margin-top:8px;
+            font-size:12px;
+            opacity:.75;
+          ">
+            IMD API response ka wait karein.
+          </div>
+
+        `;
+
+
+        try {
+
+          const result =
+            await window
+              .RRP_IMD_OBSERVATION
+              .run(true);
+
+
+          if (
+            result &&
+            result.success &&
+            result.record
+          ) {
+
+            renderObservation(
+              result.record
+            );
+
+          } else {
+
+            content.innerHTML = `
+
+              <div>
+                ⚠️ IMD station observation
+                abhi available nahi hui.
+              </div>
+
+              <div style="
+                margin-top:8px;
+                font-size:12px;
+              ">
+
+                Possible reason:
+                IMD API access / IP whitelist,
+                station matching ya API response.
+
+              </div>
+
+            `;
+
+          }
+
+        } catch (
+          error
+        ) {
+
+          console.error(
+            "IMD Observation Error:",
+            error
+          );
+
+
+          content.innerHTML = `
+
+            <div>
+              ❌ IMD observation fetch failed.
+            </div>
+
+            <div style="
+              margin-top:8px;
+              font-size:12px;
+              line-height:1.7;
+            ">
+
+              ${escapeHTML(
+                error?.message ||
+                String(error)
+              )}
+
+              <br><br>
+
+              Agar
+              <strong>
+                403 / Access Denied
+              </strong>
+              aaye to IMD API public-IP
+              whitelisting required ho sakti hai.
+
+            </div>
+
+          `;
+
+        } finally {
+
+          button.disabled = false;
+
+          button.style.opacity = "1";
+
+        }
+
+      }
+
+
+      button.addEventListener(
+        "click",
+        runIMD
+      );
+
+
+      /*
+       * Load latest saved IMD observation.
+       */
+
+      setTimeout(
+        function () {
+
+          try {
+
+            if (
+              window.RRP_IMD_OBSERVATION &&
+              typeof
+                window
+                  .RRP_IMD_OBSERVATION
+                  .getLatest ===
+                "function"
+            ) {
+
+              const latest =
+                window
+                  .RRP_IMD_OBSERVATION
+                  .getLatest();
+
+
+              if (latest) {
+
+                renderObservation(
+                  latest
+                );
+
+              }
+
+            }
+
+          } catch (
+            error
+          ) {
+
+            console.warn(
+              "Could not load saved IMD observation:",
+              error
+            );
+
+          }
+
+        },
+        1200
+      );
+
+
+      /*
+       * Update UI whenever new IMD observation
+       * is saved.
+       */
+
+      window.addEventListener(
+        "rrp:imd-observation-updated",
+        function (
+          event
+        ) {
+
+          if (
+            event &&
+            event.detail
+          ) {
+
+            renderObservation(
+              event.detail
+            );
+
+          }
+
+        }
+      );
+
+    })();
+
+  </script>
 
 
 
@@ -1083,7 +1509,9 @@
       }
 
 
-      function escapeHTML(value) {
+      function escapeHTML(
+        value
+      ) {
 
         return String(
           value ?? ""
@@ -1185,7 +1613,9 @@
             Object.keys(
               result.models
             ).map(
-              function (key) {
+              function (
+                key
+              ) {
 
                 const value =
                   result.models[key];
@@ -1288,7 +1718,9 @@
 
 
         modelList.forEach(
-          function (model) {
+          function (
+            model
+          ) {
 
             html += `
 
@@ -1381,7 +1813,9 @@
               model.leads ||
               []
             ).forEach(
-              function (lead) {
+              function (
+                lead
+              ) {
 
                 const m =
                   lead.metrics ||
@@ -1524,7 +1958,9 @@
         );
 
 
-        if (!modelList.length) {
+        if (
+          !modelList.length
+        ) {
 
           html += `
 
@@ -1657,7 +2093,9 @@
             status.innerHTML =
               "✅ Historical accuracy test complete.";
 
-          } catch (error) {
+          } catch (
+            error
+          ) {
 
             console.error(
               "Historical accuracy error:",
@@ -1722,7 +2160,9 @@
 
             }
 
-          } catch (error) {
+          } catch (
+            error
+          ) {
 
             console.error(
               "Could not load saved historical result:",
@@ -1802,6 +2242,13 @@
 
 
         console.log(
+          "IMD Observation Engine:",
+          typeof
+            window.RRP_IMD_OBSERVATION
+        );
+
+
+        console.log(
           "Verification Engine:",
           typeof
             window.RRP_VERIFICATION
@@ -1834,6 +2281,19 @@
           typeof
             window.RRP_REGIONAL_ACCURACY
         );
+
+
+        if (
+          typeof
+            window.RRP_IMD_OBSERVATION ===
+          "object"
+        ) {
+
+          console.log(
+            "🇮🇳 IMD Observation Engine V1 ready."
+          );
+
+        }
 
 
         if (
