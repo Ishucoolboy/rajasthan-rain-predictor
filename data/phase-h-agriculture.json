@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "phase": "H",
+  "lastReviewed": "2026-09-22",
+  "variables": [
+    "precipitation",
+    "soil_moisture",
+    "ET0",
+    "VPD",
+    "temperature",
+    "wind_gusts"
+  ],
+  "outputs": [
+    "24h rainfall",
+    "72h rainfall",
+    "rain probability",
+    "soil moisture estimate",
+    "7-day ET0",
+    "maximum wind gust",
+    "rain risk"
+  ],
+  "policy": "Weather-model soil moisture is an estimate and is not a field sensor measurement. Crop-specific irrigation advice requires crop, soil, growth stage and local agronomic context."
+}
