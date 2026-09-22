@@ -569,6 +569,8 @@ async function loadVillageDatabase() {
         villageDatabaseLoaded =
             true;
 
+        renderVillageCoverageStatus();
+
         console.log(
             `Rajasthan village database loaded: ${VILLAGE_DATABASE.length} records`
         );
@@ -614,6 +616,63 @@ function getVillageCoverageStatus() {
     }
 
     return `Village coordinate registry active: ${count.toLocaleString("en-IN")} records; current LGD reconciliation is still in progress.`;
+}
+
+// =======================================================
+// RENDER VILLAGE COVERAGE
+// =======================================================
+
+function renderVillageCoverageStatus() {
+
+    const el =
+        document.getElementById(
+            "villageCoverageContent"
+        );
+
+    if (!el) {
+        return;
+    }
+
+    const count =
+        number(
+            villageCoverageMeta.coordinateRecords,
+            VILLAGE_DATABASE.length
+        );
+
+    if (!count) {
+        el.innerHTML =
+            "⚠️ Village registry abhi available nahi hai. Search fallback geocoding se continue karega.";
+        return;
+    }
+
+    const completeness =
+        villageCoverageMeta.completeCoverageVerified
+            ? "Verified coordinate coverage threshold reached"
+            : "Coordinate enrichment active; current LGD reconciliation pending";
+
+    const generated =
+        villageCoverageMeta.generatedAt
+            ? new Date(villageCoverageMeta.generatedAt).toLocaleString("en-IN")
+            : "—";
+
+    el.innerHTML = `
+      <div style="font-size:18px;font-weight:800;">
+        ${count.toLocaleString("en-IN")} village coordinate records
+      </div>
+      <div style="margin-top:8px;">
+        <strong>Status:</strong> ${escapeHtml(completeness)}
+      </div>
+      <div>
+        <strong>Registry:</strong> Census-2011-linked village coordinates
+      </div>
+      <div>
+        <strong>Last generated:</strong> ${escapeHtml(generated)}
+      </div>
+      <div style="margin-top:8px;opacity:.85;">
+        Village search + village-specific forecast selection is enabled.
+        Weather forecast is an estimate and cannot be guaranteed.
+      </div>
+    `;
 }
 
 
