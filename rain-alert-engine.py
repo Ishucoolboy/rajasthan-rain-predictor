@@ -18,6 +18,7 @@ from __future__ import annotations
 import json
 import os
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from pathlib import Path
 from statistics import median
 from urllib.parse import urlencode
@@ -140,10 +141,22 @@ def model_summary(data):
     rain = [safe_num(x) for x in hourly.get("precipitation", [])]
     prob = [safe_num(x) for x in hourly.get("precipitation_probability", [])]
 
-    # Forecast is returned in local time and starts close to the current hour.
-    # First 24 values are therefore the practical next-24h window.
-    next24_rain = sum(rain[:24])
-    peak_prob = max(prob[:24], default=0)
+    times = hourly.get("time", [])
+    now_local = datetime.now(ZoneInfo("Asia/Kolkata")).replace(tzinfo=None)
+    current_index = 0
+    best_delta = None
+    for i, value in enumerate(times):
+        try:
+            parsed = datetime.fromisoformat(str(value))
+            delta = abs((parsed - now_local).total_seconds())
+            if best_delta is None or delta < best_delta:
+                best_delta = delta
+                current_index = i
+        except Exception:
+            continue
+
+    next24_rain = sum(rain[current_index:current_index + 24])
+    peak_prob = max(prob[current_index:current_index + 24], default=0)
 
     daily_rain = [safe_num(x) for x in daily.get("precipitation_sum", [])]
     next72_rain = sum(daily_rain[:3])
