@@ -143,6 +143,85 @@ def weight_for(village, weights):
     total = sum(scores.values())
     return {m: scores.get(m, 0) / total for m in MODELS}
 
+def fetch_ensemble_candidates(villages):
+    """Fetch probabilistic ensemble guidance only for deterministic rain candidates.
+    This keeps the nationwide run practical while adding member-based uncertainty
+    to the villages that already have a meaningful signal.
+    """
+    if not villages:
+        return {}
+    ensemble_models = {
+        "ECMWF_ENS": "ecmwf_ifs025_ensemble",
+        "GFS_ENS": "ncep_gefs025",
+        "ICON_EPS": "icon_global_eps",
+        "AIFS_ENS": "ecmwf_aifs025_ensemble",
+    }
+    result = {}
+    for label, model in ensemble_models.items():
+        for batch in chunks(villages, 300):
+            url = "https://ensemble-api.open-meteo.com/v1/ensemble"
+            payload = {
+                "latitude": [str(v["latitude"]) for v in batch],
+                "longitude": [str(v["longitude"]) for v in batch],
+                "hourly": ["precipitation"],
+                "forecast_hours": 24,
+                "timezone": "Asia/Kolkata",
+                "models": model,
+            }
+            data = get_json(url, payload)
+            records = data if isinstance(data, list) else [data]
+            if len(records) != len(batch):
+                raise RuntimeError(f"{label}: API returned {len(records)} records for {len(batch)} candidates")
+            for village, rec in zip(batch, records):
+                h = rec.get("hourly", {})
+                member_keys = [k for k in h if k.startswith("precipitation_member")]
+                members = []
+                for key in member_keys:
+                    vals = h.get(key, [])
+                    members.append(sum(float(x or 0) for x in vals[:24]))
+                if not members:
+                    continue
+                row = result.setdefault(village["id"], {})
+                row[label] = {
+                    "members": len(members),
+                    "mean24": sum(members) / len(members),
+                    "p90": sorted(members)[max(0, int(0.90 * (len(members)-1)))],
+                    "p_ge_10": 100 * sum(x >= 10 for x in members) / len(members),
+                    "p_ge_25": 100 * sum(x >= 25 for x in members) / len(members),
+                }
+            time.sleep(0.15)
+    return result
+
+
+def ensemble_confirm(rows, ensemble):
+    """Attach ensemble probability and require probabilistic support for HIGH alerts."""
+    confirmed = []
+    for row in rows:
+        e = ensemble.get(row["id"], {})
+        usable = list(e.values())
+        if not usable:
+            continue
+        p10 = sum(x["p_ge_10"] for x in usable) / len(usable)
+        p25 = sum(x["p_ge_25"] for x in usable) / len(usable)
+        mean = sum(x["mean24"] for x in usable) / len(usable)
+        p90 = sum(x["p90"] for x in usable) / len(usable)
+        # Keep the deterministic signal, but downgrade rather than fabricate
+        # confidence when the ensemble disagrees.
+        row = dict(row)
+        row["ensemble_models"] = len(usable)
+        row["ensemble_mean24"] = round(mean, 1)
+        row["ensemble_p_ge_10"] = round(p10)
+        row["ensemble_p_ge_25"] = round(p25)
+        row["ensemble_p90"] = round(p90, 1)
+        if row["tier"] == "VERY_HIGH" and p10 < 55:
+            row["tier"] = "HIGH"
+        if row["tier"] == "HIGH" and p10 < 35 and row["mm24"] < 25:
+            continue
+        confirmed.append(row)
+    confirmed.sort(key=lambda x: (-x["ensemble_p_ge_10"], -x["mm24"]))
+    return confirmed
+
+
 def rank(villages, model_data, weights):
     rows = []
     for v in villages:
@@ -223,6 +302,20 @@ def main():
 
     rows = rank(villages, model_data, load_weights())
     high = [r for r in rows if r["tier"] in ("HIGH","VERY_HIGH")]
+    # Phase E: run expensive member-based ensemble verification only for
+    # villages already flagged by the deterministic multi-model screen.
+    ensemble_candidates = [
+        next((v for v in villages if v["id"] == r["id"]), None)
+        for r in high[:1200]
+    ]
+    ensemble_candidates = [v for v in ensemble_candidates if v]
+    if ensemble_candidates:
+        print("Phase E ensemble verification candidates:", len(ensemble_candidates))
+        try:
+            ensemble_data = fetch_ensemble_candidates(ensemble_candidates)
+            high = ensemble_confirm(high, ensemble_data)
+        except Exception as exc:
+            print("Phase E ensemble verification failed; keeping deterministic result:", exc)
     if not high:
         print("No high-confidence village rainfall signal.")
         STATE.write_text(json.dumps({
@@ -236,7 +329,7 @@ def main():
     top = high[:MAX_WHATSAPP_ROWS]
     lines = [
         "🌧️ राजस्थान गाँव-स्तरीय वर्षा अलर्ट",
-        "अगले 24 घंटे में कई गाँवों के लिए उच्च-भरोसे वाला multi-model वर्षा संकेत मिला है।",
+        "अगले 24 घंटे में कई गाँवों के लिए deterministic + ensemble वर्षा संकेत मिला है।",
         "",
     ]
     for r in top:
@@ -245,7 +338,7 @@ def main():
             place += f", {r['tehsil']}"
         if r["district"]:
             place += f", {r['district']}"
-        lines.append(f"📍 {place}: ~{r['mm24']} mm | 72h ~{r['mm72']} mm | भरोसा: {r['tier']} | मॉडल: {r['agreement']}/3")
+        lines.append(f"📍 {place}: ~{r['mm24']} mm | 72h ~{r['mm72']} mm | Ensemble P≥10mm: {r.get('ensemble_p_ge_10','—')}% | P90: {r.get('ensemble_p90','—')} mm | भरोसा: {r['tier']}")
     lines += [
         "",
         f"कुल high-confidence candidate villages: {len(high)}",
