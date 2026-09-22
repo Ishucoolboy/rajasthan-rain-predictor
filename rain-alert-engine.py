@@ -28,6 +28,7 @@ OPEN_METEO = "https://api.open-meteo.com/v1/forecast"
 IMD_WARNINGS = "https://mausam.imd.gov.in/api/warnings_district_api.php"
 LOCATIONS_FILE = Path("regional-monitoring-locations.json")
 STATE_FILE = Path("data/rain_alert_state.json")
+ACCURACY_FILE = Path("regional-accuracy-database.json")
 
 MODELS = {
     "ECMWF": "ecmwf_ifs025",
@@ -69,6 +70,15 @@ def http_json(url: str, params: dict | None = None, headers: dict | None = None)
 def load_locations():
     data = json.loads(LOCATIONS_FILE.read_text(encoding="utf-8"))
     return data.get("locations", [])
+
+
+def load_accuracy():
+    if not ACCURACY_FILE.exists():
+        return {}
+    try:
+        return json.loads(ACCURACY_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
 
 
 def load_state():
@@ -145,20 +155,63 @@ def model_summary(data):
     }
 
 
-def combine_model_results(results):
+def model_weights(location, accuracy_db):
+    """
+    Weight models using lead-day-1 historical MAE for this location.
+    The current reference is ERA5/Open-Meteo reanalysis, so this is a
+    calibration aid rather than an independent rain-gauge accuracy claim.
+    """
+    target = next(
+        (
+            x for x in accuracy_db.get("locations", [])
+            if x.get("location", {}).get("id") == location.get("id")
+        ),
+        None,
+    )
+    if not target:
+        return {name: 1.0 for name in MODELS}
+
+    weights = {}
+    for model in target.get("models", []):
+        name = model.get("name")
+        lead1 = next(
+            (x for x in model.get("leads", []) if x.get("lead_day") == 1),
+            None,
+        )
+        mae = safe_num((lead1 or {}).get("metrics", {}).get("mae_mm"), 0)
+        if name in MODELS:
+            weights[name] = 1.0 / max(mae, 0.5)
+
+    for name in MODELS:
+        weights.setdefault(name, 1.0)
+
+    total = sum(weights.values()) or 1.0
+    return {name: value / total for name, value in weights.items()}
+
+
+def combine_model_results(results, location, accuracy_db):
     valid = list(results.values())
     if not valid:
         return None
+
+    weights = model_weights(location, accuracy_db)
+
+    def weighted(key):
+        pairs = [
+            (name, item[key])
+            for name, item in results.items()
+            if name in weights
+        ]
+        total_weight = sum(weights[name] for name, _ in pairs) or 1.0
+        return sum(value * weights[name] for name, value in pairs) / total_weight
 
     rains24 = [x["next24_mm"] for x in valid]
     rains72 = [x["next72_mm"] for x in valid]
     probs = [x["peak_probability"] for x in valid]
 
-    # Median is deliberately used instead of the mean so one outlier model
-    # cannot dominate the alert.
-    median24 = median(rains24)
-    median72 = median(rains72)
-    median_prob = median(probs)
+    ensemble24 = weighted("next24_mm")
+    ensemble72 = weighted("next72_mm")
+    ensemble_prob = weighted("peak_probability")
 
     agreeing = sum(
         1 for x in valid
@@ -168,27 +221,27 @@ def combine_model_results(results):
     spread = max(rains24) - min(rains24) if rains24 else 0
     agreement = agreeing / len(valid)
 
-    if median72 >= VERY_HIGH_MM and agreeing >= MIN_MODEL_AGREEMENT and median_prob >= VERY_HIGH_PROB:
+    if ensemble72 >= VERY_HIGH_MM and agreeing >= MIN_MODEL_AGREEMENT and ensemble_prob >= VERY_HIGH_PROB:
         level = "very_high"
-    elif median24 >= HIGH_CONF_MM and agreeing >= MIN_MODEL_AGREEMENT and median_prob >= HIGH_PROB:
+    elif ensemble24 >= HIGH_CONF_MM and agreeing >= MIN_MODEL_AGREEMENT and ensemble_prob >= HIGH_PROB:
         level = "high"
-    elif median24 >= SIGNAL_MM and agreeing >= MIN_MODEL_AGREEMENT:
+    elif ensemble24 >= SIGNAL_MM and agreeing >= MIN_MODEL_AGREEMENT:
         level = "moderate"
     else:
         level = "none"
 
     return {
-        "next24_mm": median24,
-        "next72_mm": median72,
-        "peak_probability": median_prob,
+        "next24_mm": ensemble24,
+        "next72_mm": ensemble72,
+        "peak_probability": ensemble_prob,
         "model_rain_mm": rains24,
         "model_probability": probs,
+        "weights": weights,
         "agreeing_models": agreeing,
         "agreement_ratio": agreement,
         "spread_mm": spread,
         "level": level,
     }
-
 
 def fetch_imd_warning_count():
     """
@@ -213,7 +266,7 @@ def fetch_imd_warning_count():
         }
 
 
-def classify_location(location):
+def classify_location(location, accuracy_db):
     model_results = {}
     errors = {}
 
@@ -225,7 +278,7 @@ def classify_location(location):
         except Exception as exc:
             errors[name] = str(exc)
 
-    combined = combine_model_results(model_results)
+    combined = combine_model_results(model_results, location, accuracy_db)
 
     if not combined:
         return None
@@ -347,11 +400,12 @@ def send_whatsapp(message: str):
 
 def main():
     locations = load_locations()
+    accuracy_db = load_accuracy()
     print(f"Monitoring {len(locations)} Rajasthan locations with {len(MODELS)} models.")
 
     results = []
     for location in locations:
-        result = classify_location(location)
+        result = classify_location(location, accuracy_db)
         if result:
             results.append(result)
 
