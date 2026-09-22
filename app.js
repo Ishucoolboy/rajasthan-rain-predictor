@@ -1318,6 +1318,9 @@ function setCurrentSelectedLocation(
 
     };
 
+    window.RRP_SELECTED_LOCATION =
+        currentSelectedLocation;
+
 }
 
 
