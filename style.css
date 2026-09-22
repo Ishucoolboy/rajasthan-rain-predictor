@@ -1489,3 +1489,18 @@ button {
 .calibration-grid strong{display:block;margin-top:4px;font-size:20px}
 .calibration-note,.calibration-muted{margin-top:14px;color:#64748b;font-size:13px;line-height:1.65}
 @media(max-width:700px){.calibration-grid{grid-template-columns:1fr}.calibration-head{align-items:flex-start;flex-direction:column}}
+
+/* =========================================================
+   PHASE H — AGRICULTURE INTELLIGENCE
+   ========================================================= */
+.agriculture-intelligence{background:#fff;border-radius:16px;padding:18px;box-shadow:0 5px 20px rgba(15,23,42,.06)}
+.agri-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:15px}
+.agri-head small{display:block;color:#64748b;margin-top:3px}
+.agri-risk{padding:7px 10px;border-radius:999px;font-size:12px;font-weight:800}
+.agri-low{background:#dcfce7;color:#166534}.agri-moderate{background:#fef3c7;color:#92400e}.agri-high{background:#ffedd5;color:#9a3412}.agri-very-high{background:#fee2e2;color:#991b1b}
+.agri-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.agri-grid>div{background:#f8fafc;padding:14px;border-radius:12px}
+.agri-grid span{display:block;color:#64748b;font-size:12px}.agri-grid strong{display:block;margin-top:4px;font-size:19px}
+.agri-advice{margin-top:14px;padding:13px;border-radius:12px;background:#f0fdf4;border:1px solid #bbf7d0;font-size:13px;line-height:1.6}
+.agri-note{margin-top:12px;color:#64748b;font-size:12px;line-height:1.6}
+@media(max-width:700px){.agri-grid{grid-template-columns:1fr}.agri-head{align-items:flex-start;flex-direction:column}}
