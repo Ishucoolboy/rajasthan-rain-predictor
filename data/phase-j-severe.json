@@ -1,0 +1,24 @@
+{
+  "version": "phase-j-severe-v1",
+  "phase": "J",
+  "name": "Lightning & Severe Weather Intelligence",
+  "forecastWindowHours": 24,
+  "models": [
+    "ecmwf_ifs025",
+    "gfs_seamless",
+    "icon_seamless"
+  ],
+  "variables": [
+    "cape",
+    "lightning_density",
+    "lightning_potential",
+    "wind_gusts_10m",
+    "weather_code",
+    "precipitation",
+    "precipitation_probability",
+    "cloud_cover"
+  ],
+  "policy": "Model-derived severe-weather signal only; never present as observed lightning or a guaranteed event.",
+  "officialSafety": "IMD warnings remain authoritative for official warning context.",
+  "caveat": "Lightning variable availability differs by model/API and may be zero or unavailable without implying no lightning."
+}
