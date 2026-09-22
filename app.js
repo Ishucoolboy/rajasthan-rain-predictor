@@ -44,7 +44,7 @@ const OSM_GEOCODING_API =
     "https://nominatim.openstreetmap.org/search";
 
 const VILLAGE_DATABASE_URL =
-    "./villages.json";
+    "./data/rajasthan-village-registry.json";
 
 
 // =======================================================
@@ -65,6 +65,12 @@ const DEFAULT_LOCATION = {
 let VILLAGE_DATABASE = [];
 
 let villageDatabaseLoaded = false;
+
+let villageCoverageMeta = {
+    coordinateRecords: 0,
+    completeCoverageVerified: false,
+    generatedAt: null
+};
 
 let currentSelectedLocation =
     DEFAULT_LOCATION;
@@ -525,12 +531,32 @@ async function loadVillageDatabase() {
             VILLAGE_DATABASE =
                 data;
 
+            villageCoverageMeta = {
+                coordinateRecords: data.length,
+                completeCoverageVerified: false,
+                generatedAt: null
+            };
+
         } else if (
             Array.isArray(data.villages)
         ) {
 
             VILLAGE_DATABASE =
                 data.villages;
+
+            villageCoverageMeta = {
+                coordinateRecords:
+                    number(
+                        data.coordinate_records,
+                        VILLAGE_DATABASE.length
+                    ),
+                completeCoverageVerified:
+                    Boolean(
+                        data.complete_coverage_verified
+                    ),
+                generatedAt:
+                    data.generated_at_utc || null
+            };
 
         } else {
 
@@ -562,6 +588,32 @@ async function loadVillageDatabase() {
 
     }
 
+}
+
+
+// =======================================================
+// VILLAGE COVERAGE STATUS
+// =======================================================
+
+function getVillageCoverageStatus() {
+
+    const count =
+        number(
+            villageCoverageMeta.coordinateRecords,
+            VILLAGE_DATABASE.length
+        );
+
+    if (!count) {
+        return "Village registry not loaded";
+    }
+
+    if (
+        villageCoverageMeta.completeCoverageVerified
+    ) {
+        return `Village-level registry active: ${count.toLocaleString("en-IN")} coordinate records`;
+    }
+
+    return `Village coordinate registry active: ${count.toLocaleString("en-IN")} records; current LGD reconciliation is still in progress.`;
 }
 
 
