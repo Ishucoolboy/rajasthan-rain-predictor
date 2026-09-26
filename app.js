@@ -3938,15 +3938,15 @@ function renderRainNews() {
         box.innerHTML = "⏳ District forecast load ho raha hai...";
         return;
     }
-    const top = rows.filter(r => Number(r.total3) > 0)
-        .sort((a,b) => Number(b.total3) - Number(a.total3)).slice(0,5);
+    const top = rows.filter(r => Number(r.total3Day) > 0)
+        .sort((a,b) => Number(b.total3Day) - Number(a.total3Day)).slice(0,5);
     const radar = document.getElementById("liveRainStatus")?.textContent?.trim() || "Live radar signal available hai.";
     const d1 = rows.filter(r => Number(r.day1) > 0).length;
     box.innerHTML =
         '<div class="rain-news-item">📡 <strong>Abhi:</strong> ' + escapeHTML(radar) + '</div>' +
         '<div class="rain-news-item">🌧️ <strong>Next 24 hours:</strong> Rajasthan ke ' + d1 + ' districts mein measurable rain forecast hai.</div>' +
         '<div class="rain-news-item">🔮 <strong>Next 3 days:</strong> ' +
-        (top.length ? top.map(r => escapeHTML(r.district) + ' (' + formatDistrictRain(r.total3) + ')').join(", ") : "significant rain signal nahi mila.") +
+        (top.length ? top.map(r => escapeHTML(r.district) + ' (' + formatDistrictRain(r.total3Day) + ')').join(", ") : "significant rain signal nahi mila.") +
         '.</div>' +
         '<div class="rain-news-item">⚡ <strong>Official warning:</strong> IMD warning/nowcast ko forecast se separate rakha gaya hai.</div>';
 }
@@ -4010,6 +4010,7 @@ async function loadDistrictRainfall() {
 
         renderDistrictRainfallDashboard();
         renderDistrictRainfallMap();
+        renderRainNews();
 
     } catch (error) {
         console.error("District rainfall failed:", error);
