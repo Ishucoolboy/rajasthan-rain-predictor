@@ -89,6 +89,10 @@ let rainMapCircle = null;
 
 let statewideMapMarkers = [];
 
+let districtRainfallMarkers = [];
+
+let districtRainfallData = [];
+
 let actualRainfallData = [];
 
 
@@ -3687,180 +3691,309 @@ async function loadHourlyModelComparison(
 
 
 // =======================================================
-// STATEWIDE RAINFALL
+// RAJASTHAN DISTRICT RAINFALL DASHBOARD
+// =======================================================
+
+function normalizeDistrictName(name) {
+    return String(name || "").trim().replace(/\s+/g, " ");
+}
+
+function buildDistrictLocations() {
+    const grouped = new Map();
+
+    VILLAGE_DATABASE.forEach(village => {
+        const district = normalizeDistrictName(getVillageField(village, [
+            "district", "District", "district_name"
+        ]));
+
+        const latitude = number(getVillageField(village, [
+            "latitude", "lat", "Latitude", "LAT"
+        ]), NaN);
+
+        const longitude = number(getVillageField(village, [
+            "longitude", "lon", "lng", "Longitude", "LON"
+        ]), NaN);
+
+        if (!district || !Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+
+        if (!grouped.has(district)) {
+            grouped.set(district, {
+                name: district,
+                latitudeSum: 0,
+                longitudeSum: 0,
+                count: 0
+            });
+        }
+
+        const item = grouped.get(district);
+        item.latitudeSum += latitude;
+        item.longitudeSum += longitude;
+        item.count += 1;
+    });
+
+    return Array.from(grouped.values())
+        .map(item => ({
+            name: item.name,
+            latitude: item.latitudeSum / item.count,
+            longitude: item.longitudeSum / item.count,
+            coordinateCount: item.count
+        }))
+        .filter(item =>
+            Number.isFinite(item.latitude) &&
+            Number.isFinite(item.longitude)
+        )
+        .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function districtRainClass(mm) {
+    mm = number(mm);
+
+    if (mm >= 115.6) return "extreme";
+    if (mm >= 64.5) return "very-heavy";
+    if (mm >= 15.6) return "heavy";
+    if (mm >= 2.5) return "moderate";
+    if (mm > 0) return "light";
+    return "none";
+}
+
+function districtRainLabel(mm) {
+    mm = number(mm);
+
+    if (mm >= 115.6) return "Extreme";
+    if (mm >= 64.5) return "Very Heavy";
+    if (mm >= 15.6) return "Heavy";
+    if (mm >= 2.5) return "Moderate";
+    if (mm > 0) return "Light";
+    return "No rain";
+}
+
+function districtRainColor(mm) {
+    return {
+        none: "#64748b",
+        light: "#f59e0b",
+        moderate: "#0891b2",
+        heavy: "#2563eb",
+        "very-heavy": "#7c3aed",
+        extreme: "#be123c"
+    }[districtRainClass(mm)];
+}
+
+function formatDistrictRain(mm) {
+    return number(mm).toFixed(1);
+}
+
+function renderDistrictRainfallDashboard() {
+    const container = document.getElementById("districtRainfallDashboard");
+
+    if (!container) return;
+
+    if (!districtRainfallData.length) {
+        container.innerHTML = `
+            <div class="district-empty">
+                🌧️ District rainfall data abhi available nahi hai.
+            </div>
+        `;
+        return;
+    }
+
+    const sorted = [...districtRainfallData].sort((a, b) => b.total3Day - a.total3Day);
+    const wettest = sorted.slice(0, 5);
+    const next24 = [...districtRainfallData].sort((a, b) => b.day1 - a.day1);
+
+    const wettestRows = wettest.map(item => `
+        <div class="district-top-row">
+            <strong>${escapeHtml(item.name)}</strong>
+            <span>${formatDistrictRain(item.total3Day)} mm</span>
+        </div>
+    `).join("");
+
+    const tableRows = next24.map(item => `
+        <tr>
+            <td><strong>${escapeHtml(item.name)}</strong></td>
+            <td><span class="rain-pill ${districtRainClass(item.day1)}">${formatDistrictRain(item.day1)} mm</span></td>
+            <td>${formatDistrictRain(item.day2)} mm</td>
+            <td>${formatDistrictRain(item.day3)} mm</td>
+            <td><strong>${formatDistrictRain(item.total3Day)} mm</strong></td>
+            <td>${Math.round(item.maxProbability)}%</td>
+            <td><span class="rain-label ${districtRainClass(item.total3Day)}">${districtRainLabel(item.total3Day)}</span></td>
+        </tr>
+    `).join("");
+
+    container.innerHTML = `
+        <div class="district-summary-grid">
+            <div class="district-stat">
+                <span>Districts</span>
+                <strong>${districtRainfallData.length}</strong>
+            </div>
+            <div class="district-stat">
+                <span>Highest next 24h</span>
+                <strong>${escapeHtml(next24[0]?.name || "--")}</strong>
+                <small>${formatDistrictRain(next24[0]?.day1)} mm</small>
+            </div>
+            <div class="district-stat">
+                <span>Highest 3-day</span>
+                <strong>${escapeHtml(wettest[0]?.name || "--")}</strong>
+                <small>${formatDistrictRain(wettest[0]?.total3Day)} mm</small>
+            </div>
+        </div>
+
+        <div class="district-top-box">
+            <h3>🌧️ Top Rainfall Areas — Next 3 Days</h3>
+            ${wettestRows}
+        </div>
+
+        <div class="district-table-wrap">
+            <table class="district-rain-table">
+                <thead>
+                    <tr>
+                        <th>District</th>
+                        <th>Next 24h</th>
+                        <th>Day 2</th>
+                        <th>Day 3</th>
+                        <th>3-Day Total</th>
+                        <th>Rain Chance</th>
+                        <th>Level</th>
+                    </tr>
+                </thead>
+                <tbody>${tableRows}</tbody>
+            </table>
+        </div>
+
+        <div class="district-source-note">
+            📌 Rainfall values are forecast estimates from Open-Meteo model data at
+            district coordinate centroids. IMD district warnings/nowcasts remain a
+            separate official warning signal.
+        </div>
+    `;
+}
+
+async function loadDistrictRainfall() {
+    if (!VILLAGE_DATABASE.length) return;
+
+    const districts = buildDistrictLocations();
+    if (!districts.length) return;
+
+    const container = document.getElementById("districtRainfallDashboard");
+
+    if (container) {
+        container.innerHTML = `
+            <div class="district-loading">
+                ⏳ Rajasthan ke ${districts.length} districts ka rainfall forecast load ho raha hai...
+            </div>
+        `;
+    }
+
+    try {
+        const latitude = districts.map(item => item.latitude.toFixed(5)).join(",");
+        const longitude = districts.map(item => item.longitude.toFixed(5)).join(",");
+
+        const params = new URLSearchParams({
+            latitude,
+            longitude,
+            daily: "precipitation_sum,precipitation_probability_max,weather_code",
+            forecast_days: "3",
+            timezone: "Asia/Kolkata"
+        });
+
+        const response = await fetch(`${WEATHER_API}?${params}`);
+
+        if (!response.ok) throw new Error("District rainfall API failed");
+
+        const payload = await response.json();
+        const responses = Array.isArray(payload) ? payload : [payload];
+
+        districtRainfallData = districts.map((district, index) => {
+            const data = responses[index] || {};
+            const daily = data.daily || {};
+
+            const rainfall = Array.isArray(daily.precipitation_sum)
+                ? daily.precipitation_sum.map(value => number(value))
+                : [0, 0, 0];
+
+            const probabilities = Array.isArray(daily.precipitation_probability_max)
+                ? daily.precipitation_probability_max.map(value => number(value))
+                : [0, 0, 0];
+
+            return {
+                ...district,
+                day1: rainfall[0] || 0,
+                day2: rainfall[1] || 0,
+                day3: rainfall[2] || 0,
+                total3Day: (rainfall[0] || 0) + (rainfall[1] || 0) + (rainfall[2] || 0),
+                maxProbability: Math.max(...probabilities)
+            };
+        });
+
+        renderDistrictRainfallDashboard();
+        renderDistrictRainfallMap();
+
+    } catch (error) {
+        console.error("District rainfall failed:", error);
+        districtRainfallData = [];
+
+        if (container) {
+            container.innerHTML = `
+                <div class="district-error">
+                    ⚠️ District rainfall forecast temporarily unavailable.
+                </div>
+            `;
+        }
+    }
+}
+
+function renderDistrictRainfallMap() {
+    if (!rainMap || typeof L === "undefined") return;
+
+    districtRainfallMarkers.forEach(marker => {
+        try { rainMap.removeLayer(marker); } catch (_) {}
+    });
+
+    districtRainfallMarkers = [];
+
+    districtRainfallData.forEach(item => {
+        const rain = item.day1;
+        const color = districtRainColor(rain);
+
+        const marker = L.circleMarker(
+            [item.latitude, item.longitude],
+            {
+                radius: Math.max(6, Math.min(14, 6 + Math.sqrt(rain + 1) * 1.5)),
+                color,
+                fillColor: color,
+                fillOpacity: 0.72,
+                weight: 2
+            }
+        ).addTo(rainMap);
+
+        marker.bindPopup(`
+            <div class="district-popup">
+                <strong>📍 ${escapeHtml(item.name)}</strong>
+                <hr>
+                🌧️ <strong>Next 24h:</strong> ${formatDistrictRain(item.day1)} mm<br>
+                📅 <strong>Day 2:</strong> ${formatDistrictRain(item.day2)} mm<br>
+                📅 <strong>Day 3:</strong> ${formatDistrictRain(item.day3)} mm<br>
+                💧 <strong>Rain chance:</strong> ${Math.round(item.maxProbability)}%<br>
+                <b>${districtRainLabel(item.total3Day)}</b> — 3-day total ${formatDistrictRain(item.total3Day)} mm
+            </div>
+        `);
+
+        districtRainfallMarkers.push(marker);
+    });
+}
+
+
+// =======================================================
+// LEGACY STATEWIDE RAINFALL
 // =======================================================
 
 async function loadStatewideRainfall() {
+    if (!rainMap || typeof L === "undefined") return;
 
-    if (
-        typeof L === "undefined"
-    ) {
+    statewideMapMarkers.forEach(marker => {
+        try { rainMap.removeLayer(marker); } catch (_) {}
+    });
 
-        return;
-
-    }
-
-    if (!rainMap) {
-        return;
-    }
-
-    statewideMapMarkers.forEach(
-        marker => {
-
-            try {
-
-                rainMap.removeLayer(
-                    marker
-                );
-
-            } catch (_) {}
-
-        }
-    );
-
-    statewideMapMarkers =
-        [];
-
-    for (
-        const location of
-        RAJASTHAN_LOCATIONS
-    ) {
-
-        try {
-
-            const params =
-                new URLSearchParams({
-
-                    latitude:
-                        location.latitude,
-
-                    longitude:
-                        location.longitude,
-
-                    hourly:
-                        [
-                            "precipitation",
-                            "precipitation_probability",
-                            "weather_code"
-                        ].join(","),
-
-                    forecast_days:
-                        "1",
-
-                    timezone:
-                        "auto"
-
-                });
-
-            const response =
-                await fetch(
-                    `${WEATHER_API}?${params}`
-                );
-
-            if (!response.ok) {
-                continue;
-            }
-
-            const data =
-                await response.json();
-
-            const index =
-                findCurrentHourIndex(
-                    data.hourly?.time || []
-                );
-
-            const rain =
-                number(
-                    data.hourly
-                        ?.precipitation
-                        ?.[index]
-                );
-
-            const probability =
-                number(
-                    data.hourly
-                        ?.precipitation_probability
-                        ?.[index]
-                );
-
-            const code =
-                data.hourly
-                    ?.weather_code
-                    ?.[index];
-
-            const marker =
-                L.circleMarker(
-                    [
-                        location.latitude,
-                        location.longitude
-                    ],
-                    {
-
-                        radius:
-                            7,
-
-                        color:
-                            getRainMapColor(
-                                rain
-                            ),
-
-                        fillColor:
-                            getRainMapColor(
-                                rain
-                            ),
-
-                        fillOpacity:
-                            0.75,
-
-                        weight:
-                            2
-
-                    }
-                )
-                .addTo(
-                    rainMap
-                );
-
-            marker.bindPopup(`
-
-                <strong>
-                    ${escapeHtml(
-                        location.name
-                    )}
-                </strong>
-
-                <br>
-
-                🌧️ Rain:
-                ${rain.toFixed(1)} mm
-
-                <br>
-
-                💧 Probability:
-                ${Math.round(probability)}%
-
-                <br>
-
-                🌦️
-                ${getWeatherDescription(code)}
-
-            `);
-
-            statewideMapMarkers.push(
-                marker
-            );
-
-        } catch (error) {
-
-            console.warn(
-                `Statewide data failed for ${location.name}`,
-                error
-            );
-
-        }
-
-    }
-
+    statewideMapMarkers = [];
 }
 
 
@@ -4488,6 +4621,13 @@ async function refreshCurrentWeather() {
         currentSelectedLocation
     );
 
+    loadDistrictRainfall().catch(
+        error => console.warn(
+            "District rainfall refresh failed:",
+            error
+        )
+    );
+
 }
 
 
@@ -4597,6 +4737,13 @@ async function initialize() {
 
         await loadWeather(
             DEFAULT_LOCATION
+        );
+
+        loadDistrictRainfall().catch(
+            error => console.warn(
+                "District rainfall initialization failed:",
+                error
+            )
         );
 
         /*
