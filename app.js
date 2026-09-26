@@ -2032,58 +2032,67 @@ function updateRainMap(
 
 async function updateLiveRadarLayer() {
 
-    if (!rainMap || typeof L === "undefined") {
-        return;
-    }
+    if (!rainMap || typeof L === "undefined") return;
 
     try {
         const response = await fetch(
             "https://api.rainviewer.com/public/weather-maps.json?ts=" + Date.now()
         );
 
-        if (!response.ok) {
-            throw new Error("Radar metadata unavailable");
-        }
+        if (!response.ok) throw new Error("Radar metadata unavailable");
 
         const data = await response.json();
-        const past = data?.radar?.past || [];
+        const frames = data?.radar?.past || [];
 
-        if (!past.length) {
-            return;
+        if (!frames.length) return;
+
+        if (rainRadarLayer && Array.isArray(rainRadarLayer)) {
+            rainRadarLayer.forEach(layer => {
+                try { rainMap.removeLayer(layer); } catch (_) {}
+            });
         }
 
-        const frame = past[past.length - 1];
+        const recentFrames = frames.slice(-8);
+        const layers = recentFrames.map(frame => {
+            const tileUrl =
+                `${data.host}${frame.path}/256/{z}/{x}/{y}/2/1_1.png`;
 
-        if (
-            rainRadarLayer &&
-            rainRadarFrameTime === frame.time
-        ) {
-            return;
-        }
-
-        if (rainRadarLayer) {
-            rainMap.removeLayer(rainRadarLayer);
-        }
-
-        const tileUrl =
-            `${data.host}${frame.path}/256/{z}/{x}/{y}/2/1_1.png`;
-
-        rainRadarLayer = L.tileLayer(tileUrl, {
-            opacity: 0.58,
-            maxZoom: 7,
-            attribution: "Weather radar: RainViewer"
+            return L.tileLayer(tileUrl, {
+                opacity: 0,
+                maxZoom: 7,
+                attribution: "Weather radar: RainViewer / IMD"
+            });
         });
 
-        rainRadarLayer.addTo(rainMap);
-        rainRadarFrameTime = frame.time;
+        layers.forEach(layer => layer.addTo(rainMap));
+        rainRadarLayer = layers;
+        rainRadarFrameTime = recentFrames[recentFrames.length - 1].time;
+
+        let radarAnimationTimer = window.__rrpRadarAnimationTimer;
+        if (radarAnimationTimer) clearInterval(radarAnimationTimer);
+
+        let frameIndex = 0;
+        const showFrame = index => {
+            layers.forEach((layer, i) => layer.setOpacity(i === index ? 0.62 : 0));
+        };
+
+        showFrame(0);
+
+        radarAnimationTimer = setInterval(() => {
+            frameIndex = (frameIndex + 1) % layers.length;
+            showFrame(frameIndex);
+        }, 700);
+
+        window.__rrpRadarAnimationTimer = radarAnimationTimer;
 
         const liveBox = document.getElementById("liveRainStatus");
-
         if (liveBox) {
-            const radarTime = new Date(frame.time * 1000);
+            const latest = new Date(
+                recentFrames[recentFrames.length - 1].time * 1000
+            );
 
             liveBox.innerHTML =
-                `<strong>📡 Live radar:</strong> latest radar frame ${radarTime.toLocaleTimeString("en-IN", {
+                `<strong>📡 Live rain radar:</strong> animation running • latest frame ${latest.toLocaleTimeString("en-IN", {
                     hour: "numeric",
                     minute: "2-digit"
                 })}`;
