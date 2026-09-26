@@ -2126,7 +2126,10 @@ async function fetchWeather(
                     "precipitation",
                     "rain",
                     "showers",
-                    "weather_code"
+                    "weather_code",
+                    "temperature_2m",
+                    "relative_humidity_2m",
+                    "wind_speed_10m"
                 ].join(","),
 
             hourly:
@@ -2152,27 +2155,53 @@ async function fetchWeather(
                 ].join(","),
 
             forecast_days:
-                "7",
+                "3",
+
+            forecast_hours:
+                "48",
 
             timezone:
                 "auto"
 
         });
 
-    const response =
-        await fetch(
-            `${WEATHER_API}?${params}`
+    const controller =
+        new AbortController();
+
+    const timeout =
+        setTimeout(
+            () => controller.abort(),
+            12000
         );
 
-    if (!response.ok) {
+    try {
 
-        throw new Error(
-            "Weather API request failed"
-        );
+        const response =
+            await fetch(
+                `${WEATHER_API}?${params}`
+                , {
+                    signal: controller.signal,
+                    cache: "no-store"
+                }
+            );
 
+        if (!response.ok) {
+            throw new Error(`Weather API request failed (${response.status})`);
+        }
+
+        return await response.json();
+
+    } catch (error) {
+
+        if (error?.name === "AbortError") {
+            throw new Error("Weather API timed out. Please retry.");
+        }
+
+        throw error;
+
+    } finally {
+        clearTimeout(timeout);
     }
-
-    return await response.json();
 
 }
 
