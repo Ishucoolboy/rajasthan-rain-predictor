@@ -2196,6 +2196,14 @@ function updateCurrentWeather(
         hourly?.precipitation?.[index]
     );
 
+    const recentRainValues = Array.isArray(hourly?.precipitation)
+        ? hourly.precipitation.slice(Math.max(0, index - 2), index + 1).map(number)
+        : [];
+
+    const recentRainMm = recentRainValues.length
+        ? Math.max(...recentRainValues)
+        : precipitation;
+
     const temp = current?.temperature_2m ?? hourly?.temperature_2m?.[index];
     const humidityValue = current?.relative_humidity_2m ?? hourly?.relative_humidity_2m?.[index];
     const windValue = current?.wind_speed_10m ?? hourly?.wind_speed_10m?.[index];
@@ -2233,10 +2241,13 @@ function updateCurrentWeather(
 
     if (liveBox) {
         const hasCurrentRain = precipitation > 0.05;
+        const hasRecentRain = recentRainMm > 0.05;
 
         liveBox.innerHTML = hasCurrentRain
-            ? `<strong>🌧️ Abhi rain signal detected:</strong> ${precipitation.toFixed(1)} mm`
-            : `<strong>☁️ Model current signal:</strong> No measurable rain at the selected point`;
+            ? `<strong>🌧️ Abhi rain signal:</strong> ${precipitation.toFixed(1)} mm`
+            : hasRecentRain
+                ? `<strong>🌧️ Recent rain signal:</strong> pichhle ~2–3 ghanton mein ${recentRainMm.toFixed(1)} mm tak ka precipitation signal mila.`
+                : `<strong>☁️ Recent rain signal:</strong> selected point par measurable rain signal nahi mila.`;
     }
 }
 
