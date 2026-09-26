@@ -87,6 +87,10 @@ let rainMapMarker = null;
 
 let rainMapCircle = null;
 
+let rainRadarLayer = null;
+
+let rainRadarFrameTime = null;
+
 let statewideMapMarkers = [];
 
 let districtRainfallMarkers = [];
@@ -1792,6 +1796,13 @@ function initializeRainMap() {
         rainMap
     );
 
+    updateLiveRadarLayer().catch(
+        error => console.warn(
+            "Initial radar layer failed:",
+            error
+        )
+    );
+
 }
 
 
@@ -2016,6 +2027,75 @@ function updateRainMap(
 
 
 // =======================================================
+// LIVE RADAR — CURRENT RAIN
+// =======================================================
+
+async function updateLiveRadarLayer() {
+
+    if (!rainMap || typeof L === "undefined") {
+        return;
+    }
+
+    try {
+        const response = await fetch(
+            "https://api.rainviewer.com/public/weather-maps.json?ts=" + Date.now()
+        );
+
+        if (!response.ok) {
+            throw new Error("Radar metadata unavailable");
+        }
+
+        const data = await response.json();
+        const past = data?.radar?.past || [];
+
+        if (!past.length) {
+            return;
+        }
+
+        const frame = past[past.length - 1];
+
+        if (
+            rainRadarLayer &&
+            rainRadarFrameTime === frame.time
+        ) {
+            return;
+        }
+
+        if (rainRadarLayer) {
+            rainMap.removeLayer(rainRadarLayer);
+        }
+
+        const tileUrl =
+            `${data.host}${frame.path}/256/{z}/{x}/{y}/2/1_1.png`;
+
+        rainRadarLayer = L.tileLayer(tileUrl, {
+            opacity: 0.58,
+            maxZoom: 7,
+            attribution: "Weather radar: RainViewer"
+        });
+
+        rainRadarLayer.addTo(rainMap);
+        rainRadarFrameTime = frame.time;
+
+        const liveBox = document.getElementById("liveRainStatus");
+
+        if (liveBox) {
+            const radarTime = new Date(frame.time * 1000);
+
+            liveBox.innerHTML =
+                `<strong>📡 Live radar:</strong> latest radar frame ${radarTime.toLocaleTimeString("en-IN", {
+                    hour: "numeric",
+                    minute: "2-digit"
+                })}`;
+        }
+
+    } catch (error) {
+        console.warn("Live radar unavailable:", error);
+    }
+}
+
+
+// =======================================================
 // FETCH MAIN WEATHER
 // =======================================================
 
@@ -2031,6 +2111,14 @@ async function fetchWeather(
 
             longitude:
                 location.longitude,
+
+            current:
+                [
+                    "precipitation",
+                    "rain",
+                    "showers",
+                    "weather_code"
+                ].join(","),
 
             hourly:
                 [
@@ -2088,95 +2176,70 @@ function updateCurrentWeather(
     data
 ) {
 
-    const hourly =
-        data?.hourly;
+    const current = data?.current;
+    const hourly = data?.hourly;
 
-    if (
-        !hourly?.time?.length
-    ) {
-
+    if (!current && !hourly?.time?.length) {
         return;
-
     }
 
-    const index =
-        findCurrentHourIndex(
-            hourly.time
-        );
+    const index = findCurrentHourIndex(hourly?.time || []);
 
-    const probability =
-        number(
-            hourly.precipitation_probability?.[index]
-        );
+    const probability = number(
+        hourly?.precipitation_probability?.[index]
+    );
 
-    const precipitation =
-        number(
-            hourly.precipitation?.[index]
-        );
+    const precipitation = number(
+        current?.precipitation ??
+        current?.rain ??
+        current?.showers ??
+        hourly?.precipitation?.[index]
+    );
 
-    const temp =
-        hourly.temperature_2m?.[index];
-
-    const humidityValue =
-        hourly.relative_humidity_2m?.[index];
-
-    const windValue =
-        hourly.wind_speed_10m?.[index];
-
-    const code =
-        hourly.weather_code?.[index];
+    const temp = current?.temperature_2m ?? hourly?.temperature_2m?.[index];
+    const humidityValue = current?.relative_humidity_2m ?? hourly?.relative_humidity_2m?.[index];
+    const windValue = current?.wind_speed_10m ?? hourly?.wind_speed_10m?.[index];
+    const code = current?.weather_code ?? hourly?.weather_code?.[index];
 
     if (rainProbability) {
-
-        rainProbability.textContent =
-            `${Math.round(probability)}%`;
-
+        rainProbability.textContent = `${Math.round(probability)}%`;
     }
 
     if (rainAmount) {
-
-        rainAmount.textContent =
-            `${precipitation.toFixed(1)} mm`;
-
+        rainAmount.textContent = `${precipitation.toFixed(1)} mm`;
     }
 
     if (temperature) {
-
         temperature.textContent =
-            temp !== undefined
-                ? `${Math.round(temp)} °C`
-                : "-- °C";
-
+            temp !== undefined ? `${Math.round(temp)} °C` : "-- °C";
     }
 
     if (humidity) {
-
         humidity.textContent =
-            humidityValue !== undefined
-                ? `${Math.round(humidityValue)}%`
-                : "--%";
-
+            humidityValue !== undefined ? `${Math.round(humidityValue)}%` : "--%";
     }
 
     if (wind) {
-
         wind.textContent =
-            windValue !== undefined
-                ? `${Math.round(windValue)} km/h`
-                : "-- km/h";
-
+            windValue !== undefined ? `${Math.round(windValue)} km/h` : "-- km/h";
     }
 
     if (thunderstorm) {
-
         thunderstorm.textContent =
-            isThunderstorm(code)
-                ? "Possible"
-                : "No indication";
-
+            isThunderstorm(code) ? "Possible" : "No indication";
     }
 
+    const liveBox = document.getElementById("liveRainStatus");
+
+    if (liveBox) {
+        const hasCurrentRain = precipitation > 0.05;
+
+        liveBox.innerHTML = hasCurrentRain
+            ? `<strong>🌧️ Abhi rain signal detected:</strong> ${precipitation.toFixed(1)} mm`
+            : `<strong>☁️ Model current signal:</strong> No measurable rain at the selected point`;
+    }
 }
+
 
 
 // =======================================================
@@ -4679,6 +4742,23 @@ if (locationInput) {
 setInterval(
     refreshCurrentWeather,
     30 * 60 * 1000
+);
+
+
+// =======================================================
+// LIVE RADAR REFRESH
+// =======================================================
+
+setInterval(
+    () => {
+        updateLiveRadarLayer().catch(
+            error => console.warn(
+                "Radar refresh failed:",
+                error
+            )
+        );
+    },
+    5 * 60 * 1000
 );
 
 
