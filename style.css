@@ -1516,3 +1516,157 @@ button {
    ========================================================= */
 .phase-j-severe{background:#fff;border-radius:16px;padding:18px;box-shadow:0 5px 20px rgba(15,23,42,.06)}
 .severe-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:15px}.severe-head small{display:block;color:#64748b;margin-top:4px}.severe-badge{padding:7px 10px;border-radius:999px;font-size:12px;font-weight:800}.severe-badge.low{background:#dcfce7;color:#166534}.severe-badge.elevated{background:#fef3c7;color:#92400e}.severe-badge.high{background:#ffedd5;color:#9a3412}.severe-badge.severe{background:#fee2e2;color:#991b1b}.severe-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.severe-summary>div{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:13px}.severe-summary span{display:block;color:#64748b;font-size:11px}.severe-summary strong{display:block;margin-top:4px;font-size:19px}.severe-models{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}.severe-model{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:13px}.severe-model strong{display:block;font-size:15px;margin-bottom:7px}.severe-model span{display:block;color:#64748b;font-size:11px;margin-top:6px}.severe-model b{display:block}.severe-signals{margin-top:12px;padding:11px;border-radius:10px;background:#fff7ed;border:1px solid #fed7aa;color:#7c2d12;font-size:12px;line-height:1.6}.severe-note{margin:12px 0 0;color:#64748b;font-size:12px;line-height:1.65}@media(max-width:700px){.severe-summary,.severe-models{grid-template-columns:1fr 1fr}.severe-head{align-items:flex-start;flex-direction:column}}@media(max-width:450px){.severe-summary,.severe-models{grid-template-columns:1fr}}
+
+
+/* =========================================================
+   DISTRICT RAINFALL DASHBOARD
+   ========================================================= */
+
+.district-rainfall-section {
+    margin-top: 28px;
+}
+
+.district-rainfall-dashboard {
+    background: white;
+    border-radius: 18px;
+    padding: 18px;
+    box-shadow: 0 5px 20px rgba(15, 23, 42, 0.06);
+}
+
+.district-loading,
+.district-empty,
+.district-error {
+    padding: 18px;
+    border-radius: 14px;
+    background: #f8fafc;
+    color: #475569;
+    text-align: center;
+}
+
+.district-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.district-stat {
+    padding: 16px;
+    border-radius: 14px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+}
+
+.district-stat span {
+    display: block;
+    color: #64748b;
+    font-size: 12px;
+    margin-bottom: 4px;
+}
+
+.district-stat strong {
+    display: block;
+    font-size: 18px;
+    color: #0f172a;
+}
+
+.district-stat small {
+    color: #0284c7;
+    font-weight: 700;
+}
+
+.district-top-box {
+    margin-bottom: 18px;
+    padding: 16px;
+    border-radius: 14px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+}
+
+.district-top-box h3 {
+    margin-bottom: 8px;
+}
+
+.district-top-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.district-top-row:last-child {
+    border-bottom: 0;
+}
+
+.district-top-row span {
+    font-weight: 800;
+    color: #0284c7;
+}
+
+.district-table-wrap {
+    overflow-x: auto;
+}
+
+.district-rain-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 760px;
+    font-size: 13px;
+}
+
+.district-rain-table th {
+    background: #f1f5f9;
+    color: #475569;
+    text-align: left;
+    padding: 11px 10px;
+    white-space: nowrap;
+}
+
+.district-rain-table td {
+    padding: 11px 10px;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+}
+
+.rain-pill,
+.rain-label {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 11px;
+}
+
+.rain-pill.none,
+.rain-label.none { background: #e2e8f0; color: #475569; }
+.rain-pill.light,
+.rain-label.light { background: #fef3c7; color: #92400e; }
+.rain-pill.moderate,
+.rain-label.moderate { background: #cffafe; color: #155e75; }
+.rain-pill.heavy,
+.rain-label.heavy { background: #dbeafe; color: #1e40af; }
+.rain-pill.very-heavy,
+.rain-label.very-heavy { background: #ede9fe; color: #5b21b6; }
+.rain-pill.extreme,
+.rain-label.extreme { background: #ffe4e6; color: #9f1239; }
+
+.district-source-note {
+    margin-top: 14px;
+    padding: 11px;
+    border-radius: 10px;
+    background: #f8fafc;
+    color: #64748b;
+    font-size: 11px;
+    line-height: 1.6;
+}
+
+@media (max-width: 700px) {
+    .district-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .district-rainfall-dashboard {
+        padding: 12px;
+    }
+}
