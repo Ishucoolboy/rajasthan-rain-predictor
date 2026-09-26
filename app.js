@@ -3954,8 +3954,18 @@ function renderRainNews() {
     const box = document.getElementById("rainNews");
     if (!box) return;
     const rows = Array.isArray(districtRainfallData) ? [...districtRainfallData] : [];
+
+    // Show an instant local update first; district data fills in when ready.
+    const radar = document.getElementById("liveRainStatus")?.textContent?.trim() || "Live radar signal load ho raha hai...";
     if (!rows.length) {
-        box.innerHTML = "⏳ District forecast load ho raha hai...";
+        const currentRain = Number(latestWeatherData?.current?.precipitation ?? latestWeatherData?.current?.rain ?? 0);
+        const currentProb = Number(latestWeatherData?.hourly?.precipitation_probability?.[0] ?? 0);
+        box.innerHTML =
+            '<div class="rain-news-item">📡 <strong>Abhi:</strong> ' + escapeHTML(radar) + '</div>' +
+            '<div class="rain-news-item">📍 <strong>' + escapeHTML(currentSelectedLocation?.name || "Selected area") + ':</strong> ' +
+            (currentRain > 0.05 ? 'abhi rain signal hai.' : (currentProb >= 30 ? 'rain ka chance bana hua hai.' : 'abhi measurable rain signal nahi hai.')) +
+            '</div>' +
+            '<div class="rain-news-item">⏳ <strong>Rajasthan update:</strong> District-wise rain news background mein update ho rahi hai...</div>';
         return;
     }
     const top = rows.filter(r => Number(r.total3Day) > 0)
@@ -4352,6 +4362,9 @@ async function loadWeather(
             location,
             data
         );
+
+        // Refresh the news card immediately after selected-location weather arrives.
+        renderRainNews();
 
         renderSmartRainSummary(
             data
@@ -4856,6 +4869,16 @@ async function initialize() {
         }
 
         await loadVillageDatabase();
+
+        // Start district rainfall/news in parallel with the slower model-comparison work.
+        loadDistrictRainfall().catch(
+            error => console.warn(
+                "District rainfall initialization failed:",
+                error
+            )
+        );
+
+        renderRainNews();
 
         await loadWeather(
             DEFAULT_LOCATION
