@@ -1696,3 +1696,50 @@ button {
     font-size: 11px;
     line-height: 1.6;
 }
+
+
+/* =========================================================
+   SIMPLE 5-SECTION HOME
+   ========================================================= */
+
+main.container > section {
+    display: none;
+}
+
+main.container > .search-section,
+main.container > .weather-section,
+main.container > .map-section,
+main.container > .district-rainfall-section,
+main.container > .rain-news-section {
+    display: block;
+}
+
+.search-section,
+.weather-section,
+.map-section,
+.district-rainfall-section,
+.rain-news-section {
+    margin-bottom: 18px;
+}
+
+.rain-news {
+    padding: 18px;
+    border-radius: 16px;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.12);
+    line-height: 1.75;
+    font-size: 14px;
+}
+
+.rain-news strong {
+    font-size: 16px;
+}
+
+.rain-news-item {
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+}
+
+.rain-news-item:last-child {
+    border-bottom: 0;
+}
