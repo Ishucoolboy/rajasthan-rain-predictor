@@ -3961,8 +3961,8 @@ function renderRainNews() {
         const currentRain = Number(latestWeatherData?.current?.precipitation ?? latestWeatherData?.current?.rain ?? 0);
         const currentProb = Number(latestWeatherData?.hourly?.precipitation_probability?.[0] ?? 0);
         box.innerHTML =
-            '<div class="rain-news-item">📡 <strong>Abhi:</strong> ' + escapeHTML(radar) + '</div>' +
-            '<div class="rain-news-item">📍 <strong>' + escapeHTML(currentSelectedLocation?.name || "Selected area") + ':</strong> ' +
+            '<div class="rain-news-item">📡 <strong>Abhi:</strong> ' + escapeHtml(radar) + '</div>' +
+            '<div class="rain-news-item">📍 <strong>' + escapeHtml(currentSelectedLocation?.name || "Selected area") + ':</strong> ' +
             (currentRain > 0.05 ? 'abhi rain signal hai.' : (currentProb >= 30 ? 'rain ka chance bana hua hai.' : 'abhi measurable rain signal nahi hai.')) +
             '</div>' +
             '<div class="rain-news-item">⏳ <strong>Rajasthan update:</strong> District-wise rain news background mein update ho rahi hai...</div>';
@@ -3973,7 +3973,7 @@ function renderRainNews() {
     const radar = document.getElementById("liveRainStatus")?.textContent?.trim() || "Live radar signal available hai.";
     const d1 = rows.filter(r => Number(r.day1) > 0).length;
     box.innerHTML =
-        '<div class="rain-news-item">📡 <strong>Abhi:</strong> ' + escapeHTML(radar) + '</div>' +
+        '<div class="rain-news-item">📡 <strong>Abhi:</strong> ' + escapeHtml(radar) + '</div>' +
         '<div class="rain-news-item">🌧️ <strong>Next 24 hours:</strong> Rajasthan ke ' + d1 + ' districts mein measurable rain forecast hai.</div>' +
         '<div class="rain-news-item">🔮 <strong>Next 3 days:</strong> ' +
         (top.length ? top.map(r => escapeHTML(r.district) + ' (' + formatDistrictRain(r.total3Day) + ')').join(", ") : "significant rain signal nahi mila.") +
@@ -4868,27 +4868,24 @@ async function initialize() {
 
         }
 
-        await loadVillageDatabase();
-
-        // Start district rainfall/news in parallel with the slower model-comparison work.
-        loadDistrictRainfall().catch(
-            error => console.warn(
-                "District rainfall initialization failed:",
-                error
-            )
-        );
+        // Do NOT block the main weather screen on the large village registry.
+        // Weather + radar should appear first; village search data can load in background.
+        loadVillageDatabase().then(() => {
+            loadDistrictRainfall().catch(
+                error => console.warn(
+                    "District rainfall initialization failed:",
+                    error
+                )
+            );
+        }).catch(error => {
+            console.warn("Village database initialization failed:", error);
+        });
 
         renderRainNews();
 
+        // Load the selected location immediately.
         await loadWeather(
             DEFAULT_LOCATION
-        );
-
-        loadDistrictRainfall().catch(
-            error => console.warn(
-                "District rainfall initialization failed:",
-                error
-            )
         );
 
         /*
