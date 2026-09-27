@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Nagaur Rain Intelligence</title><meta name="description" content="Hyperlocal rain radar, nowcast and multi-model forecast for Nagaur and a 100 km radius."><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"></head>
+<body><header><div><span class="eyebrow">RAJASTHAN • RAIN INTELLIGENCE</span><h1>Nagaur Rain Intelligence</h1><p>Live radar + AI nowcast + multi-model forecast • Nagaur ±100 km</p></div><button id="refresh">↻ Refresh</button></header>
+<main>
+<section class="hero"><div><span class="pill">📍 Nagaur, Rajasthan</span><h2>Where will rain move next?</h2><p id="headline">Loading live weather intelligence…</p></div><div class="score"><b id="confidence">—</b><span>forecast agreement</span></div></section>
+<section class="cards" id="current"></section>
+<section class="panel"><div class="panelhead"><div><h2>🛰️ Live Rain Radar & Nowcast</h2><p>Past radar animation + short-term precipitation projection.</p></div><div id="radarStatus" class="status">Loading radar…</div></div><div id="map"></div><div class="legend"><span>Rain intensity</span><i>Light</i><i>Moderate</i><i>Heavy</i><i>Extreme</i></div></section>
+<section class="panel"><div class="panelhead"><div><h2>⏱️ Next 10 Hours</h2><p>Hour-by-hour rain probability, amount and thunderstorm signal.</p></div></div><div id="hours" class="hours"></div></section>
+<section class="panel"><div class="panelhead"><div><h2>🤖 Multi-Model Forecast</h2><p>ECMWF • GFS • ICON • AIFS • model spread and consensus.</p></div></div><div id="models" class="modelgrid"></div></section>
+<section class="panel"><div class="panelhead"><div><h2>🗺️ 100 km Rain Watch</h2><p>Rainfall outlook across Nagaur and the surrounding 100 km region.</p></div></div><div id="regional" class="regional"></div></section>
+<section class="panel"><div class="panelhead"><div><h2>📰 Rain News</h2><p>Automatically generated from radar, nowcast, warnings and model consensus.</p></div></div><div id="news"></div></section>
+<section class="panel"><h2>⚠️ Official warnings</h2><div id="warnings">Loading IMD warning signal…</div></section>
+<footer>Forecasts are estimates. Radar/nowcast describes observed or extrapolated precipitation; model forecasts can disagree. No weather system can guarantee 95% accuracy for every rain event.</footer>
+</main>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="app.js"></script></body></html>
