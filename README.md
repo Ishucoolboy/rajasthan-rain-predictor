@@ -25,13 +25,23 @@ The feature set was researched against Windy, RainViewer, Ventusky, Weather Unde
 ## Accuracy policy
 No weather service can honestly guarantee a universal **95% correct** rain forecast. The correct path is to collect forecasts and observations, then publish measured metrics such as Brier score, probability calibration, POD, FAR, CSI and MAE for defined thresholds and time windows.
 
+## pySTEPS radar nowcasting
+
+The repository now includes a real pySTEPS integration:
+- `scripts/pysteps_nowcast.py` reads quantitative radar frames in ODIM/OPERA HDF5, BoM Rainfields3 NetCDF or FMI GeoTIFF formats.
+- It estimates motion with Lucas-Kanade and generates a deterministic extrapolation nowcast for up to 2 hours.
+- `.github/workflows/pysteps-nowcast.yml` installs pySTEPS and publishes a compact `data/pysteps-nowcast.json` result.
+- The web dashboard displays the pySTEPS status/short-term intensity when radar frames are available.
+
+Important: RainViewer's public map tiles are colorized display tiles. The integration deliberately does not reverse-engineer those colors into quantitative precipitation because that would make the nowcast scientifically unreliable. RainViewer currently exposes past radar tiles and separate source-radar data files; quantitative radar input must be available in a supported format.
+
 ## Next engineering phase
 1. Add a small server/GitHub Action to save forecast snapshots every hour.
 2. Pair snapshots with observed IMD/AWS/ARG rainfall.
 3. Calculate rolling verification by lead time (0–1h, 1–3h, 3–6h, 6–10h).
 4. Calibrate probabilities for Nagaur using the local history.
 5. Add Rainbow Weather server-side minute nowcast if an API key is supplied.
-6. Add official IMD radar imagery and lightning/nowcast products where a stable public endpoint is available.
+6. Connect a stable quantitative Indian radar source (IMD/source-radar file or another licensed feed) to `radar-input/` so the pySTEPS workflow can run automatically.
 
 ## Attribution
 RainViewer requires visible attribution for its public API. Open-Meteo data should also be attributed according to its terms.
