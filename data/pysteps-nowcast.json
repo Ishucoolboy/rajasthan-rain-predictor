@@ -2,5 +2,6 @@
   "engine": "pySTEPS",
   "captured_at": null,
   "summary": [],
-  "status": "waiting_for_quantitative_radar"
+  "status": "waiting_for_quantitative_radar",
+  "note": "At least three consecutive quantitative radar frames are required."
 }
