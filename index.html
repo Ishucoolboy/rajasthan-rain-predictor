@@ -15,6 +15,11 @@
 <div id="farmerActions" class="actionGrid"></div>
 <div class="farmerNote">These are weather-based precautionary actions, not crop-specific agronomic prescriptions. Follow your local agriculture officer/label directions for chemical use.</div>
 </section>
+<section class="panel historyPanel">
+<div class="panelhead"><div><h2>📚 Rajasthan Rainfall Climate Context</h2><p>Long-term West Rajasthan rainfall context — useful for seasonal planning, not a short-term rain forecast.</p></div><div class="status">Historical baseline</div></div>
+<div id="historyRainfall" class="historyGrid"></div>
+<div class="historyNote">Historical climate context is separate from the live 6-hour rain action alerts above. It should not be used to decide whether rain will arrive today.</div>
+</section>
 <section class="panel rainbowPanel"><div class="panelhead"><div><h2>🧠 pySTEPS Radar Nowcast</h2><p>Local radar-motion nowcast engine. Uses quantitative radar frames when available.</p></div><div id="pystepsStatus" class="status">Loading engine…</div></div><div id="pystepsNowcast" class="nowcast"></div></section>
 <section class="panel rainbowPanel"><div class="panelhead"><div><h2>🌈 Rainbow AI Nowcast</h2><p>Minute-by-minute precipitation outlook for the next 4 hours when the server-side API key is configured.</p></div><div id="rainbowStatus" class="status">Loading nowcast…</div></div><div id="rainbowNowcast" class="nowcast"></div></section>
 <section class="panel"><div class="panelhead"><div><h2>⏱️ Next 10 Hours</h2><p>Rain amount, probability, temperature, wind and thunderstorm signal.</p></div></div><div id="hours" class="hours"></div></section>
