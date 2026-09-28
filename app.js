@@ -20,6 +20,40 @@ async function loadRadar(){initMap();try{const d=await getJSON('https://api.rain
 function setRadarFrame(i){radarLayers.forEach((x,k)=>x.setOpacity(k===Number(i)?0.68:0));const f=radarFrames[Math.max(0,radarFrames.length-radarLayers.length+Number(i))];$('radarLabel').textContent=f?new Date(f.time*1000).toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'}):'—'}
 async function loadIMD(){try{const [w,nc,rf]=await Promise.all([getJSON(IMD+'warnings_district_api.php'),getJSON(IMD+'nowcast_district_api.php?id=5'),getJSON(IMD+'districtwise_rainfall_api.php')]);const text=(JSON.stringify(w)+' '+JSON.stringify(nc)+' '+JSON.stringify(rf)).toLowerCase();const pos=text.indexOf('nagaur');let excerpt=pos>=0?text.slice(Math.max(0,pos-180),Math.min(text.length,pos+520)):'Nagaur was not found by a simple text match in the returned district feeds.';$('warnings').innerHTML='<div class="newsitem"><b>IMD feeds:</b> warning, district nowcast and district rainfall endpoints responded.</div><div class="sub">Nagaur text check: '+(pos>=0?'found':'not found')+'</div><details><summary>Returned Nagaur-area excerpt</summary><pre>'+excerpt.replace(/[<>]/g,'')+'</pre></details>'}catch(e){$('warnings').textContent='IMD district feeds temporarily unavailable; the map and model forecast remain separate.'}}
 function renderVerification(){const vals=modelData.filter(x=>x.d);$('verification').innerHTML='<div class="verifybox"><b>'+vals.length+'/4</b><div>models returned data</div></div><div class="verifybox"><b>0%</b><div>unmeasured accuracy claims</div></div><div class="verifybox"><b>Ready</b><div>forecast-vs-observation framework</div></div><div class="verifybox"><b>Next</b><div>store forecast snapshots + IMD observed rain before publishing measured scores</div></div>'}
+function renderFarmerActions(){
+  const box=$('farmerActions'),hero=$('farmerActionHero'),risk=$('farmerRisk');
+  if(!box||!centerForecast?.hourly)return;
+  const h=centerForecast.hourly;
+  const rain=(h.precipitation||[]).slice(0,6).map(num);
+  const prob=(h.precipitation_probability||[]).slice(0,6).map(num);
+  const total=rain.reduce((a,b)=>a+b,0), peak=Math.max(...rain,0), p=Math.max(...prob,0);
+  const crop=$('cropSelect')?.value||'generic',stage=$('stageSelect')?.value||'standing';
+  let level='LOW', cls='', title='No strong rain action right now';
+  if(peak>=15||p>=80){level='HIGH';cls='urgent';title='RAIN ACTION: prepare your field now';}
+  else if(peak>=5||p>=50){level='WATCH';cls='watch';title='RAIN WATCH: finish exposed work early';}
+  risk.textContent=level+' field risk';
+  hero.innerHTML='<div class="big">'+title+'</div><div class="why">Next 6h: '+one(total)+' mm model rain • peak '+one(peak)+' mm/h • highest rain chance '+Math.round(p)+'%. Exact timing can change.</div>';
+  const actions=[];
+  if(stage==='harvest'){
+    actions.push({t:'Check harvest-ready crop',d:'If produce is mature and rain risk is rising, assess whether safe harvesting before rain is practical.',c:cls});
+    actions.push({t:'Protect harvested produce',d:'Move bags, grain, fodder and drying material under a dry covered area before rainfall starts.',c:cls});
+  } else {
+    actions.push({t:'Stop unnecessary field work before rain',d:'Prioritise urgent work now; avoid leaving tools, seed, fodder or equipment exposed in the field.',c:cls});
+  }
+  if(stage==='spray'){
+    actions.push({t:'Do not rush a spray before rain',d:'Rain soon after foliar spraying can wash product off and reduce effectiveness. Follow the product label and local advisory for the required rain-free interval.',c:'watch'});
+  }
+  if(stage==='fertilizer'){
+    actions.push({t:'Avoid fertilizer immediately before heavy rain',d:'Heavy rainfall can move nutrients away from the root zone or increase runoff. Check the crop/product recommendation before application.',c:'urgent'});
+  }
+  if(peak>=5||p>=50){
+    actions.push({t:'Check field drainage',d:'Open/clear safe drainage paths where waterlogging is a known problem. Do not block natural outlets.',c:cls});
+    actions.push({t:'Secure irrigation',d:'If irrigation is planned, re-check the rain forecast first so you do not unnecessarily irrigate just before useful rainfall.',c:'watch'});
+  }
+  actions.push({t:'Watch the radar',d:'Use the radar timeline to see whether rain is approaching your 100 km region. Radar shows observed rain, not a guarantee of where it will go.',c:''});
+  if(crop!=='generic') actions.push({t:crop+' field note',d:'Keep the crop stage selected above accurate; the action list changes according to harvest/sowing/spray/fertilizer needs.',c:''});
+  box.innerHTML=actions.map(a=>'<div class="action '+a.c+'"><b>'+a.t+'</b><span>'+a.d+'</span></div>').join('');
+}
 function renderPysteps(){
   const box=$('pystepsNowcast');
   if(!pystepsData || !Array.isArray(pystepsData.summary) || !pystepsData.summary.length){
@@ -41,5 +75,5 @@ async function loadPysteps(){
   renderPysteps();
 }
 function renderRainbow(){const box=$('rainbowNowcast');if(!rainbowData?.forecast?.length){$('rainbowStatus').textContent='Waiting for Rainbow API key';box.innerHTML='<div class="newsitem">Rainbow AI integration is installed, but the API key must be stored as a GitHub Actions secret named <b>RAINBOW_API_KEY</b>. Until then the dashboard continues with radar + model data.</div>';return}$('rainbowStatus').textContent='Rainbow AI • 0–4h';const f=rainbowData.forecast.slice(0,24);box.innerHTML=f.map((x,i)=>{const t=new Date(x.timestampBegin*1000).toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'});return '<div class="nc"><b>'+t+'</b><strong>'+num(x.precipRate).toFixed(2)+'</strong><small>mm/h</small></div>'}).join('')}\nasync function loadRainbow(){try{const r=await fetch('data/rainbow-nowcast.json?ts='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error(r.status);rainbowData=await r.json();renderRainbow()}catch(e){rainbowData=null;renderRainbow()}}\nfunction renderNews(){const valid=modelData.filter(x=>x.rain!==null);const ranking=[...valid].sort((a,b)=>b.rain-a.rain);$('news').innerHTML='<div class="newsitem">🌧️ <b>Nagaur rain desk:</b> '+consensusSentence()+'</div><div class="newsitem">📐 <b>Model spread:</b> '+ranking.map(x=>x.name+' '+one(x.rain)+' mm').join(' • ')+'</div><div class="newsitem">📡 <b>Radar:</b> the public RainViewer feed currently provides observed past radar frames; future nowcast frames are not assumed from the API.</div><div class="newsitem">🧭 <b>Regional watch:</b> the grid uses 81 points inside the 100 km circle and can be scrubbed hour-by-hour.</div>'}
-async function load(){const btn=$('refresh');btn.disabled=true;btn.textContent='Updating…';try{$('headline').textContent='Fetching live weather, radar and regional models…';const [base]=await Promise.all([forecast(),loadRadar(),loadRainbow(),loadPysteps()]);centerForecast=base;currentCards(base);renderHours(base);$('headline').textContent=consensusSentence();$('updated').textContent='Updated '+new Date().toLocaleString('en-IN');await Promise.all([loadModels(),loadGrid(),loadIMD()]);renderRainbow();renderPysteps();renderNews();renderVerification()}catch(e){console.error(e);$('headline').textContent='Some data sources are temporarily unavailable. Tap Refresh to retry.'}finally{btn.disabled=false;btn.textContent='↻ Refresh'}}
-$('refresh').onclick=load;$('timeSlider').oninput=e=>renderGrid(Number(e.target.value));$('radarSlider').oninput=e=>setRadarFrame(Number(e.target.value));initMap();load();setInterval(load,10*60*1000);
+async function load(){const btn=$('refresh');btn.disabled=true;btn.textContent='Updating…';try{$('headline').textContent='Fetching live weather, radar and regional models…';const [base]=await Promise.all([forecast(),loadRadar(),loadRainbow(),loadPysteps()]);centerForecast=base;currentCards(base);renderHours(base);$('headline').textContent=consensusSentence();$('updated').textContent='Updated '+new Date().toLocaleString('en-IN');await Promise.all([loadModels(),loadGrid(),loadIMD()]);renderRainbow();renderPysteps();renderFarmerActions();renderNews();renderVerification()}catch(e){console.error(e);$('headline').textContent='Some data sources are temporarily unavailable. Tap Refresh to retry.'}finally{btn.disabled=false;btn.textContent='↻ Refresh'}}
+$('refresh').onclick=load;$('cropSelect')?.addEventListener('change',renderFarmerActions);$('stageSelect')?.addEventListener('change',renderFarmerActions);$('timeSlider').oninput=e=>renderGrid(Number(e.target.value));$('radarSlider').oninput=e=>setRadarFrame(Number(e.target.value));initMap();load();setInterval(load,10*60*1000);
