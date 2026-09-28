@@ -25,6 +25,17 @@ The feature set was researched against Windy, RainViewer, Ventusky, Weather Unde
 ## Accuracy policy
 No weather service can honestly guarantee a universal **95% correct** rain forecast. The correct path is to collect forecasts and observations, then publish measured metrics such as Brier score, probability calibration, POD, FAR, CSI and MAE for defined thresholds and time windows.
 
+## Farmer-first design
+
+The dashboard is now designed primarily around a farmer's immediate field decision:
+- Crop and crop-stage selector.
+- Rain-risk level for the next 6 hours.
+- Action cards for harvest protection, spraying, fertilizer timing, drainage and irrigation decisions.
+- Radar + forecast context beside the action list.
+- The app intentionally avoids presenting generic weather data as if it were an agronomic prescription.
+
+The referenced Agriculture Portal contributes useful product ideas such as crop/stage-aware recommendations, fertilizer/crop tools, yield context, farmer news and weather information. Its original repository describes crop prediction, crop recommendation, fertilizer recommendation, rainfall prediction, yield prediction, news and weather features. citeturn0search0 This project adapts the useful ideas to the specific goal of **helping farmers act before rain**, rather than reproducing its PHP/MySQL application.
+
 ## pySTEPS radar nowcasting
 
 The repository now includes a real pySTEPS integration:
