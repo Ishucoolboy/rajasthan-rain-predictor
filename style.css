@@ -11,3 +11,5 @@
 .action.urgent{border-left-color:#e05a47;background:#fff5f2}.action.watch{border-left-color:#e2a62b;background:#fffaf0}
 .farmerNote{font-size:10px;color:#6a7a70;margin-top:12px}
 @media(max-width:560px){.actionGrid{grid-template-columns:1fr}.farmerSetup label{width:100%}.farmerSetup select{float:right}}
+
+.historyGrid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}.historyCard,.historySummary{background:#f6fafb;border:1px solid #dce8eb;border-radius:12px;padding:12px}.historyCard{display:grid;gap:4px}.historyCard strong,.historySummary strong{font-size:1.05rem}.historyCard span,.historySummary span{font-size:.78rem;color:#64748b}.historySummary{grid-column:span 2;display:grid;gap:4px}.historyNote{margin-top:12px;color:#64748b;font-size:.82rem}@media(max-width:800px){.historyGrid{grid-template-columns:repeat(3,1fr)}.historySummary{grid-column:span 3}}
